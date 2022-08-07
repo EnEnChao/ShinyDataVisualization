@@ -7,6 +7,17 @@ ancova_page <- function (){
                   accordion(
                     id = 'accordion_ancova',
                     accordionItem(
+                      title = 'Configurações do gráfico',
+                      status = accordionStatus,
+                      collapsed = FALSE,
+                      uiOutput('ancova_variables'),
+                      numericInput(
+                        inputId = 'ancova_ci',
+                        label = 'Intervalo de confiança',
+                        min = 0, max = 1, value = 0.05
+                      )
+                    ),
+                    accordionItem(
                       title = "Configurações das linhas",
                       status = accordionStatus,
                       collapsed = TRUE,
@@ -30,27 +41,6 @@ ancova_page <- function (){
                         inputId = "ancova_marker_size",
                         min = 0, value = 4
                       )
-                    ),
-                    accordionItem(
-                      title = 'Selecione os testes estatísticos',
-                      status = accordionStatus,
-                      collapsed = TRUE,
-                      checkboxGroupButtons(
-                         inputId = "Id060",
-                         label = "Label",
-                         choices =
-                           c("Tabela de dados descritivos",
-                             "Tabela com covariância",
-                             "Tabela de correlação",
-                             "Homogeneidade das variâncias",
-                             "Pontos fora da curva",
-                             "Teste post-hoc"),
-                         checkIcon = list(
-                            yes = tags$i(class = "fa fa-check-square",
-                          style = "color: steelblue"),
-                         no = tags$i(class = "fa fa-square-o",
-                          style = "color: steelblue"))
-                      )
                     )
                   )
            )
@@ -60,18 +50,16 @@ ancova_page <- function (){
              h3("ANCOVA - Análise de Covariância", style="text-align:center; font-size:50px;"),
              tabPanel(title = 'Gráfico',
                       shinycssloaders::withSpinner(
-                        plotlyOutput('plotly_ancova'),
+                        uiOutput('plotly_ancova'),
                         type = spinnerType,
                         color = spinnerColor,
                         size = spinnerSize
                       ),
-                      uiOutput('ancova_anova_test'),
-                      DTOutput('ancova_levene_test'),
-                      DTOutput('ancova_levene_test_log'),
+                      uiOutput('ancova_statistics')
         ),
         width = 9
-      ))),
-
-    )
+      )))
+    ),
+    column(12, hr())
   )
 }

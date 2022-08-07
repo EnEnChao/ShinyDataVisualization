@@ -1,19 +1,21 @@
-library(shiny)
-library(shinythemes)
-library(DT)
-library(shinydashboardPlus)
-library(shinyWidgets)
-library(plotly)
-library(openxlsx)
-library(vtable)
-library(ggridges)
-library(beeswarm)
-library(carData)
-library(tidyverse)
-library(datarium)
-library(rstatix)
-library(broom)
-library(ggpubr)
+if (!(require(shiny))){install.packages("shiny"); require(shiny, quietly=TRUE)}
+if (!(require(shinythemes))){install.packages("shinythemes"); require(shinythemes, quietly=TRUE)}
+if (!(require(DT))){install.packages("DT"); require(DT, quietly=TRUE)}
+if (!(require(shinydashboardPlus))){install.packages("shinydashboardPlus"); require(shinydashboardPlus, quietly=TRUE)}
+if (!(require(shinydashboard))){install.packages("shinydashboard"); require(shinydashboard, quietly=TRUE)}
+if (!(require(shinyWidgets))){install.packages("shinyWidgets"); require(shinyWidgets, quietly=TRUE)}
+if (!(require(plotly))){install.packages("plotly"); require(plotly, quietly=TRUE)}
+if (!(require(openxlsx))){install.packages("openxlsx"); require(openxlsx, quietly=TRUE)}
+if (!(require(vtable))){install.packages("vtable"); require(vtable, quietly=TRUE)}
+if (!(require(ggridges))){install.packages("ggridges"); require(ggridges, quietly=TRUE)}
+if (!(require(beeswarm))){install.packages("beeswarm"); require(beeswarm, quietly=TRUE)}
+if (!(require(carData))){install.packages("carData"); require(carData, quietly=TRUE)}
+if (!(require(tidyverse))){install.packages("tidyverse"); require(tidyverse, quietly=TRUE)}
+if (!(require(datarium))){install.packages("datarium"); require(datarium, quietly=TRUE)}
+if (!(require(rstatix))){install.packages("rstatix"); require(rstatix, quietly=TRUE)}
+if (!(require(broom))){install.packages("broom"); require(broom, quietly=TRUE)}
+if (!(require(ggpubr))){install.packages("ggpubr"); require(ggpubr, quietly=TRUE)}
+if (!(require(rhandsontable))){install.packages("rhandsontable"); require(rhandsontable, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')
@@ -37,6 +39,7 @@ source('Interface/ImportBidimensional.R')
 source('Interface/ANCOVA.R')
 source('Interface/ImportTridimensional.R')
 source('Interface/Mesh.R')
+source('Interface/Config.R')
 source('Interface/Contact.R')
 
 ui <- (fluidPage(
@@ -63,7 +66,6 @@ tags$style(HTML("
         }")),
   navbarPage(
     selected = 'Home',
-    # header = includeHTML('header.html'),
     footer = includeHTML("footer.html"),
     id = 'tabs',
     # position = "fixed-top",
@@ -74,7 +76,7 @@ tags$style(HTML("
                tabPanel('Carregue seus dados',
                         tabsetPanel(
                             import_unidimensional_page(),
-                            tabPanel('Digite seus dados na planilha')
+                            insert_unidimensional()
                         )
                ),
                statistics_unidimensional_page(),
@@ -106,8 +108,19 @@ tags$style(HTML("
                ),
     ),
     navbarMenu('Dados bidimensionais',
-               import_bidimensional_page(),
-               tabPanel('Comparando duas médias'),
+               tabPanel('Carregue seus dados',
+                        tabsetPanel(
+                          import_bidimensional_page(),
+                          insert_bidimensional()
+                        )
+               ),
+               tabPanel('Comparando duas médias',
+                        tabsetPanel(
+                          tabPanel('Teste - T'),
+                          tabPanel('Teste Wilcoxon'),
+                          tabPanel('Teste do sinal (Sign test)')
+                        )
+               ),
                tabPanel('Comparando multiplas médias',
                         tabsetPanel(
                           ancova_page(),
@@ -119,10 +132,9 @@ tags$style(HTML("
                import_tridimensional_page(),
                mesh_page()
     ),
-    tabPanel('Configurações'),
+    config_page(),
     contact_page(),
     # navbarMenu('Configurações'),
-    # includeScript("multiple_navbar.js")
   ),
   column(2)
 ))

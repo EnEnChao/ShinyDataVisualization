@@ -11,18 +11,18 @@ server <- function (input, output, session){
   values$data_info <- data.frame()
   values$condensed_data_info <- data.frame()
 
-  output$table_import_data_output <- renderUI(tagList(
-    h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'),
-    br(), br(), br(), br(), br(), br(),
-    br(), br(), br(), br()
-  ))
+  #Iniciar alguns textos dinâmicos
+  output$table_import_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
+  output$title_name_insert <- renderUI(h2(strong('Digite os dados:')))
 
-  output$table_import_bi_data_output <- renderUI(tagList(
-    h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'),
-    br(), br(), br(), br(), br(), br(),
-    br(), br(), br(), br()
-  ))
+  output$table_import_bi_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
+  output$title_name_insert_bi <- renderUI(h2(strong('Digite os dados:')))
 
+  #Iniciar as planilhas
+  output$user_data <- renderRHandsontable({ rhandsontable(data = data.frame(matrix('', 1000, 1000))) })
+  output$user_data_bi <- renderRHandsontable({ rhandsontable(data = data.frame(matrix('', 1000, 1000))) })
+
+  #Esconder todos os paineis
   hideTab(inputId = "tabs", target = "Gráficos 2D")
   hideTab(inputId = "tabs", target = "Gráficos 3D")
   hideTab(inputId = "tabs", target = "Checando os dados")
@@ -33,33 +33,16 @@ server <- function (input, output, session){
 
   hideTab(inputId = "tabs", target = 'Gráfico em Mesh')
 
-  observeEvent(input$load_bidimensional,{
-    showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Comparando multiplas médias")
+  #----------- BOTÕES DE CARREGAMENTO -----------
 
-    if (input$file_selector_bi == 'example'){
-      if(input$examp_select_bi == 'gas')
-      dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
-      if(input$examp_select_bi == 'anxiety') {
-
-        data("anxiety", package = "datarium")
-        dt <- data.frame(c(anxiety[,3], anxiety[,5], anxiety[,2]))
-      }
-    }
-    else if(input$file_selector_bi == 'import'){
-      dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
-    }
-    output$table_import_bi_data_output <- renderUI(
-      shinycssloaders::withSpinner(
-        DTOutput("table_import_bi_data_output2"),
-        type = spinnerType,
-        color = spinnerColor,
-        size = spinnerSize
-      )
-    )
-    output$table_import_bi_data_output2 <- renderDT(dt)
-    values$bidimensional_data <- dt
-  })
+  observeEvent(input$tutorial_button,{
+      showModal(modalDialog(
+        title = "Artigo",
+        tags$iframe(style="height:600px; width:100%", src="Shiny Data Visualization - Tutorial.pdf"),
+        easyClose = TRUE,
+        footer = NULL
+      ))
+    })
 
   observeEvent(input$load_unidimensional,{
     showTab(inputId = "tabs", target = "Gráficos 2D")
@@ -70,11 +53,8 @@ server <- function (input, output, session){
     # Caso a opção selecionada tenha sido um dos exemplos
     if (input$file_selector_uni == 'example'){
       #Caso construction
-      if(input$examp_select == 'labs') {
+      if(input$examp_select == 'labs')
         dt <- data.frame(read.xlsx('Data/Laboratorios.xlsx'))
-        dt[ncol(dt) + 1] <- (as.integer(rnorm(nrow(dt))*30))
-        names(dt)[ncol(dt)] <- paste0('Lab.',ncol(dt))
-      }
       if(input$examp_select == 'construction')
         dt <- data.frame(construction[6:9])
       else if(input$examp_select == 'florida')
@@ -122,39 +102,186 @@ server <- function (input, output, session){
         )
       )
       output$table_import_data_output2 <- renderDT(dt)
-    } else output$rest_of_sidebar <- renderMenu(NULL)
+    }
+
     #Título inserido no import
-    observeEvent(input$title_id_import, {
-      values$usr_title <- paste0(input$title_id_import)
-      output$title_name_import <- renderUI(
-      h2(strong(values$usr_title))
-    )})
+    values$usr_title <- paste0(input$title_id_import)
+    output$title_name_import <- renderUI(h2(strong(values$usr_title)))
   })
 
-  observeEvent(input$tutorial_button,{
-      showModal(modalDialog(
-        title = "Artigo",
-        tags$iframe(style="height:600px; width:100%", src="Shiny Data Visualization - Tutorial.pdf"),
-        easyClose = TRUE,
-        footer = NULL
-      ))
-    })
+  observeEvent(input$load_spreadsheet, {
+    showTab(inputId = "tabs", target = "Gráficos 2D")
+    showTab(inputId = "tabs", target = "Gráficos 3D")
+    showTab(inputId = "tabs", target = "Checando os dados")
+    showTab(inputId = "tabs", target = "Informações gerais")
 
-  observeEvent(input$mesh_load_file, {
+    dt <- data.frame(hot_to_r(input$user_data))
+    empty_columns <- colSums(dt == "") == nrow(dt)
+    dt <- dt[, !empty_columns]
+
+    if(ncol(dt) != 0) {
+      empty_rows <- rowSums(dt == "") == ncol(dt)
+      dt <- dt[!empty_rows,]
+    } else dt <- NULL
+
+    if(!is.null(dt)) {
+      names(dt) <- dt[1,]
+      names(dt) <- gsub('\\.', ' ', names(dt))
+      dt <- dt[-1,]
+
+      dt <- sapply(dt, function(x) as.double(x))
+      dt <- as.data.frame(dt)
+      setUniValues(values, dt)
+    } else output$rest_of_sidebar <- renderMenu(NULL)
+
+    #Título inserido no import
+    values$usr_title <- paste0(input$title_id_insert)
+    output$title_name_insert <- renderUI(h2(strong(values$usr_title)))
+
+  })
+
+  observeEvent(input$load_bidimensional,{
+    output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
+    output$ancova_statistics <- renderUI(p(''))
+    showTab(inputId = "tabs", target = "Comparando duas médias")
+    showTab(inputId = "tabs", target = "Comparando multiplas médias")
+
+    if (input$file_selector_bi == 'example'){
+      if(input$examp_select_bi == 'gas')
+      dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
+      if(input$examp_select_bi == 'anxiety') {
+        data("anxiety", package = "datarium")
+        dt <- anxiety %>%
+          select(id, group, t1, t3) %>%
+          rename(dependente = t1, covariavel = t3)
+
+        dt[14, "posttest"] <- 19
+        set.seed(123)
+        dt %>% sample_n_by(group, size = 1)
+
+      }
+    }
+    else if(input$file_selector_bi == 'import')
+      dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
+    output$table_import_bi_data_output <- renderUI(
+      shinycssloaders::withSpinner(
+        DTOutput("table_import_bi_data_output2"),
+        type = spinnerType,
+        color = spinnerColor,
+        size = spinnerSize
+      )
+    )
+    output$table_import_bi_data_output2 <- renderDT(dt)
+
+    values$usr_title <- paste0(input$title_id_import_bi)
+      output$title_name_import_bi <- renderUI(h2(strong(values$usr_title)))
+    values$bidimensional_data <- dt
+  })
+
+  observeEvent(input$load_spreadsheet_bi,{
+    output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
+    output$ancova_statistics <- renderUI(p(''))
+    showTab(inputId = "tabs", target = "Comparando duas médias")
+    showTab(inputId = "tabs", target = "Comparando multiplas médias")
+
+    dt <- data.frame(hot_to_r(input$user_data_bi))
+    empty_columns <- colSums(dt == "") == nrow(dt)
+    dt <- dt[, !empty_columns]
+
+    if(ncol(dt) != 0) {
+      empty_rows <- rowSums(dt == "") == ncol(dt)
+      dt <- dt[!empty_rows,]
+    } else dt <- NULL
+
+    if(!is.null(dt)) {
+      names(dt) <- dt[1,]
+      # names(dt) <- gsub('\\.', ' ', names(dt))
+      dt <- dt[-1,]
+
+      dt <- as.data.frame(dt)
+    } else output$rest_of_sidebar <- renderMenu(NULL)
+
+    values$usr_title <- paste0(input$title_id_insert_bi)
+    output$title_name_insert_bi <- renderUI(
+      h2(strong(values$usr_title)))
+
+    values$bidimensional_data <- dt
+  })
+
+  observeEvent(input$load_ancova, {
+    options$ancova_variable <- input$ancova_variable
+    options$ancova_covariable <- input$ancova_covariable
+    options$ancova_group_variable <- input$ancova_group_variable
+
+    if(!(options$ancova_variable == options$ancova_covariable || options$ancova_variable == options$ancova_group_variable || options$ancova_covariable == options$ancova_group_variable)){
+
+      output$ancova_statistics <- renderUI(tagList(
+        h3(strong('ANCOVA'), align = 'center'),
+        DTOutput('ancova_test'),
+        h3(strong('Verificação de suposição'), align = 'center'),
+        br(),
+        column(6,
+               h4(strong('Teste de Levene'), align = 'center'),
+               DTOutput('ancova_levene_test')
+        ),
+        column(6,
+               h4(strong('Teste de Shapiro-Wilk'), align = 'center'),
+               DTOutput('ancova_shapiro_test')
+        ),
+        h3(strong('Resultados:'), align = 'center'),
+        br(),
+        uiOutput('ancova_results')
+      ))
+
+      output$plotly_ancova <- renderUI(tagList(
+        shinycssloaders::withSpinner(
+                        plotlyOutput('plotly_ancova2'),
+                        type = spinnerType,
+                        color = spinnerColor,
+                        size = spinnerSize
+                      ),
+      ))
+      output$plotly_ancova2 <- renderPlotly(renderANCOVA(values, options))
+      output$ancova_test <- renderDT(ancova_table(values, options))
+      levene <- levene_table(values, options)
+      output$ancova_levene_test <- renderDT(levene)
+      shapiro <- shapiro_table(values, options)
+      output$ancova_shapiro_test <- renderDT(shapiro)
+
+      output$ancova_results <- renderUI(tagList(
+        if(as.double(shapiro$p) > options$ancova_ci) h4('O teste de Shapiro-Wilk não foi significante (p > ',options$ancova_ci,'), assim podemos
+        assumir a normalidade dos residuos')
+        else h4('O teste de Shapiro-Wilk foi significante (p <= ',options$ancova_ci,'), não podemos
+        assumir a normalidade dos resíduos.'),
+
+        if(as.double(levene$p) > options$ancova_ci) h4('O teste de Levene não foi significante (p > ',options$ancova_ci,'), assim podemos
+        assumir a igualdade da variância dos resíduos para todos os grupos.')
+        else h4('O teste de Levene foi significante (p <= ',options$ancova_ci,'), não podemos
+        assumir a igualdade da variância dos resíduos.')
+      ))
+    }
+    else{
+      output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções. (Dados inválidos)'), align = 'center')))
+    }
+  })
+
+  observeEvent(input$load_tridimensional, {
     showTab(inputId = "tabs", target = "Gráfico em Mesh")
     output$mesh_insert_result <- renderUI(h3(strong('Arquivo carregado: \"',input$examp_select_mesh,'\"')))
   })
 
+  #----------- VARIÁVEIS DOS GRÁFICOS -----------
   observe({
 
     #Tabela
     options$transpose_table <- input$transpose_table
 
-    #Histograma linear
-    options$stack_histogram <- input$switch_stack_histogram
+    #Histograma
+  { #Histograma linear
+  { options$stack_histogram <- input$switch_stack_histogram
     options$bargap_histogram <- input$bargap_histogram
-    options$bargap_histogram_level <- input$bargap_histogram_level/10
-    options$bandwidth_histogram <- if(input$bins_histogram) 0 else input$bandwidth_histogram
+    options$bargap_histogram_level <- input$bargap_histogram_level / 10
+    options$bandwidth_histogram <- if (input$bins_histogram) 0 else input$bandwidth_histogram
     options$opacity_histogram <- input$opacity_histogram
 
     #Histograma de densidade
@@ -162,10 +289,10 @@ server <- function (input, output, session){
     options$density_histogram_area <- if (input$density_histogram_area) 'tozeroy' else 'none'
     options$density_histogram_scale <- input$density_histogram_scale
     options$density_histogram_line_opacity <- input$density_histogram_line_opacity
-    options$density_histogram_area_opacity <- input$density_histogram_area_opacity
+    options$density_histogram_area_opacity <- input$density_histogram_area_opacity }
 
     #Histograma - Ridges
-    options$bandwidth_ridges_histogram <- input$bandwidth_ridges_histogram
+  { options$bandwidth_ridges_histogram <- input$bandwidth_ridges_histogram
     options$scale_ridges_histogram <- input$scale_ridges_histogram
     options$show_quartis_ridges_histogram <- input$show_quartis_ridges_histogram
     options$n_quartis_ridges_histogram <- input$n_quartis_ridges_histogram
@@ -180,32 +307,31 @@ server <- function (input, output, session){
 
     #Cor
     options$ridges_color <- input$ridges_color
-    options$reverse_ridges_histogram <- if(input$reverse_ridges_histogram) -1 else 1
-
+    options$reverse_ridges_histogram <- if (input$reverse_ridges_histogram) -1 else 1 } }
 
     # Box plot
-    # Algoritmo
+  { # Algoritmo
     options$box_algorithm <- input$box_algorithm
     options$meanline_box <- input$meanline_box
     #Pontos
-    options$point_box <- if(input$point_box) 'all' else 'outliers'
+    options$point_box <- if (input$point_box) 'all' else 'outliers'
     options$jitter_box <- input$jitter_box
     options$jitter_pointpos <- input$jitter_pointpos
     options$points_size_box <- input$points_size_box
     options$points_width_box <- input$points_width_box
     options$points_opacity_box <- input$points_opacity_box
-    options$dot_box_shape <- input$dot_box_shape
-
+    options$dot_box_shape <- input$dot_box_shape }
 
     #Violin
-    #Algoritmo
+  { #Algoritmo
     options$violin_algorithm <- input$violin_algorithm
     options$meanline_violin <- input$meanline_violin
     #Largura de banda (violino)
-    options$bandwidth_violin <- if(input$bandwidth_violin) 0 else input$bandwidth_violin_size
+    options$bandwidth_violin <- if (input$bandwidth_violin) 0 else input$bandwidth_violin_size }
 
-    #Pontos
-    options$point_violin <- if(input$point_violin) 'all' else 'outliers'
+    # Gráfico de pontos
+  { #Pontos
+    options$point_violin <- if (input$point_violin) 'all' else 'outliers'
     options$jitter_violin <- input$jitter_violin
     options$jitter_pointpos <- input$jitter_pointpos
     options$points_size_violin <- input$points_size_violin
@@ -229,9 +355,10 @@ server <- function (input, output, session){
     options$ellipse_line_format <- input$ellipse_line_format
     options$ellipse_area_dot_plot <- input$ellipse_area_dot_plot
     options$area_opacity_ellipse <- input$area_opacity_ellipse
-    options$ci_ellipse <- input$ci_ellipse
+    options$ci_ellipse <- input$ci_ellipse }
 
-    #Pontos BeeSwarm
+    #Gráfico de BeeSwarm
+  { #Pontos BeeSwarm
     options$shape_markers_beeswarm <- input$shape_markers_beeswarm
     options$line_markers_beeswarm <- input$line_markers_beeswarm
     options$size_markers_beeswarm <- input$size_markers_beeswarm
@@ -244,14 +371,15 @@ server <- function (input, output, session){
     options$subplots_beeswarm <- input$subplots_beeswarm
     options$width_beeswarm <- input$width_beeswarm
     options$beeswarm_method <- input$beeswarm_method
-    options$priority_beeswarm <- input$priority_beeswarm
+    options$priority_beeswarm <- input$priority_beeswarm }
 
     #Gráfico de Densidade
-    if (input$area_density_plot) options$area_density <- 'tozeroy' else options$area_density <-'none'
-    if (input$line_density_plot) options$line_density <- 'line' else options$line_density <-'none'
-    options$algorithm_density_plot <- input$algorithm_density_plot
+  { if (input$area_density_plot) options$area_density <- 'tozeroy' else options$area_density <- 'none'
+    if (input$line_density_plot) options$line_density <- 'line' else options$line_density <- 'none'
+    options$algorithm_density_plot <- input$algorithm_density_plot }
 
-    #Barra de erro
+    # Gráfico de erro
+  { #Barra de erro
     options$error_bar <- input$bar_error_bar
     options$opacity_error_bar <- input$opacity_error_bar
 
@@ -259,17 +387,17 @@ server <- function (input, output, session){
     options$error_line <- input$error_line
     options$opacity_error_line <- input$opacity_error_line
     options$error_algorithm <- input$error_algorithm
-    if(options$error_algorithm == 'ci')
+    if (options$error_algorithm == 'ci')
       options$alpha_ci <- input$slider_ci
 
     #Pontos
     options$markers_shape_error_bar <- input$markers_shape_error_bar
     options$line_markers_error_bar <- input$line_markers_error_bar
     options$size_markers_error_bar <- input$size_markers_error_bar
-    options$opacity_markers_error_bar <- input$opacity_markers_error_bar
+    options$opacity_markers_error_bar <- input$opacity_markers_error_bar }
 
     #Histograma 3D
-    #Gráfico
+  { #Gráfico
     options$bins_histogram3d <- input$bins_histogram3d
     options$opacity_histogram3d <- input$opacity_histogram3d
 
@@ -279,14 +407,14 @@ server <- function (input, output, session){
     #Pontos
     options$markers_histogram3d <- input$markers_histogram3d
     options$size_markers_histogram3d <- input$size_markers_histogram3d
-    options$shape_markers_histogram3d <- input$shape_markers_histogram3d
+    options$shape_markers_histogram3d <- input$shape_markers_histogram3d }
 
     #Gráfico de densidade 3D
-    options$width_markers_density3d <- input$width_markers_density3d
-    options$algorithm_density_plot3d <- input$algorithm_density_plot3d
+  { options$width_markers_density3d <- input$width_markers_density3d
+    options$algorithm_density_plot3d <- input$algorithm_density_plot3d }
 
     #Gráfico de pontos 3D
-    #Pontos
+  { #Pontos
     options$bins_scatter3d <- input$bins_scatter3d
     options$line_markers_scatter3d <- input$line_markers_scatter3d
     options$shape_markers_scatter3d <- input$shape_markers_scatter3d
@@ -303,9 +431,10 @@ server <- function (input, output, session){
     #Line ellipse
     options$line_ellipse3d <- input$line_ellipse3d
     options$opacity_line_ellipse3d <- input$opacity_line_ellipse3d
-    options$width_line_ellipse3d <- input$width_line_ellipse3d
+    options$width_line_ellipse3d <- input$width_line_ellipse3d }
 
-    #Pontos BeeSwarm
+    #Gráfico de pontos BeeSwarm 3D
+  { #Pontos BeeSwarm
     options$shape_markers_beeswarm3d <- input$shape_markers_beeswarm3d
     options$line_markers_beeswarm3d <- input$line_markers_beeswarm3d
     options$size_markers_beeswarm3d <- input$size_markers_beeswarm3d
@@ -315,29 +444,261 @@ server <- function (input, output, session){
     options$spacing_markers_beeswarm3d <- input$spacing_markers_beeswarm3d
     options$side_beeswarm3d <- input$side_beeswarm3d
     options$beeswarm_method3d <- input$beeswarm_method3d
-    options$priority_beeswarm3d <- input$priority_beeswarm3d
+    options$priority_beeswarm3d <- input$priority_beeswarm3d }
 
     #Gráfico de Barras 3D
-    options$algorithm_bar3d <- input$algorithm_bar3d
+  { options$algorithm_bar3d <- input$algorithm_bar3d
     options$spacing_bar_bar3d <- input$spacing_bar_bar3d
-    options$opacity_bar_bar3d <- input$opacity_bar_bar3d
+    options$opacity_bar_bar3d <- input$opacity_bar_bar3d }
 
     #ANCOVA
-    options$ancova_line_width <- input$ancova_line_width
+  { options$ancova_line_width <- input$ancova_line_width
     options$ancova_marker_opacity <- input$ancova_marker_opacity
     options$ancova_marker_size <- input$ancova_marker_size
+    options$ancova_ci <- input$ancova_ci }
 
-    #Mesh selecionar
-    options$examp_select_mesh <- input$examp_select_mesh
-    options$checkbox_mesh <- input$checkbox_mesh
+    #Gráfico em Mesh
+    { options$examp_select_mesh <- input$examp_select_mesh
+    options$checkbox_mesh <- input$checkbox_mesh }
   })
 
-    #Summary
+  #----------- LAYOUT DOS GRÁFICOS -----------
+  observe({
+      options$bgColorPlotly <- if (!input$default_plot_color) {
+        if (input$bgcolor_plot_default == 'personal') input$personal_bgcolor_plot_default else input$bgcolor_plot_default
+      }
+      else bgColorPlotly
+
+      if(input$histogram_tabs == 'linear_histogram') {
+        #Cores
+        options$colors_linear_histogram <- input$colors_linear_histogram
+        options$bgcolor_linear_histogram <- input$bgcolor_linear_histogram
+        options$personal_bgcolor_linear_histogram <- input$personal_bgcolor_linear_histogram
+
+        #Eixos
+        options$axis_x_linear_histogram <- input$axis_x_linear_histogram
+        options$axis_y_linear_histogram <- input$axis_y_linear_histogram
+
+        #Legenda
+        options$legend_linear_histogram <- input$legend_linear_histogram
+        options$border_legend_linear_histogram <- input$border_legend_linear_histogram
+        options$title_legend_linear_histogram <- input$title_legend_linear_histogram
+        options$bold_title_legend_linear_histogram <- input$bold_title_legend_linear_histogram
+        options$item_size_legend_linear_histogram <- input$item_size_legend_linear_histogram
+        options$orientation_legend_linear_histogram <- input$orientation_legend_linear_histogram
+      }
+      if(input$histogram_tabs == 'ridges_histogram') {
+        #Cores
+        options$colors_ridges_histogram <- input$colors_ridges_histogram
+        options$bgcolor_ridges_histogram <- input$bgcolor_ridges_histogram
+        options$personal_bgcolor_ridges_histogram <- input$personal_bgcolor_ridges_histogram
+
+        #Eixos
+        options$axis_x_ridges_histogram <- input$axis_x_ridges_histogram
+        options$axis_y_ridges_histogram <- input$axis_y_ridges_histogram
+        #Legenda
+        options$legend_ridges_histogram <- input$legend_ridges_histogram
+        options$border_legend_ridges_histogram <- input$border_legend_ridges_histogram
+        options$title_legend_ridges_histogram <- input$title_legend_ridges_histogram
+        options$bold_title_legend_ridges_histogram <- input$bold_title_legend_ridges_histogram
+        options$item_size_legend_ridges_histogram <- input$item_size_legend_ridges_histogram
+        options$orientation_legend_ridges_histogram <- input$orientation_legend_ridges_histogram
+    }
+    {
+      #Cores
+      options$colors_box <- input$colors_box
+      options$bgcolor_box <- input$bgcolor_box
+      options$personal_bgcolor_box <- input$personal_bgcolor_box
+
+      #Eixos
+      options$axis_x_box <- input$axis_x_box
+      options$axis_y_box <- input$axis_y_box
+
+      #Legenda
+      options$legend_box <- input$legend_box
+      options$border_legend_box <- input$border_legend_box
+      options$title_legend_box <- input$title_legend_box
+      options$bold_title_legend_box <- input$bold_title_legend_box
+      options$item_size_legend_box <- input$item_size_legend_box
+      options$orientation_legend_box <- input$orientation_legend_box
+    }
+    {
+      #Cores
+      options$colors_violin <- input$colors_violin
+      options$bgcolor_violin <- input$bgcolor_violin
+      options$personal_bgcolor_violin <- input$personal_bgcolor_violin
+
+      #Eixos
+      options$axis_x_violin <- input$axis_x_violin
+      options$axis_y_violin <- input$axis_y_violin
+
+      #Legenda
+      options$legend_violin <- input$legend_violin
+      options$border_legend_violin <- input$border_legend_violin
+      options$title_legend_violin <- input$title_legend_violin
+      options$bold_title_legend_violin <- input$bold_title_legend_violin
+      options$item_size_legend_violin <- input$item_size_legend_violin
+      options$orientation_legend_violin <- input$orientation_legend_violin
+    }
+    {
+    {
+        #Cores
+        options$colors_simple_dot_plot <- input$colors_simple_dot_plot
+        options$bgcolor_simple_dot_plot <- input$bgcolor_simple_dot_plot
+        options$personal_bgcolor_simple_dot_plot <- input$personal_bgcolor_simple_dot_plot
+
+        #Eixos
+        options$axis_x_simple_dot_plot <- input$axis_x_simple_dot_plot
+        options$axis_y_simple_dot_plot <- input$axis_y_simple_dot_plot
+
+      #Legenda
+      options$legend_simple_dot_plot <- input$legend_simple_dot_plot
+      options$border_legend_simple_dot_plot <- input$border_legend_simple_dot_plot
+      options$title_legend_simple_dot_plot <- input$title_legend_simple_dot_plot
+      options$bold_title_legend_simple_dot_plot <- input$bold_title_legend_simple_dot_plot
+      options$item_size_legend_simple_dot_plot <- input$item_size_legend_simple_dot_plot
+      options$orientation_legend_simple_dot_plot <- input$orientation_legend_simple_dot_plot
+      }
+    {
+        #Cores
+        options$colors_beeswarm_dot_plot <- input$colors_beeswarm_dot_plot
+        options$bgcolor_beeswarm_dot_plot <- input$bgcolor_beeswarm_dot_plot
+        options$personal_bgcolor_beeswarm_dot_plot <- input$personal_bgcolor_beeswarm_dot_plot
+
+        #Eixos
+        options$axis_x_beeswarm_dot_plot <- input$axis_x_beeswarm_dot_plot
+        options$axis_y_beeswarm_dot_plot <- input$axis_y_beeswarm_dot_plot
+
+      #Legenda
+      options$legend_beeswarm_dot_plot <- input$legend_beeswarm_dot_plot
+      options$border_legend_beeswarm_dot_plot <- input$border_legend_beeswarm_dot_plot
+      options$title_legend_beeswarm_dot_plot <- input$title_legend_beeswarm_dot_plot
+      options$bold_title_legend_beeswarm_dot_plot <- input$bold_title_legend_beeswarm_dot_plot
+      options$item_size_legend_beeswarm_dot_plot <- input$item_size_legend_beeswarm_dot_plot
+      options$orientation_legend_beeswarm_dot_plot <- input$orientation_legend_beeswarm_dot_plot
+    }
+    }
+    {
+      #Cores
+      options$colors_density_plot <- input$colors_density_plot
+      options$bgcolor_density_plot <- input$bgcolor_density_plot
+      options$personal_bgcolor_density_plot <- input$personal_bgcolor_density_plot
+
+      #Eixos
+      options$axis_x_density_plot <- input$axis_x_density_plot
+      options$axis_y_density_plot <- input$axis_y_density_plot
+
+      #Legenda
+      options$legend_density_plot <- input$legend_density_plot
+      options$border_legend_density_plot <- input$border_legend_density_plot
+      options$title_legend_density_plot <- input$title_legend_density_plot
+      options$bold_title_legend_density_plot <- input$bold_title_legend_density_plot
+      options$item_size_legend_density_plot <- input$item_size_legend_density_plot
+      options$orientation_legend_density_plot <- input$orientation_legend_density_plot
+    }
+    {
+      #Cores
+      options$colors_error_bar <- input$colors_error_bar
+      options$bgcolor_error_bar <- input$bgcolor_error_bar
+      options$personal_bgcolor_error_bar <- input$personal_bgcolor_error_bar
+
+      #Eixos
+      options$axis_x_error_bar <- input$axis_x_error_bar
+      options$axis_y_error_bar <- input$axis_y_error_bar
+
+      #Legenda
+      options$legend_error_bar <- input$legend_error_bar
+      options$border_legend_error_bar <- input$border_legend_error_bar
+      options$title_legend_error_bar <- input$title_legend_error_bar
+      options$bold_title_legend_error_bar <- input$bold_title_legend_error_bar
+      options$item_size_legend_error_bar <- input$item_size_legend_error_bar
+      options$orientation_legend_error_bar <- input$orientation_legend_error_bar
+    }
+    {
+      #Cores
+      options$colors_histogram_3d <- input$colors_histogram_3d
+      options$bgcolor_histogram_3d <- input$bgcolor_histogram_3d
+      options$personal_bgcolor_histogram_3d <- input$personal_bgcolor_histogram_3d
+
+      #Eixos
+      options$axis_x_histogram_3d <- input$axis_x_histogram_3d
+      options$axis_y_histogram_3d <- input$axis_y_histogram_3d
+      options$axis_z_histogram_3d <- input$axis_z_histogram_3d
+
+      #Legenda
+      options$legend_histogram_3d <- input$legend_histogram_3d
+      options$border_legend_histogram_3d <- input$border_legend_histogram_3d
+      options$title_legend_histogram_3d <- input$title_legend_histogram_3d
+      options$bold_title_legend_histogram_3d <- input$bold_title_legend_histogram_3d
+      options$item_size_legend_histogram_3d <- input$item_size_legend_histogram_3d
+      options$orientation_legend_histogram_3d <- input$orientation_legend_histogram_3d
+    }
+    {
+      #Cores
+      options$colors_density_plot_3d <- input$colors_density_plot_3d
+      options$bgcolor_density_plot_3d <- input$bgcolor_density_plot_3d
+      options$personal_bgcolor_density_plot_3d <- input$personal_bgcolor_density_plot_3d
+
+      #Eixos
+      options$axis_x_density_plot_3d <- input$axis_x_density_plot_3d
+      options$axis_y_density_plot_3d <- input$axis_y_density_plot_3d
+      options$axis_z_density_plot_3d <- input$axis_z_density_plot_3d
+
+      #Legenda
+      options$legend_density_plot_3d <- input$legend_density_plot_3d
+      options$border_legend_density_plot_3d <- input$border_legend_density_plot_3d
+      options$title_legend_density_plot_3d <- input$title_legend_density_plot_3d
+      options$bold_title_legend_density_plot_3d <- input$bold_title_legend_density_plot_3d
+      options$item_size_legend_density_plot_3d <- input$item_size_legend_density_plot_3d
+      options$orientation_legend_density_plot_3d <- input$orientation_legend_density_plot_3d
+    }
+    {
+      #Cores
+      options$colors_dot_plot_3d <- input$colors_dot_plot_3d
+      options$bgcolor_dot_plot_3d <- input$bgcolor_dot_plot_3d
+      options$personal_bgcolor_dot_plot_3d <- input$personal_bgcolor_dot_plot_3d
+
+      #Eixos
+      options$axis_x_dot_plot_3d <- input$axis_x_dot_plot_3d
+      options$axis_y_dot_plot_3d <- input$axis_y_dot_plot_3d
+      options$axis_z_dot_plot_3d <- input$axis_z_dot_plot_3d
+
+      #Legenda
+      options$legend_dot_plot_3d <- input$legend_dot_plot_3d
+      options$border_legend_dot_plot_3d <- input$border_legend_dot_plot_3d
+      options$title_legend_dot_plot_3d <- input$title_legend_dot_plot_3d
+      options$bold_title_legend_dot_plot_3d <- input$bold_title_legend_dot_plot_3d
+      options$item_size_legend_dot_plot_3d <- input$item_size_legend_dot_plot_3d
+      options$orientation_legend_dot_plot_3d <- input$orientation_legend_dot_plot_3d
+    }
+    {
+      #Cores
+      options$colors_bar_plot_3d <- input$colors_bar_plot_3d
+      options$bgcolor_bar_plot_3d <- input$bgcolor_bar_plot_3d
+      options$personal_bgcolor_bar_plot_3d <- input$personal_bgcolor_bar_plot_3d
+
+      #Eixos
+      options$axis_x_bar_plot_3d <- input$axis_x_bar_plot_3d
+      options$axis_y_bar_plot_3d <- input$axis_y_bar_plot_3d
+      options$axis_z_bar_plot_3d <- input$axis_z_bar_plot_3d
+
+      #Legenda
+      options$legend_bar_plot_3d <- input$legend_bar_plot_3d
+      options$border_legend_bar_plot_3d <- input$border_legend_bar_plot_3d
+      options$title_legend_bar_plot_3d <- input$title_legend_bar_plot_3d
+      options$bold_title_legend_bar_plot_3d <- input$bold_title_legend_bar_plot_3d
+      options$item_size_legend_bar_plot_3d <- input$item_size_legend_bar_plot_3d
+      options$orientation_legend_bar_plot_3d <- input$orientation_legend_bar_plot_3d
+    }
+    })
+
+  #Summary
   output$title_name_summary  <- renderUI(h1(strong(values$usr_title)))
   output$summary_data_table <- renderDT(values$data_info)
   output$summary_text <- renderDT(summaryDataTable(values, options))
 
-  output$plotly_linear_histogram <- renderPlotly(renderHistogramLinear(values, options))
+    #----------- GRÁFICOS -----------
+  { output$plotly_linear_histogram <- renderPlotly(renderHistogramLinear(values, options))
 
   output$plot_histogram <- renderPlot(renderHistogramRidges(values, options))
 
@@ -367,12 +728,34 @@ server <- function (input, output, session){
 
   output$plotly_bar3d <- renderPlotly(barHistogram3d(values, options))
 
-  output$plotly_ancova <- renderPlotly(renderANCOVA(values, options))
-  output$ancova_anova_test <- renderUI(tagList(
-    h3('Homogeneidade das inclinações de regressão', align = 'center'),
-    DTOutput('ancova_anova_test_dt')
-  ))
-  output$ancova_anova_test_dt <- renderDT(ancova_table(values))
+  output$ancova_variables <- renderUI(
+    tagList(
+      selectInput(
+        inputId = 'ancova_variable',
+        label = 'Escolha a variavel dependente: ',
+        choices = names(values$bidimensional_data),
+        selected = options$ancova_variable
+      ),
+      selectInput(
+        inputId = 'ancova_covariable',
+        label = 'Escolha a covariavel: ',
+        choices = names((values$bidimensional_data)),
+        selected = options$ancova_covariable
+      ),
+      selectInput(
+        inputId = 'ancova_group_variable',
+        label = 'Escolha a variavel de grupo: ',
+        choices = names((values$bidimensional_data)),
+        selected = options$ancova_group_variable
+      ),
+      actionButton("load_ancova",
+                   strong('Carregue!'),
+                   style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                   width = "80%",
+                   class = "btn-info"
+      )
+    ),
+  )
 
-  output$plotly_mesh3d <- renderPlotly(renderMesh3D(values, options))
+  output$plotly_mesh3d <- renderPlotly(renderMesh3D(values, options)) }
 }

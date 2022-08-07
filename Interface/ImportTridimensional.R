@@ -20,7 +20,7 @@ import_tridimensional_page <- function (){
                                                    ),
                                                    selected = 'zoneA'
                                        ),
-                                       actionButton("mesh_load_file",
+                                       actionButton("load_tridimensional",
                                                     strong('Carregue!'),
                                                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
                                                     width = "80%",

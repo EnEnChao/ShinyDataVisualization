@@ -81,13 +81,68 @@ ellipse_data <- function (data_info, colnames, ci){
   return(data)
 }
 
-ancova_table <- function (values){
+ancova_table <- function (values, options){
   dt <- values$bidimensional_data
-  dt2 <- data.frame(
-    anova_test(data = dt, dt[,1] ~ dt[,3] * dt[,2])
-  )
-  dt2[,6] <- sapply(dt2[,6], function (x) if(x != '*') 'Significânte' else 'Não significante' )
+  var1<- options$ancova_variable
+  cov1 <- options$ancova_covariable
+  group1 <- options$ancova_group_variable
+
+  print('A')
+  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
+  print('B')
+  names <- names(dt)
+  names(dt) <- c('var', 'cov', 'group')
+
+
+  dt2 <- dt %>% anova_test(cov ~ var * group)
+  dt2[,6] <- sapply(dt2[,5], function (x) if(x > options$ancova_ci) 'Significânte' else 'Não significante' )
   names(dt2)[6] <- 'Significância'
-  dt2$Effect <- c(names(dt)[3], names(dt)[2], paste0(names(dt)[3], ':', names(dt)[2]) )
+  dt2$Effect <- c(names[which(names(dt) == 'var')], names[which(names(dt) == 'group')],
+                  paste0(names[which(names(dt) == 'group')], ':', names[which(names(dt) == 'var')] ))
   dt2
+}
+
+levene_table <- function (values, options){
+  dt <- values$bidimensional_data
+  var1<- options$ancova_variable
+  cov1 <- options$ancova_covariable
+  group1 <- options$ancova_group_variable
+
+
+  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
+  names(dt) <- c('var', 'cov', 'group')
+
+  model <- lm(cov ~ var + group, data = dt)
+  model.metrics <- augment(model) %>% select(c(-.hat, -.sigma, -.fitted))
+  levene <- model.metrics %>% levene_test(.resid ~ group)
+
+  levene$statistic <- as.double(round(levene$statistic, 4))
+  levene$p <- as.double(round(levene$p, 4))
+
+  levene <- data.frame(F = levene$statistic, df1 = levene$df1, df2 = levene$df2, p = levene$p)
+  names(levene) <- c('F', 'Df 1', 'Df 2', 'p')
+
+  levene
+}
+shapiro_table <- function (values, options){
+  dt <- values$bidimensional_data
+  var1<- options$ancova_variable
+  cov1 <- options$ancova_covariable
+  group1 <- options$ancova_group_variable
+
+
+  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
+  names(dt) <- c('var', 'cov', 'group')
+
+  model <- lm(cov ~ var + group, data = dt)
+  model.metrics <- augment(model) %>% select(c(-.hat, -.sigma, -.fitted))
+  shapiro <- shapiro_test(model.metrics$.resid)
+
+  shapiro$statistic <- as.double(round(shapiro$statistic, 4))
+  shapiro$p.value <- as.double(round(shapiro$p.value, 4))
+
+  shapiro <- data.frame(F = shapiro$statistic, p = shapiro$p.value)
+  names(shapiro) <- c('F', 'p')
+
+  shapiro
 }

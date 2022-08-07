@@ -144,20 +144,20 @@ renderBoxPlot <- function(values, options) {
                  ),
                  boxmean = options$meanline_box
   )
-  layoutConfig <- list(bgcolor = if(is.null(options$colors_box_plots)) options$bgColorPlotly else{
-         if(options$colors_box_plots) options$bgColorPlotly else{
-           if(options$bgcolor_box_plots == 'personal') options$personal_bgcolor_box_plots
-           else options$bgcolor_box_plots
+  layoutConfig <- list(bgcolor = if(is.null(options$colors_box)) options$bgColorPlotly else{
+         if(options$colors_box) options$bgColorPlotly else{
+           if(options$bgcolor_box == 'personal') options$personal_bgcolor_box
+           else options$bgcolor_box
              }},
-                       pBgcolor = options$personal_bgcolor_box_plots,
-                       xTitle = if(!is.null(options$axis_x_box_plots)) options$axis_x_box_plots else 'Classificação',
-                       yTitle = if(!is.null(options$axis_y_box_plots)) options$axis_y_box_plots else 'Dados',
-    legend = if(is.null(options$legend_box_plots)) TRUE else options$legend_box_plots,
-    legend_title = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) '' else options$title_legend_box_plots,
-    legend_bold = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) FALSE else options$bold_title_legend_box_plots,
-    legend_size = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) 'trace' else options$item_size_legend_box_plots,
-    legend_orientation = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) 'v' else options$orientation_legend_box_plots,
-    legend_border = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) FALSE else options$border_legend_box_plots
+                       pBgcolor = options$personal_bgcolor_box,
+                       xTitle = if(!is.null(options$axis_x_box)) options$axis_x_box else 'Classificação',
+                       yTitle = if(!is.null(options$axis_y_box)) options$axis_y_box else 'Dados',
+    legend = if(is.null(options$legend_box)) TRUE else options$legend_box,
+    legend_title = if(is.null(options$legend_box) | if(is.null(options$legend_box)) TRUE else !options$legend_box) '' else options$title_legend_box,
+    legend_bold = if(is.null(options$legend_box) | if(is.null(options$legend_box)) TRUE else !options$legend_box) FALSE else options$bold_title_legend_box,
+    legend_size = if(is.null(options$legend_box) | if(is.null(options$legend_box)) TRUE else !options$legend_box) 'trace' else options$item_size_legend_box,
+    legend_orientation = if(is.null(options$legend_box) | if(is.null(options$legend_box)) TRUE else !options$legend_box) 'v' else options$orientation_legend_box,
+    legend_border = if(is.null(options$legend_box) | if(is.null(options$legend_box)) TRUE else !options$legend_box) FALSE else options$border_legend_box
   )
 
   fig <- fig %>% addLayout(values$usr_title, layoutConfig = layoutConfig)
@@ -197,20 +197,20 @@ renderViolinPlot <- function(values, options) {
                            quartilemethod = options$violin_algorithm,
                            width = 0.1
   )
-  layoutConfig <- list(bgcolor = if(is.null(options$colors_box_plots)) options$bgColorPlotly else{
-         if(options$colors_box_plots) options$bgColorPlotly else{
-           if(options$bgcolor_box_plots == 'personal') options$personal_bgcolor_box_plots
-           else options$bgcolor_box_plots
+  layoutConfig <- list(bgcolor = if(is.null(options$colors_violin)) options$bgColorPlotly else{
+         if(options$colors_violin) options$bgColorPlotly else{
+           if(options$bgcolor_violin == 'personal') options$personal_bgcolor_violin
+           else options$bgcolor_violin
              }},
-                       pBgcolor = options$personal_bgcolor_box_plots,
-                       xTitle = if(!is.null(options$axis_x_box_plots)) options$axis_x_box_plots else 'Classificação',
-                       yTitle = if(!is.null(options$axis_y_box_plots)) options$axis_y_box_plots else 'Dados',
-    legend = if(is.null(options$legend_box_plots)) TRUE else options$legend_box_plots,
-    legend_title = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) '' else options$title_legend_box_plots,
-    legend_bold = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) FALSE else options$bold_title_legend_box_plots,
-    legend_size = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) 'trace' else options$item_size_legend_box_plots,
-    legend_orientation = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) 'v' else options$orientation_legend_box_plots,
-    legend_border = if(is.null(options$legend_box_plots) | if(is.null(options$legend_box_plots)) TRUE else !options$legend_box_plots) FALSE else options$border_legend_box_plots
+                       pBgcolor = options$personal_bgcolor_violin,
+                       xTitle = if(!is.null(options$axis_x_violin)) options$axis_x_violin else 'Classificação',
+                       yTitle = if(!is.null(options$axis_y_violin)) options$axis_y_violin else 'Dados',
+    legend = if(is.null(options$legend_violin)) TRUE else options$legend_violin,
+    legend_title = if(is.null(options$legend_violin) | if(is.null(options$legend_violin)) TRUE else !options$legend_violin) '' else options$title_legend_violin,
+    legend_bold = if(is.null(options$legend_violin) | if(is.null(options$legend_violin)) TRUE else !options$legend_violin) FALSE else options$bold_title_legend_violin,
+    legend_size = if(is.null(options$legend_violin) | if(is.null(options$legend_violin)) TRUE else !options$legend_violin) 'trace' else options$item_size_legend_violin,
+    legend_orientation = if(is.null(options$legend_violin) | if(is.null(options$legend_violin)) TRUE else !options$legend_violin) 'v' else options$orientation_legend_violin,
+    legend_border = if(is.null(options$legend_violin) | if(is.null(options$legend_violin)) TRUE else !options$legend_violin) FALSE else options$border_legend_violin
   )
 
   fig <- fig %>% addLayout(values$usr_title, layoutConfig = layoutConfig)
@@ -499,17 +499,24 @@ renderCheckNormTable <- function (values, options){
 renderANCOVA <- function (values, options){
 
   dt <- values$bidimensional_data
-  groups <- names(table(dt[,3]))
+  var1<- options$ancova_variable
+  cov1 <- options$ancova_covariable
+  group1 <- options$ancova_group_variable
+  groups <- names(table(dt[group1]))
+
+  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
+  names(dt) <- c('var', 'cov', 'group')
+  lm <- lm(data = dt, cov ~ var + group)
 
   fig <- plot_ly()
 
   fig <- fig %>% add_trace(
+    data = dt,
     type = 'scatter', mode = 'lines+markers',
     y = c(
-      min(dt[,1]) * lm(dt[,2]~dt[,1] + dt[,3])$coefficients[2] + lm(dt[,2]~dt[,1] + dt[,3])$coefficients[1],
-      max(dt[,1]) * lm(dt[,2]~dt[,1] + dt[,3])$coefficients[2] + lm(dt[,2]~dt[,1] + dt[,3])$coefficients[1]),
-    x = c(min(dt[,1]), max(dt[,1])
-    ),
+      min(dt$var) * lm$coefficients[2] + lm$coefficients[1],
+      max(dt$var) * lm$coefficients[2] + lm$coefficients[1]),
+    x = c(min(dt$var), max(dt$var)),
     line = list(
       width = options$ancova_line_width,
       dash = 'longdash',
@@ -525,14 +532,15 @@ renderANCOVA <- function (values, options){
     # ,showlegend = FALSE
   )
   for (i in groups){
-    dt_aux <- dt[which(dt[,3] == i),]
-    fig <- fig%>% add_trace(
-          type = 'scatter', mode = 'lines+markers', color = i,legendgroup = i,
+    dt_aux <- dt[which(dt$group == i),]
+    lm_aux <- lm(dt_aux$cov ~ dt_aux$var)
+    fig <- fig %>% add_trace(
+          type = 'scatter', mode = 'lines+markers', color = i, legendgroup = i,
           y = c(
-            min(dt_aux[,1]) * lm(dt_aux[,2]~dt_aux[,1])$coefficients[2] + lm(dt_aux[,2]~dt_aux[,1])$coefficients[1],
-            max(dt_aux[,1]) * lm(dt_aux[,2]~dt_aux[,1])$coefficients[2] + lm(dt_aux[,2]~dt_aux[,1])$coefficients[1]
+            min(dt_aux$var) * lm_aux$coefficients[2] + lm_aux$coefficients[1],
+            max(dt_aux$var) * lm_aux$coefficients[2] + lm_aux$coefficients[1]
           ),
-          x = c(min(dt_aux[,1]), max(dt_aux[,1])),
+          x = c(min(dt_aux$var), max(dt_aux$var)),
           line = list(
             width = options$ancova_line_width
           ),
@@ -543,20 +551,22 @@ renderANCOVA <- function (values, options){
           )
     )
   }
-    fig <- fig %>% add_trace(type = 'scatter', mode = 'markers',
-                             x = dt[,1],
-                             y = dt[,2],
-                             color = dt[,3],
-                             legendgroup = dt[,3],
-                             showlegend = FALSE,
-                             marker = list(
-                               opacity = options$ancova_marker_opacity,
-                               size = options$ancova_marker_size
-                               # ,line = list(
-                               #   width = 1,
-                               #   color = 'black'
-                               # )
-                             )
+
+
+  fig <- fig %>% add_trace(type = 'scatter', mode = 'markers',
+                           x = ~var,
+                           y = ~cov,
+                           color = ~group,
+                           legendgroup = ~group,
+                           showlegend = FALSE,
+                           marker = list(
+                             opacity = options$ancova_marker_opacity,
+                             size = options$ancova_marker_size
+                             # ,line = list(
+                             #   width = 1,
+                             #   color = 'black'
+                             # )
+                           )
   )
 
   fig

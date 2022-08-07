@@ -1,5 +1,5 @@
 import_unidimensional_page <- function (){
-  tabPanel('Carregue seus dados',
+  tabPanel('Importe seus dados',
     column(4,
            tabPanel(
              h2(strong("Controle de opções:")),
@@ -48,6 +48,35 @@ import_unidimensional_page <- function (){
            column(8,
                   column(12, uiOutput('title_name_import'), align = 'center'),
                     uiOutput("table_import_data_output"),
+           ),
+  column(12,hr())
+)
+}
+
+insert_unidimensional <- function (){
+    tabPanel('Digite seus dados na planilha',
+    column(4,
+           tabPanel(
+             h2(strong("Controle de opções:")),
+             #Selecione se deseja utilizar um arquivo existente ou um exemplar
+             h3(strong('Digite ou cole na planilha a esquerda:')),
+             #Caso tenha escolhido alguma das opções, aparece o botão grande " Carregue! "
+             textInput('title_id_insert', 'Digíte o título', 'Título'),
+             actionButton("load_spreadsheet",
+                          strong('Carregue!'),
+                          style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                          width = "80%",
+                          class = "btn-info"
+             )
+           ),align = 'center'),
+           column(8,
+                  column(12, uiOutput('title_name_insert'), align = 'center'),
+                  shinycssloaders::withSpinner(
+                    rHandsontableOutput("user_data", height = '400px'),
+                    type = spinnerType,
+                    color = spinnerColor,
+                    size = spinnerSize
+                  )
            ),
   column(12,hr())
 )

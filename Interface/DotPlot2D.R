@@ -2,9 +2,10 @@ dotplot2d_page <- function (){
   tabPanel(
     'Gráfico de Pontos',
     column(3,
-           h3(strong("Controle de opções:"), align = 'center'),
-        #Ao clicar no painel Gráfico de pontos simples
-      { conditionalPanel(condition = 'input.dot_plot_tabs == "simple_dot_plot"',
+           column(12,
+              h3(strong("Controle de opções:"), align = 'center'),
+             #Ao clicar no painel Gráfico de pontos simples
+           { conditionalPanel(condition = 'input.dot_plot_tabs == "simple_dot_plot"',
                          column(12,
                                 accordion(
                                   id = 'accordion_simple_dot_plot',
@@ -105,8 +106,8 @@ dotplot2d_page <- function (){
                                 )
                          )
       )},
-        #Ao clicar no painel Gráfico de pontos bee swarm
-      {conditionalPanel(condition = 'input.dot_plot_tabs == "beeswarm_dot_plot"',
+             #Ao clicar no painel Gráfico de pontos bee swarm
+           {conditionalPanel(condition = 'input.dot_plot_tabs == "beeswarm_dot_plot"',
                         column(12,
                                accordion(
                                  id = 'accordion_beeswarm',
@@ -198,6 +199,234 @@ dotplot2d_page <- function (){
                                )
                         )
       )}
+           ),
+           column(12,
+             h3(strong("Controle do layout:"), align = 'center'),
+                  conditionalPanel(condition = 'input.dot_plot_tabs == "simple_dot_plot"',{
+                         column(12,
+                         accordion(
+                           id = 'accordion_simple_dot_plot_layout',
+                           #Cores de fundo
+                           {
+                           accordionItem(
+                             title = 'Cores de fundo',
+                             status = accordionStatus,
+                             collapsed = TRUE,
+                             materialSwitch(
+                               label = 'Cores de fundo padrões:',
+                               inputId = "colors_simple_dot_plot",
+                               status = switchStatus,
+                               value = TRUE
+                             ),
+                             conditionalPanel(condition = '!input.colors_simple_dot_plot',
+                                              pickerInput(
+                                                inputId = "bgcolor_simple_dot_plot",
+                                                label = "Escolha a cor de fundo: ",
+                                                choices = c(
+                                                  "Branco" = 'white',
+                                                  "Preto" = 'black',
+                                                  "Cinza" = 'grey',
+                                                  'Cinza claro' = 'lightgrey',
+                                                  'Personalizada' = 'personal'
+                                                ),
+                                                selected = 'white'
+                                              ),
+                                              conditionalPanel(condition = 'input.bgcolor_simple_dot_plot == "personal" ',
+                                                               colourpicker::colourInput(inputId = "personal_bgcolor_simple_dot_plot",
+                                                                                         label = "Choose colour",
+                                                                                         value = "red",
+                                                                                         showColour = 'background'
+                                                               )
+                                              )
+                             )
+                           )},
+                           {
+                           accordionItem(
+                             title = 'Configurações da legenda',
+                             status = accordionStatus,
+                             collapsed = TRUE,
+                             materialSwitch(
+                               label = 'Mostrar legenda:',
+                               inputId = "legend_simple_dot_plot",
+                               status = switchStatus,
+                               value = TRUE
+                             ),
+                             conditionalPanel(condition = 'input.legend_simple_dot_plot',
+                                              textInput(
+                                                inputId = 'title_legend_simple_dot_plot',
+                                                label = 'Digite o título da legenda',
+                                                value = ''
+                                              ),
+                                              materialSwitch(
+                                               label = 'Borda na legenda: ',
+                                               inputId = "border_legend_simple_dot_plot",
+                                               status = switchStatus,
+                                               value = FALSE
+                                              ),
+                                              materialSwitch(
+                                               label = 'Título da legenda em negrito: ',
+                                               inputId = "bold_title_legend_simple_dot_plot",
+                                               status = switchStatus,
+                                               value = FALSE
+                                              ),
+                                              radioGroupButtons(
+                                                inputId = "item_size_legend_simple_dot_plot",
+                                                label = 'Tamanho do item na legenda:',
+                                                choices = c(
+                                                  'Constante' = 'constant',
+                                                  'Variavel' = 'trace'
+                                                )
+                                              ),
+                                              radioGroupButtons(
+                                                inputId = "orientation_legend_simple_dot_plot",
+                                                label = 'Orientação da legenda:',
+                                                choices = c(
+                                                  'Vertical' = 'v',
+                                                  'Horizontal' = 'h'
+                                                ),
+                                                selected = 'v'
+                                              )
+                             )
+                           )},
+                           #Nomes dos eixos
+                           accordionItem(
+                             title = 'Eixos',
+                             status = accordionStatus,
+                             collapsed = TRUE,
+                             materialSwitch(
+                               label = 'Nome dos eixos padrões:',
+                               inputId = "axis_simple_dot_plot",
+                               status = switchStatus,
+                               value = TRUE
+                             ),
+                             conditionalPanel(condition = '!input.axis_simple_dot_plot',
+                                              textInput(
+                                                inputId = 'axis_x_simple_dot_plot',
+                                                label = 'Digite o nome do eixo X:',
+                                                value = 'Dados'
+                                              ),
+                                              textInput(
+                                                inputId = 'axis_y_simple_dot_plot',
+                                                label = 'Digite o nome do eixo Y:',
+                                                value = 'Frequência'
+                                              )
+                             )
+                           )
+                         )
+                         )}),
+                  conditionalPanel(condition = 'input.dot_plot_tabs == "beeswarm_dot_plot"',{
+                         column(12,
+                         accordion(
+                           id = 'accordion_beeswarm_dot_plot_layout',
+                           #Cores de fundo
+                           {
+                           accordionItem(
+                             title = 'Cores de fundo',
+                             status = accordionStatus,
+                             collapsed = TRUE,
+                             materialSwitch(
+                               label = 'Cores de fundo padrões:',
+                               inputId = "colors_beeswarm_dot_plot",
+                               status = switchStatus,
+                               value = TRUE
+                             ),
+                             conditionalPanel(condition = '!input.colors_beeswarm_dot_plot',
+                                              pickerInput(
+                                                inputId = "bgcolor_beeswarm_dot_plot",
+                                                label = "Escolha a cor de fundo: ",
+                                                choices = c(
+                                                  "Branco" = 'white',
+                                                  "Preto" = 'black',
+                                                  "Cinza" = 'grey',
+                                                  'Cinza claro' = 'lightgrey',
+                                                  'Personalizada' = 'personal'
+                                                ),
+                                                selected = 'white'
+                                              ),
+                                              conditionalPanel(condition = 'input.bgcolor_beeswarm_dot_plot == "personal" ',
+                                                               colourpicker::colourInput(inputId = "personal_bgcolor_beeswarm_dot_plot",
+                                                                                         label = "Choose colour",
+                                                                                         value = "red",
+                                                                                         showColour = 'background'
+                                                               )
+                                              )
+                             )
+                           )},
+                           {
+                           accordionItem(
+                             title = 'Configurações da legenda',
+                             status = accordionStatus,
+                             collapsed = TRUE,
+                             materialSwitch(
+                               label = 'Mostrar legenda:',
+                               inputId = "legend_beeswarm_dot_plot",
+                               status = switchStatus,
+                               value = TRUE
+                             ),
+                             conditionalPanel(condition = 'input.legend_beeswarm_dot_plot',
+                                              textInput(
+                                                inputId = 'title_legend_beeswarm_dot_plot',
+                                                label = 'Digite o título da legenda',
+                                                value = ''
+                                              ),
+                                              materialSwitch(
+                                               label = 'Borda na legenda: ',
+                                               inputId = "border_legend_beeswarm_dot_plot",
+                                               status = switchStatus,
+                                               value = FALSE
+                                              ),
+                                              materialSwitch(
+                                               label = 'Título da legenda em negrito: ',
+                                               inputId = "bold_title_legend_beeswarm_dot_plot",
+                                               status = switchStatus,
+                                               value = FALSE
+                                              ),
+                                              radioGroupButtons(
+                                                inputId = "item_size_legend_beeswarm_dot_plot",
+                                                label = 'Tamanho do item na legenda:',
+                                                choices = c(
+                                                  'Constante' = 'constant',
+                                                  'Variavel' = 'trace'
+                                                )
+                                              ),
+                                              radioGroupButtons(
+                                                inputId = "orientation_legend_beeswarm_dot_plot",
+                                                label = 'Orientação da legenda:',
+                                                choices = c(
+                                                  'Vertical' = 'v',
+                                                  'Horizontal' = 'h'
+                                                ),
+                                                selected = 'v'
+                                              )
+                             )
+                           )},
+                           #Nomes dos eixos
+                           accordionItem(
+                             title = 'Eixos',
+                             status = accordionStatus,
+                             collapsed = TRUE,
+                             materialSwitch(
+                               label = 'Nome dos eixos padrões:',
+                               inputId = "axis_beeswarm_dot_plot",
+                               status = switchStatus,
+                               value = TRUE
+                             ),
+                             conditionalPanel(condition = '!input.axis_beeswarm_dot_plot',
+                                              textInput(
+                                                inputId = 'axis_x_beeswarm_dot_plot',
+                                                label = 'Digite o nome do eixo X:',
+                                                value = 'Dados'
+                                              ),
+                                              textInput(
+                                                inputId = 'axis_y_beeswarm_dot_plot',
+                                                label = 'Digite o nome do eixo Y:',
+                                                value = 'Frequência'
+                                              )
+                             )
+                           )
+                         )
+                         )})
+           )
     ),
     column(9,
            fluidPage(fluidRow(column(
