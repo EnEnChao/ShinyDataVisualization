@@ -1,6 +1,7 @@
 config_page <- function(){
   tabPanel(
     'Configurações',
+    icon = icon('glyphicon glyphicon-wrench', lib = 'glyphicon'),
     column(12,
            h2("Configuração de opções extras", style="text-align:center; font-size:50px;"),
            h3(strong('Defina as cores dos gráficos:')),

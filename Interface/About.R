@@ -1,5 +1,5 @@
 about_page <- function (){
-  tabPanel('Sobre',
+  tabPanel('Sobre', icon = icon('question'),
              # fluidRow(h4('Este protótipo encontra-se em fase experimental, favor aguardar novas atualizações!')),
              column(12,
                     h4(strong('Descrição do Projeto')),

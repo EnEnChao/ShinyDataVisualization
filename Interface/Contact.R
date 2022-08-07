@@ -1,6 +1,6 @@
 contact_page <- function (){
   tabPanel(
-    'Contato',
+    'Contato', icon = icon('glyphicon glyphicon-envelope', lib = "glyphicon"),
     column(12,
            hr(),
            p(strong('Críticas'), ' e ', strong('sugestões'),' são bem-vindas! Entre em contato com a equipe de Visualização de Dados do Inmetro, pelo endereço a seguir ou preenchendo os campos do formulário:'),
