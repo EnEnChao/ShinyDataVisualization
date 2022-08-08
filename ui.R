@@ -9,6 +9,7 @@ if (!(require(openxlsx))){install.packages("openxlsx"); require(openxlsx, quietl
 if (!(require(vtable))){install.packages("vtable"); require(vtable, quietly=TRUE)}
 if (!(require(ggridges))){install.packages("ggridges"); require(ggridges, quietly=TRUE)}
 if (!(require(beeswarm))){install.packages("beeswarm"); require(beeswarm, quietly=TRUE)}
+if (!(require(car))){install.packages("car"); require(car, quietly=TRUE)}
 if (!(require(carData))){install.packages("carData"); require(carData, quietly=TRUE)}
 if (!(require(tidyverse))){install.packages("tidyverse"); require(tidyverse, quietly=TRUE)}
 if (!(require(datarium))){install.packages("datarium"); require(datarium, quietly=TRUE)}
@@ -16,6 +17,8 @@ if (!(require(rstatix))){install.packages("rstatix"); require(rstatix, quietly=T
 if (!(require(broom))){install.packages("broom"); require(broom, quietly=TRUE)}
 if (!(require(ggpubr))){install.packages("ggpubr"); require(ggpubr, quietly=TRUE)}
 if (!(require(rhandsontable))){install.packages("rhandsontable"); require(rhandsontable, quietly=TRUE)}
+if (!(require(multcomp))){install.packages("multcomp"); require(multcomp, quietly=TRUE)}
+if (!(require(emmeans))){install.packages("emmeans"); require(emmeans, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')

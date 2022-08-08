@@ -22,7 +22,8 @@ import_bidimensional_page <- function (){
                            'Escolha os dados de exemplo',
                            choices = c(
                              'Combustível' = 'gas',
-                             'Ansiedade' = 'anxiety'
+                             'Ansiedade' = 'anxiety',
+                             'Escolaridade' = 'escolaridade'
                            ),
                            selected = 'gas'
                ) }),

@@ -151,14 +151,11 @@ server <- function (input, output, session){
       dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
       if(input$examp_select_bi == 'anxiety') {
         data("anxiety", package = "datarium")
-        dt <- anxiety %>%
-          select(id, group, t1, t3) %>%
-          rename(dependente = t1, covariavel = t3)
-
-        dt[14, "posttest"] <- 19
-        set.seed(123)
-        dt %>% sample_n_by(group, size = 1)
-
+        dt <- data.frame(anxiety)
+        names(dt) <- c('Id', 'Grupo', 'Var Dep', 'T2', 'Cov')
+      }
+      if(input$examp_select_bi == 'escolaridade'){
+        dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
       }
     }
     else if(input$file_selector_bi == 'import')
@@ -228,6 +225,8 @@ server <- function (input, output, session){
                h4(strong('Teste de Shapiro-Wilk'), align = 'center'),
                DTOutput('ancova_shapiro_test')
         ),
+        h3(strong('Tabela Posthoc:'), align = 'center'),
+        DTOutput('ancova_posthoc'),
         h3(strong('Resultados:'), align = 'center'),
         br(),
         uiOutput('ancova_results')
@@ -242,6 +241,7 @@ server <- function (input, output, session){
                       ),
       ))
       output$plotly_ancova2 <- renderPlotly(renderANCOVA(values, options))
+      setBiValues(values, options)
       output$ancova_test <- renderDT(ancova_table(values, options))
       levene <- levene_table(values, options)
       output$ancova_levene_test <- renderDT(levene)
@@ -259,6 +259,7 @@ server <- function (input, output, session){
         else h4('O teste de Levene foi significante (p <= ',options$ancova_ci,'), não podemos
         assumir a igualdade da variância dos resíduos.')
       ))
+      output$ancova_posthoc <- renderDT(posthoc_table(values, options))
     }
     else{
       output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções. (Dados inválidos)'), align = 'center')))
@@ -455,7 +456,9 @@ server <- function (input, output, session){
   { options$ancova_line_width <- input$ancova_line_width
     options$ancova_marker_opacity <- input$ancova_marker_opacity
     options$ancova_marker_size <- input$ancova_marker_size
-    options$ancova_ci <- input$ancova_ci }
+    options$ancova_ci <- input$ancova_ci
+    options$ancova_sumsq <- input$ancova_sumsq
+  }
 
     #Gráfico em Mesh
     { options$examp_select_mesh <- input$examp_select_mesh
@@ -616,6 +619,42 @@ server <- function (input, output, session){
     }
     {
       #Cores
+      options$colors_check_norm_d <- input$colors_check_norm_d
+      options$bgcolor_check_norm_d <- input$bgcolor_check_norm_d
+      options$personal_bgcolor_check_norm_d <- input$personal_bgcolor_check_norm_d
+
+      #Eixos
+      options$axis_x_check_norm_d <- input$axis_x_check_norm_d
+      options$axis_y_check_norm_d <- input$axis_y_check_norm_d
+
+      #Legenda
+      options$legend_check_norm_d <- input$legend_check_norm_d
+      options$border_legend_check_norm_d <- input$border_legend_check_norm_d
+      options$title_legend_check_norm_d <- input$title_legend_check_norm_d
+      options$bold_title_legend_check_norm_d <- input$bold_title_legend_check_norm_d
+      options$item_size_legend_check_norm_d <- input$item_size_legend_check_norm_d
+      options$orientation_legend_check_norm_d <- input$orientation_legend_check_norm_d
+    }
+    {
+      #Cores
+      options$colors_check_norm_qq <- input$colors_check_norm_qq
+      options$bgcolor_check_norm_qq <- input$bgcolor_check_norm_qq
+      options$personal_bgcolor_check_norm_qq <- input$personal_bgcolor_check_norm_qq
+
+      #Eixos
+      options$axis_x_check_norm_qq <- input$axis_x_check_norm_qq
+      options$axis_y_check_norm_qq <- input$axis_y_check_norm_qq
+
+      #Legenda
+      options$legend_check_norm_qq <- input$legend_check_norm_qq
+      options$border_legend_check_norm_qq <- input$border_legend_check_norm_qq
+      options$title_legend_check_norm_qq <- input$title_legend_check_norm_qq
+      options$bold_title_legend_check_norm_qq <- input$bold_title_legend_check_norm_qq
+      options$item_size_legend_check_norm_qq <- input$item_size_legend_check_norm_qq
+      options$orientation_legend_check_norm_qq <- input$orientation_legend_check_norm_qq
+    }
+    {
+      #Cores
       options$colors_histogram_3d <- input$colors_histogram_3d
       options$bgcolor_histogram_3d <- input$bgcolor_histogram_3d
       options$personal_bgcolor_histogram_3d <- input$personal_bgcolor_histogram_3d
@@ -689,6 +728,43 @@ server <- function (input, output, session){
       options$bold_title_legend_bar_plot_3d <- input$bold_title_legend_bar_plot_3d
       options$item_size_legend_bar_plot_3d <- input$item_size_legend_bar_plot_3d
       options$orientation_legend_bar_plot_3d <- input$orientation_legend_bar_plot_3d
+    }
+    {
+      #Cores
+      options$colors_ancova_plot <- input$colors_ancova_plot
+      options$bgcolor_ancova_plot <- input$bgcolor_ancova_plot
+      options$personal_bgcolor_ancova_plot <- input$personal_bgcolor_ancova_plot
+
+      #Eixos
+      options$axis_x_ancova_plot <- input$axis_x_ancova_plot
+      options$axis_y_ancova_plot <- input$axis_y_ancova_plot
+
+      #Legenda
+      options$legend_ancova_plot <- input$legend_ancova_plot
+      options$border_legend_ancova_plot <- input$border_legend_ancova_plot
+      options$title_legend_ancova_plot <- input$title_legend_ancova_plot
+      options$bold_title_legend_ancova_plot <- input$bold_title_legend_ancova_plot
+      options$item_size_legend_ancova_plot <- input$item_size_legend_ancova_plot
+      options$orientation_legend_ancova_plot <- input$orientation_legend_ancova_plot
+    }
+    {
+      #Cores
+      options$colors_mesh_3d <- input$colors_mesh_3d
+      options$bgcolor_mesh_3d <- input$bgcolor_mesh_3d
+      options$personal_bgcolor_mesh_3d <- input$personal_bgcolor_mesh_3d
+
+      #Eixos
+      options$axis_x_mesh_3d <- input$axis_x_mesh_3d
+      options$axis_y_mesh_3d <- input$axis_y_mesh_3d
+      options$axis_z_mesh_3d <- input$axis_z_mesh_3d
+
+      #Legenda
+      options$legend_mesh_3d <- input$legend_mesh_3d
+      options$border_legend_mesh_3d <- input$border_legend_mesh_3d
+      options$title_legend_mesh_3d <- input$title_legend_mesh_3d
+      options$bold_title_legend_mesh_3d <- input$bold_title_legend_mesh_3d
+      options$item_size_legend_mesh_3d <- input$item_size_legend_mesh_3d
+      options$orientation_legend_mesh_3d <- input$orientation_legend_mesh_3d
     }
     })
 

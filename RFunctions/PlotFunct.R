@@ -449,51 +449,57 @@ renderErrorBar <- function(values, options) {
   return(fig)
 }
 
-renderCustomPlot <- function (values, options){
-  fig <- subplot(renderErrorBar(values, options), renderDotPlot(values, options) ,renderBoxPlot(values, options), renderViolinPlot(values, options), nrows = 2)
-
-  return(fig)
-}
-
 renderCheckNormDensity <- function (values, options){
   data <- values$c_data_info
     fig <- ggplotly(
     ggdensity(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
   )
-  fig
+
+  layoutConfig <- list(
+    bgcolor = if(is.null(options$colors_check_norm_d)) options$bgColorPlotly else{
+         if(options$colors_check_norm_d) options$bgColorPlotly else{
+           if(options$bgcolor_check_norm_d == 'personal') options$personal_bgcolor_check_norm_d
+           else options$bgcolor_check_norm_d
+    }},
+    xTitle = if(!is.null(options$axis_x_check_norm_d)) options$axis_x_check_norm_d else 'Dados',
+    yTitle = if(!is.null(options$axis_y_check_norm_d)) options$axis_y_check_norm_d else 'Frequência',
+
+    legend = if(is.null(options$legend_check_norm_d)) TRUE else options$legend_check_norm_d,
+    legend_title = if(is.null(options$legend_check_norm_d) | if(is.null(options$legend_check_norm_d)) TRUE else !options$legend_check_norm_d) '' else options$title_legend_check_norm_d,
+    legend_bold = if(is.null(options$legend_check_norm_d) | if(is.null(options$legend_check_norm_d)) TRUE else !options$legend_check_norm_d) FALSE else options$bold_title_legend_check_norm_d,
+    legend_size = if(is.null(options$legend_check_norm_d) | if(is.null(options$legend_check_norm_d)) TRUE else !options$legend_check_norm_d) 'trace' else options$item_size_legend_check_norm_d,
+    legend_orientation = if(is.null(options$legend_check_norm_d) | if(is.null(options$legend_check_norm_d)) TRUE else !options$legend_check_norm_d) 'v' else options$orientation_legend_check_norm_d,
+    legend_border = if(is.null(options$legend_check_norm_d) | if(is.null(options$legend_check_norm_d)) TRUE else !options$legend_check_norm_d) FALSE else options$border_legend_check_norm_d
+  )
+  fig <- fig %>% addLayout(values$usr_title, layoutConfig = layoutConfig)
+
+  return(fig)
 }
 renderCheckNormQQ <- function (values, options){
   data <- values$c_data_info
   fig <- ggplotly(
     ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
   )
-  fig
-}
 
-renderCheckNormTable <- function (values, options){
-  ci <- 0.05
-  data <- values$data_info
-  fig <- data.frame(
-    sapply(data, function (x) signif(shapiro.test(x)$p.value, 4)),
-    'Teste Shapiro-Wilk' = sapply(data, function (x) {
-      p <- shapiro.test(x)$p.value
-      if(p > ci)
-        'Normal'
-      else
-        'Não normal'
-    }),
-    sapply(data, function (x) signif(ks.test(x, 'pnorm')$p.value, 4)),
-    sapply(data, function (x){
-      p <- ks.test(x, 'pnorm')$p.value
-            if(p > ci)
-        'Normal'
-      else
-        'Não normal'
-    })
+    layoutConfig <- list(
+    bgcolor = if(is.null(options$colors_check_norm_qq)) options$bgColorPlotly else{
+         if(options$colors_check_norm_qq) options$bgColorPlotly else{
+           if(options$bgcolor_check_norm_qq == 'personal') options$personal_bgcolor_check_norm_qq
+           else options$bgcolor_check_norm_qq
+    }},
+    xTitle = if(!is.null(options$axis_x_check_norm_qq)) options$axis_x_check_norm_qq else 'Dados',
+    yTitle = if(!is.null(options$axis_y_check_norm_qq)) options$axis_y_check_norm_qq else 'Frequência',
+
+    legend = if(is.null(options$legend_check_norm_qq)) TRUE else options$legend_check_norm_qq,
+    legend_title = if(is.null(options$legend_check_norm_qq) | if(is.null(options$legend_check_norm_qq)) TRUE else !options$legend_check_norm_qq) '' else options$title_legend_check_norm_qq,
+    legend_bold = if(is.null(options$legend_check_norm_qq) | if(is.null(options$legend_check_norm_qq)) TRUE else !options$legend_check_norm_qq) FALSE else options$bold_title_legend_check_norm_qq,
+    legend_size = if(is.null(options$legend_check_norm_qq) | if(is.null(options$legend_check_norm_qq)) TRUE else !options$legend_check_norm_qq) 'trace' else options$item_size_legend_check_norm_qq,
+    legend_orientation = if(is.null(options$legend_check_norm_qq) | if(is.null(options$legend_check_norm_qq)) TRUE else !options$legend_check_norm_qq) 'v' else options$orientation_legend_check_norm_qq,
+    legend_border = if(is.null(options$legend_check_norm_qq) | if(is.null(options$legend_check_norm_qq)) TRUE else !options$legend_check_norm_qq) FALSE else options$border_legend_check_norm_qq
   )
-  names(fig) <- c('Teste Shapiro-Wilk', 'Decisão - teste Shapiro-Wilk', 'Teste Kolmogorov-Smirnov', 'Desisão - teste Kolmogorov-Smirnov')
-  fig
+  fig <- fig %>% addLayout(values$usr_title, layoutConfig = layoutConfig)
 
+  return(fig)
 }
 
 renderANCOVA <- function (values, options){
@@ -541,6 +547,7 @@ renderANCOVA <- function (values, options){
             max(dt_aux$var) * lm_aux$coefficients[2] + lm_aux$coefficients[1]
           ),
           x = c(min(dt_aux$var), max(dt_aux$var)),
+          showlegend = FALSE,
           line = list(
             width = options$ancova_line_width
           ),
@@ -558,7 +565,6 @@ renderANCOVA <- function (values, options){
                            y = ~cov,
                            color = ~group,
                            legendgroup = ~group,
-                           showlegend = FALSE,
                            marker = list(
                              opacity = options$ancova_marker_opacity,
                              size = options$ancova_marker_size
@@ -569,5 +575,23 @@ renderANCOVA <- function (values, options){
                            )
   )
 
-  fig
+  layoutConfig <- list(bgcolor = if(is.null(options$colors_ancova_plot)) options$bgColorPlotly else{
+         if(options$colors_ancova_plot) options$bgColorPlotly else{
+           if(options$bgcolor_ancova_plot == 'personal') options$personal_bgcolor_ancova_plot
+           else options$bgcolor_ancova_plot
+             }},
+                       pBgcolor = options$personal_bgcolor_ancova_plot,
+                       xTitle = if(!is.null(options$axis_x_ancova_plot)) options$axis_x_ancova_plot else 'Eixo X',
+                       yTitle = if(!is.null(options$axis_y_ancova_plot)) options$axis_y_ancova_plot else 'Eixo Y',
+    legend = if(is.null(options$legend_ancova_plot)) TRUE else options$legend_ancova_plot,
+    legend_title = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) '' else options$title_legend_ancova_plot,
+    legend_bold = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) FALSE else options$bold_title_legend_ancova_plot,
+    legend_size = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) 'trace' else options$item_size_legend_ancova_plot,
+    legend_orientation = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) 'v' else options$orientation_legend_ancova_plot,
+    legend_border = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) FALSE else options$border_legend_ancova_plot
+  )
+
+  fig <- fig %>% addLayout(values$usr_title, layoutConfig = layoutConfig)
+
+  return(fig)
 }

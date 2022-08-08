@@ -81,68 +81,83 @@ ellipse_data <- function (data_info, colnames, ci){
   return(data)
 }
 
-ancova_table <- function (values, options){
+renderCheckNormTable <- function (values, options){
+  ci <- 0.05
+  data <- values$data_info
+  fig <- data.frame(
+    sapply(data, function (x) signif(shapiro.test(x)$p.value, 4)),
+    'Teste Shapiro-Wilk' = sapply(data, function (x) {
+      p <- shapiro.test(x)$p.value
+      if(p > ci)
+        'Normal'
+      else
+        'Não normal'
+    }),
+    sapply(data, function (x) signif(ks.test(x, 'pnorm')$p.value, 4)),
+    sapply(data, function (x){
+      p <- ks.test(x, 'pnorm')$p.value
+            if(p > ci)
+        'Normal'
+      else
+        'Não normal'
+    })
+  )
+  names(fig) <- c('Teste Shapiro-Wilk', 'Decisão - teste Shapiro-Wilk', 'Teste Kolmogorov-Smirnov', 'Desisão - teste Kolmogorov-Smirnov')
+  fig
+
+}
+
+setBiValues <- function (values, options){
   dt <- values$bidimensional_data
   var1<- options$ancova_variable
   cov1 <- options$ancova_covariable
   group1 <- options$ancova_group_variable
 
-  print('A')
   dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
-  print('B')
-  names <- names(dt)
-  names(dt) <- c('var', 'cov', 'group')
+  values$names_bi <- name <- names(dt)
+  names(dt) <- c('vard', 'cov', 'vari')
+  values$data_info_bi <- dt
+}
 
+ancova_table <- function (values, options){
+  values$model_ancova <- aov(vard ~ cov + vari, data = values$data_info_bi)
 
-  dt2 <- dt %>% anova_test(cov ~ var * group)
-  dt2[,6] <- sapply(dt2[,5], function (x) if(x > options$ancova_ci) 'Significânte' else 'Não significante' )
-  names(dt2)[6] <- 'Significância'
-  dt2$Effect <- c(names[which(names(dt) == 'var')], names[which(names(dt) == 'group')],
-                  paste0(names[which(names(dt) == 'group')], ':', names[which(names(dt) == 'var')] ))
-  dt2
+  dt <- Anova(values$model_ancova, type = options$ancova_sumsq)
+  dt <- data.frame('Soma de quadrados' = dt$`Sum Sq`, 'DF' = dt$Df, 'F' = dt$`F value`, 'p' = dt$`Pr(>F)`)
+
+  if(options$ancova_sumsq == 2)
+    rownames(dt) <- c(values$names_bi[c(2, 3)], 'Residuos')
+  else
+    rownames(dt) <- c('Intercept',values$names_bi[c(2, 3)], 'Residuos')
+  dt <- round(dt, 4)
+
+  return(dt)
 }
 
 levene_table <- function (values, options){
-  dt <- values$bidimensional_data
-  var1<- options$ancova_variable
-  cov1 <- options$ancova_covariable
-  group1 <- options$ancova_group_variable
-
-
-  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
-  names(dt) <- c('var', 'cov', 'group')
-
-  model <- lm(cov ~ var + group, data = dt)
-  model.metrics <- augment(model) %>% select(c(-.hat, -.sigma, -.fitted))
-  levene <- model.metrics %>% levene_test(.resid ~ group)
-
-  levene$statistic <- as.double(round(levene$statistic, 4))
-  levene$p <- as.double(round(levene$p, 4))
-
-  levene <- data.frame(F = levene$statistic, df1 = levene$df1, df2 = levene$df2, p = levene$p)
-  names(levene) <- c('F', 'Df 1', 'Df 2', 'p')
-
+  levene <- leveneTest(aov(vard ~ cov + vari, data = values$data_info_bi)$residuals ~ values$data_info_bi$vari)
+  levene <- data.frame(F = levene$`F value`[1], Df1 = levene$Df[1], Df2 = levene$Df[2], p = levene$`Pr(>F)`[1])
+  levene <- round(levene, 4)
+  rownames(levene) <- 'Teste de Levene'
   levene
 }
 shapiro_table <- function (values, options){
-  dt <- values$bidimensional_data
-  var1<- options$ancova_variable
-  cov1 <- options$ancova_covariable
-  group1 <- options$ancova_group_variable
-
-
-  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
-  names(dt) <- c('var', 'cov', 'group')
-
-  model <- lm(cov ~ var + group, data = dt)
-  model.metrics <- augment(model) %>% select(c(-.hat, -.sigma, -.fitted))
-  shapiro <- shapiro_test(model.metrics$.resid)
-
-  shapiro$statistic <- as.double(round(shapiro$statistic, 4))
-  shapiro$p.value <- as.double(round(shapiro$p.value, 4))
-
-  shapiro <- data.frame(F = shapiro$statistic, p = shapiro$p.value)
-  names(shapiro) <- c('F', 'p')
-
+  shapiro <- shapiro.test(aov(vard ~ cov + vari, data = values$data_info_bi)$residuals)
+  shapiro <- data.frame(Estatística = shapiro$statistic, p = shapiro$p.value)
+  shapiro <- round(shapiro, 4)
+  rownames(shapiro) <- 'Teste de Shapiro-Wilk'
   shapiro
+}
+
+posthoc_table <- function (values, options){
+  dt <- values$data_info_bi
+  posthoc <- as.data.frame(
+    dt %>% emmeans_test(vard ~ vari, covariate = cov, p.adjust.method = 'bonferroni')
+  )
+  posthoc <- posthoc[,-c(1, 2)]
+  posthoc$statistic <- round(posthoc$statistic, 4)
+  posthoc$p <- round(posthoc$p, 4)
+  posthoc$p.adj <- round(posthoc$p.adj, 4)
+  names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
+  posthoc
 }
