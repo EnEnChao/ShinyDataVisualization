@@ -75,3 +75,28 @@ insert_bidimensional <- function (){
   column(12,hr())
 )
 }
+
+transform_bidimensional <- function (){
+  tabPanel('Transformar seus dados',
+           column(4,
+                  tabPanel(
+                    h3(strong("Controle de opções:"), align = 'center'),
+                    {accordion(
+                      id = 'accordion_ancova',
+                      accordionItem(
+                        title = 'Variáveis',
+                        status = accordionStatus,
+                        collapsed = FALSE,
+                        uiOutput('transform_bi_table')
+                      )
+                    )}
+                  )
+           ),
+           column(8,
+                  tabPanel(
+                    column(12, uiOutput('title_name_transform_bi'), align = 'center'),
+                    uiOutput("table_transform_bi_data_output")
+                  )
+           )
+  )
+}

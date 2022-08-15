@@ -19,6 +19,8 @@ if (!(require(ggpubr))){install.packages("ggpubr"); require(ggpubr, quietly=TRUE
 if (!(require(rhandsontable))){install.packages("rhandsontable"); require(rhandsontable, quietly=TRUE)}
 if (!(require(multcomp))){install.packages("multcomp"); require(multcomp, quietly=TRUE)}
 if (!(require(emmeans))){install.packages("emmeans"); require(emmeans, quietly=TRUE)}
+if (!(require(readxl))){install.packages("readxl"); require(readxl, quietly=TRUE)}
+if (!(require(slickR))){install.packages("slickR"); require(slickR, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')
@@ -104,8 +106,8 @@ tags$style(HTML("
                tabPanel('Checando os dados',
                         tabsetPanel(
                           check_norm_page(),
-                          tabPanel('Homogenidade das variâncias'),
-                          tabPanel('Avaliando a esferecidade'),
+                          tabPanel('Homogeneidade  das variâncias'),
+                          tabPanel('Avaliando a esfericidade'),
                           tabPanel('Transformando os dados para normalidade')
                         )
                ),
@@ -117,6 +119,7 @@ tags$style(HTML("
                           insert_bidimensional()
                         )
                ),
+               transform_bidimensional(),
                tabPanel('Comparando duas médias',
                         tabsetPanel(
                           tabPanel('Teste - T'),

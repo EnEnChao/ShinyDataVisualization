@@ -351,33 +351,18 @@ renderMesh3D <- function (values, options){
   if(is.null(options$checkbox_mesh))
     return(plot_ly(type = 'scatter', mode = 'markers') %>% layout(xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE)))
 
-  plots <- list()
-  for (i in seq(length(options$checkbox_mesh))){
-    file <- paste0('Data/Machine Learning/',options$examp_select_mesh,'/',options$examp_select_mesh,'_',options$checkbox_mesh[i],'.txt')
-    plots[[i]] <- plot_ly(z = as.matrix(read.table(file))*100000000, type = 'mesh3d', scene = paste0('scene',i)) %>% add_surface()
+  dts <- values$data_info_tri
+  if(options$num_sheets_imported_tri == 1)
+    fig <- plot_ly(z = dts[[1]], type = 'mesh3d') %>% add_surface()
+  else {
+    plots <- list()
+    dts <- dts[as.integer(options$checkbox_mesh)]
+    for (i in as.integer(seq(length(options$checkbox_mesh)))) {
+      plots[[i]] <- plot_ly(z = dts[[i]], type = 'mesh3d', scene = paste0('scene', i), showlegend = FALSE) %>% add_surface()
+    }
+    # subplot and define scene
+    fig <- subplot(plots)
   }
-  # subplot and define scene
-  fig <- subplot(plots)
-
-    layoutConfig <- list(
-    bgcolor = if(is.null(options$colors_mesh_3d)) options$bgColorPlotly else{
-         if(options$colors_mesh_3d) options$bgColorPlotly else{
-           if(options$bgcolor_mesh_3d == 'personal') options$personal_bgcolor_mesh_3d
-           else options$bgcolor_mesh_3d
-    }},
-    xTitle = if(!is.null(options$axis_x_mesh_3d)) options$axis_x_mesh_3d else 'Dados',
-    yTitle = if(!is.null(options$axis_y_mesh_3d)) options$axis_y_mesh_3d else 'Frequência',
-    zTitle = if(!is.null(options$axis_z_mesh_3d)) options$axis_z_mesh_3d else 'Classificação',
-
-    legend = if(is.null(options$legend_mesh_3d)) TRUE else options$legend_mesh_3d,
-    legend_title = if(is.null(options$legend_mesh_3d) | if(is.null(options$legend_mesh_3d)) TRUE else !options$legend_mesh_3d) '' else options$title_legend_mesh_3d,
-    legend_bold = if(is.null(options$legend_mesh_3d) | if(is.null(options$legend_mesh_3d)) TRUE else !options$legend_mesh_3d) FALSE else options$bold_title_legend_mesh_3d,
-    legend_size = if(is.null(options$legend_mesh_3d) | if(is.null(options$legend_mesh_3d)) TRUE else !options$legend_mesh_3d) 'trace' else options$item_size_legend_mesh_3d,
-    legend_orientation = if(is.null(options$legend_mesh_3d) | if(is.null(options$legend_mesh_3d)) TRUE else !options$legend_mesh_3d) 'v' else options$orientation_legend_mesh_3d,
-    legend_border = if(is.null(options$legend_mesh_3d) | if(is.null(options$legend_mesh_3d)) TRUE else !options$legend_mesh_3d) FALSE else options$border_legend_mesh_3d
-  )
-
-  fig <- fig %>% addLayout3d(values$usr_title, layoutConfig = layoutConfig)
 
   return(fig)
 }

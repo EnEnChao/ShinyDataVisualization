@@ -11,11 +11,18 @@ server <- function (input, output, session){
   values$data_info <- data.frame()
   values$condensed_data_info <- data.frame()
 
+  #Carrosel com as imagens iniciais
+  output$home_images <- renderSlickR({
+    imgs <- list.files("www/HomeImages", pattern=".png", full.names = TRUE)
+    slickR(imgs, objLinks = 'https://www.gov.br/inmetro/pt-br')+ settings(dots = TRUE, autoplay = TRUE, slidesToShow = 2, slidesToScroll = 1)
+  })
+
   #Iniciar alguns textos dinâmicos
   output$table_import_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$title_name_insert <- renderUI(h2(strong('Digite os dados:')))
 
   output$table_import_bi_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
+  output$table_transform_bi_data_output <- renderUI(tagList(h2(strong('Escolha a variável na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$title_name_insert_bi <- renderUI(h2(strong('Digite os dados:')))
 
   #Iniciar as planilhas
@@ -28,6 +35,7 @@ server <- function (input, output, session){
   hideTab(inputId = "tabs", target = "Checando os dados")
   hideTab(inputId = "tabs", target = "Informações gerais")
 
+  hideTab(inputId = "tabs", target = "Transformar seus dados")
   hideTab(inputId = "tabs", target = "Comparando duas médias")
   hideTab(inputId = "tabs", target = "Comparando multiplas médias")
 
@@ -143,6 +151,7 @@ server <- function (input, output, session){
   observeEvent(input$load_bidimensional,{
     output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
     output$ancova_statistics <- renderUI(p(''))
+    showTab(inputId = "tabs", target = "Transformar seus dados")
     showTab(inputId = "tabs", target = "Comparando duas médias")
     showTab(inputId = "tabs", target = "Comparando multiplas médias")
 
@@ -171,13 +180,16 @@ server <- function (input, output, session){
     output$table_import_bi_data_output2 <- renderDT(dt)
 
     values$usr_title <- paste0(input$title_id_import_bi)
-      output$title_name_import_bi <- renderUI(h2(strong(values$usr_title)))
+      output$title_name_import_bi <- renderUI(
+         h2(strong(values$usr_title))
+      )
     values$bidimensional_data <- dt
   })
 
   observeEvent(input$load_spreadsheet_bi,{
     output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
     output$ancova_statistics <- renderUI(p(''))
+    showTab(inputId = "tabs", target = "Transformar seus dados")
     showTab(inputId = "tabs", target = "Comparando duas médias")
     showTab(inputId = "tabs", target = "Comparando multiplas médias")
 
@@ -203,6 +215,28 @@ server <- function (input, output, session){
       h2(strong(values$usr_title)))
 
     values$bidimensional_data <- dt
+  })
+
+  observeEvent(input$load_transform_bi,{
+    showTab(inputId = "tabs", target = "Gráficos 2D")
+    showTab(inputId = "tabs", target = "Gráficos 3D")
+    showTab(inputId = "tabs", target = "Checando os dados")
+    showTab(inputId = "tabs", target = "Informações gerais")
+
+    dt <- data.frame(values$bidimensional_data[input$transform_bi_variable], values$bidimensional_data[input$transform_bi_variable])
+
+    output$table_transform_bi_data_output <- renderUI(
+      shinycssloaders::withSpinner(
+        DTOutput("table_transform_bi_data_output2"),
+        type = spinnerType,
+        color = spinnerColor,
+        size = spinnerSize
+      )
+    )
+    output$table_transform_bi_data_output2 <- renderDT(dt)
+
+    setUniValues(values, dt)
+    output$title_name_transform_bi <- renderUI(h2(strong(values$usr_title)))
   })
 
   observeEvent(input$load_ancova, {
@@ -241,7 +275,7 @@ server <- function (input, output, session){
                       ),
       ))
       output$plotly_ancova2 <- renderPlotly(renderANCOVA(values, options))
-      setBiValues(values, options)
+      setAncovaValues(values, options)
       output$ancova_test <- renderDT(ancova_table(values, options))
       levene <- levene_table(values, options)
       output$ancova_levene_test <- renderDT(levene)
@@ -268,7 +302,34 @@ server <- function (input, output, session){
 
   observeEvent(input$load_tridimensional, {
     showTab(inputId = "tabs", target = "Gráfico em Mesh")
-    output$mesh_insert_result <- renderUI(h3(strong('Arquivo carregado: \"',input$examp_select_mesh,'\"')))
+
+    values$usr_title <- paste0(input$title_id_import_tri)
+    if(input$mesh_file_selector == 'example') {
+       for (i in 1:20){
+        file <- paste0('Data/Machine Learning/', options$examp_select_mesh, '/', options$examp_select_mesh, '_', i, '.txt')
+        values$data_info_tri[[i]] <- as.matrix(data.frame(read_table(file)))
+      }
+      options$num_sheets_imported_tri <- 20
+      output$mesh_insert_result <- renderUI(
+          h3(strong('Arquivo carregado: \"', input$examp_select_mesh,' - ', values$usr_title, '\"'))
+         )
+    }
+    else if(input$mesh_file_selector == 'import') {
+      options$num_sheets_imported_tri <- input$num_sheets_imported_tri
+      if(input$num_sheets_imported_tri == 1){
+        values$data_info_tri <- list(NULL, as.matrix(data.frame(read_excel(path = input$file_imported_tri$datapath, sheet = 1))))
+        values$data_info_tri <- values$data_info_tri[-1]
+      }
+      else {
+        values$data_info_tri <- sapply(seq(input$num_sheets_imported_tri), function(x) {
+          as.matrix(data.frame(read_excel(path = input$file_imported_tri$datapath, sheet = x)))
+        })
+      }
+      output$mesh_insert_result <- renderUI(
+          h3(strong('Arquivo carregado: \"', values$usr_title, '\"'))
+      )
+    }
+
   })
 
   #----------- VARIÁVEIS DOS GRÁFICOS -----------
@@ -804,6 +865,22 @@ server <- function (input, output, session){
 
   output$plotly_bar3d <- renderPlotly(barHistogram3d(values, options))
 
+  output$transform_bi_table <- renderUI(
+    tagList(
+      selectInput(
+        inputId = 'transform_bi_variable',
+        label = 'Escolha a variavel para ser plotada: ',
+        choices = names(values$bidimensional_data),
+        selected = options$transform_bi_variable
+      ),
+      actionButton("load_transform_bi",
+                   strong('Carregue!'),
+                   style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                   width = "80%",
+                   class = "btn-info"
+      )
+    )
+  )
   output$ancova_variables <- renderUI(
     tagList(
       selectInput(
@@ -820,7 +897,7 @@ server <- function (input, output, session){
       ),
       selectInput(
         inputId = 'ancova_group_variable',
-        label = 'Escolha a variavel de grupo: ',
+        label = 'Escolha a variavel independente: ',
         choices = names((values$bidimensional_data)),
         selected = options$ancova_group_variable
       ),
@@ -831,6 +908,16 @@ server <- function (input, output, session){
                    class = "btn-info"
       )
     ),
+  )
+
+  output$checkbox_mesh_ui <- renderUI(
+    checkboxGroupButtons(
+      inputId = "checkbox_mesh",
+      label = '',
+      choices = seq(options$num_sheets_imported_tri),
+      checkIcon = list(yes = tags$i(class = "fa fa-check-square", style = "color: steelblue"),
+                       no = tags$i(class = "fa fa-square-o", style = "color: steelblue"))
+    )
   )
 
   output$plotly_mesh3d <- renderPlotly(renderMesh3D(values, options)) }

@@ -2,7 +2,14 @@ home_page <- function (){
   tabPanel('Home', icon = icon('home'),
            # h2('Home', align = 'center'),
            br(),
-             HTML('<center><img src="a-imagem-destaca-grafico-setores-grafico-linhas-grafico-barras.png" width=40% height=40%></center>'),
+           shinycssloaders::withSpinner(
+                    slickROutput("home_images", width="1000px", height = '350px'),
+                    type = spinnerType,
+                    color = spinnerColor,
+                    size = spinnerSize
+           ),
+           br(),
+             # HTML('<center><img src="HomeImages/a-imagem-destaca-grafico-setores-grafico-linhas-grafico-barras.png" width=40% height=40%></center>'),
            h2(strong('Informações disponiveis'), align = 'center'),
            hr(),
            wellPanel(

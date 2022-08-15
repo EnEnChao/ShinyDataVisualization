@@ -6,7 +6,7 @@ import_tridimensional_page <- function (){
                                   label = 'Escolha a próxima ação:',
                                   choices = c(
                                     " " = "null",
-                                    "Importar arquivo .zip (NÃO IMPLEMENTADO)" = "import",
+                                    "Importar arquivo excel" = "import",
                                     "Usar um arquivo exemplo" = "example"
                                   ),
                                   selected = "null"
@@ -19,14 +19,22 @@ import_tridimensional_page <- function (){
                                                      'zoneB' = 'zoneB'
                                                    ),
                                                    selected = 'zoneA'
-                                       ),
-                                       actionButton("load_tridimensional",
-                                                    strong('Carregue!'),
-                                                    style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                                                    width = "80%",
-                                                    class = "btn-info"
                                        )
-                      ),align = 'center'
+                      ),
+                  conditionalPanel('input.mesh_file_selector == "import"',
+                                   fileInput(inputId = 'file_imported_tri', "Insira o arquivo", accept = '.xlsx'),
+                                   numericInput(inputId = 'num_sheets_imported_tri', 'Digite o numero de planilhas no arquivo excel',min = 1, value = 1)
+                  ),
+                  conditionalPanel('input.mesh_file_selector != "null"',
+                                   textInput('title_id_import_tri', 'Digíte o título', 'Título'),
+                                   actionButton("load_tridimensional",
+                                                strong('Carregue!'),
+                                                style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                                                width = "80%",
+                                                class = "btn-info"
+                                   )
+                  ),
+                  align = 'center'
            ),
            column(8,
                         fluidPage(fluidRow(column(

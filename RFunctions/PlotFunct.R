@@ -583,12 +583,12 @@ renderANCOVA <- function (values, options){
                        pBgcolor = options$personal_bgcolor_ancova_plot,
                        xTitle = if(!is.null(options$axis_x_ancova_plot)) options$axis_x_ancova_plot else 'Eixo X',
                        yTitle = if(!is.null(options$axis_y_ancova_plot)) options$axis_y_ancova_plot else 'Eixo Y',
-    legend = if(is.null(options$legend_ancova_plot)) TRUE else options$legend_ancova_plot,
-    legend_title = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) '' else options$title_legend_ancova_plot,
-    legend_bold = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) FALSE else options$bold_title_legend_ancova_plot,
-    legend_size = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) 'trace' else options$item_size_legend_ancova_plot,
-    legend_orientation = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) 'v' else options$orientation_legend_ancova_plot,
-    legend_border = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) FALSE else options$border_legend_ancova_plot
+                       legend = if(is.null(options$legend_ancova_plot)) TRUE else options$legend_ancova_plot,
+                       legend_title = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) '' else options$title_legend_ancova_plot,
+                       legend_bold = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) FALSE else options$bold_title_legend_ancova_plot,
+                       legend_size = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) 'trace' else options$item_size_legend_ancova_plot,
+                       legend_orientation = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) 'v' else options$orientation_legend_ancova_plot,
+                       legend_border = if(is.null(options$legend_ancova_plot) | if(is.null(options$legend_ancova_plot)) TRUE else !options$legend_ancova_plot) FALSE else options$border_legend_ancova_plot
   )
 
   fig <- fig %>% addLayout(values$usr_title, layoutConfig = layoutConfig)

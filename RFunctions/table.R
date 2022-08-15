@@ -107,9 +107,9 @@ renderCheckNormTable <- function (values, options){
 
 }
 
-setBiValues <- function (values, options){
+setAncovaValues <- function (values, options){
   dt <- values$bidimensional_data
-  var1<- options$ancova_variable
+  var1 <- options$ancova_variable
   cov1 <- options$ancova_covariable
   group1 <- options$ancova_group_variable
 
