@@ -160,13 +160,3 @@ posthoc_table <- function (values, options){
   names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
   posthoc
 }
-
-
-ftest <- function (first, sec, data){
-  data <- data.frame(data[which(data$`Classificação` == first | data$`Classificação` == sec),]$Dados, data[which(data$Classificação == first | data$Classificação == sec),]$`Classificação`)
-  names(data) <- c('Dados', 'Classificacao')
-
-  res <- var.test(Dados ~ Classificacao, data = data)
-  res <- data.frame(F = res$statistic,Num_df = res$parameter[1], Denom_df = res$parameter[2] ,p = res$p.value)
-
-}

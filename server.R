@@ -158,6 +158,7 @@ server <- function (input, output, session){
     ))
 
     choosen <- input$homogenity_tests
+    ci <- input$homogenity_ci
 
     if(choosen == 'f_test'){
       first <- input$first_var_f_test
@@ -167,24 +168,93 @@ server <- function (input, output, session){
         output$homogenity_results <- renderUI(h4('Erro: Foi selecionada variáveis repetidas'))
       else{
         output$homogenity_method_name <- renderUI(h3('Teste F para comparação de duas variáveis'))
-        output$homogenity_table <- renderDT(ftest(first, sec, values$c_data_info))
+
+        data <- values$c_data_info
+        data <- data.frame(data[which(data$`Classificação` == first | data$`Classificação` == sec),]$Dados, data[which(data$Classificação == first | data$Classificação == sec),]$`Classificação`)
+        names(data) <- c('Dados', 'Classificacao')
+
+        res <- var.test(Dados ~ Classificacao, data = data, conf.level = ci)
+        dt <- round(data.frame(F = res$statistic,Num_df = res$parameter[1], Denom_df = res$parameter[2] ,p = res$p.value), 4)
+
+        output$homogenity_table <- renderDT(dt)
+        output$homogenity_method_results <- renderUI(
+          tagList(
+            h4('Com um intervalo de confiança de ', ci*100,'%:'),
+            h4(round(res$conf.int[1], 4), round(res$conf.int[2], 4)), br(),
+            if(round(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+               '. Assim sugere que ',strong('há diferênças significantes'),' entre as duas variâncias')
+            else if(1 - ci < res$p.value) h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância', 1 - ci),
+               '. Assim sugere que ',strong('não há diferênças significantes'),' entre as duas variâncias')
+            else h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+               '. Assim sugere que ',strong('há diferênças significantes'),' entre as duas variâncias')
+          )
+        )
       }
     }
     else if(choosen == 'bartlett_test'){
       res <- bartlett.test(Dados ~ Classificação, data = values$c_data_info)
       output$homogenity_method_name <- renderUI(h3('Teste de Bartlett para comparação múltiplas variáveis'))
-      output$homogenity_table <- renderDT(data.frame(F = res$statistic, df = res$parameter, p = res$p.value))
+      output$homogenity_table <- renderDT(round(data.frame(F = res$statistic, df = res$parameter, p = res$p.value)), 4)
+      output$homogenity_method_results <- renderUI(
+        tagList(
+           if(round(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+                                             '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
+           else if(1 - ci < res$p.value) h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
+                                       '. Assim sugere que ',strong('não há diferênças significantes'),' entre as variâncias das variáveis')
+           else h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+                   '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
+        )
+      )
+
     }
     else if(choosen == 'levene_test'){
       output$homogenity_method_name <- renderUI(h3('Teste de Levene para comparação múltiplas variáveis'))
-      output$homogenity_table <- renderDT(as.data.frame(leveneTest(Dados ~ Classificação, data = values$c_data_info)))
+      res <- leveneTest(Dados ~ Classificação, data = values$c_data_info)
+      output$homogenity_table <- renderDT(round(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), 4))
+      output$homogenity_method_results <- renderUI(
+        tagList(
+           if(round(res$`Pr(>F)`, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+                                             '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
+           else if(1 - ci < res$`Pr(>F)`) h4('O valor de p = ', strong(round(res$`Pr(>F)`, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
+                                       '. Assim sugere que ',strong('não há diferênças significantes'),' entre as variâncias das variáveis')
+           else h4('O valor de p = ', strong(round(res$`Pr(>F)`, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+                   '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
+        )
+      )
     }
     else if(choosen == 'fk_test'){
       res <- fligner.test(weight ~ group, data = PlantGrowth)
       output$homogenity_method_name <- renderUI(h3('Teste de Fligner-Killeen para comparação múltiplas variáveis'))
-      output$homogenity_table <- renderDT(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value))
-
+      output$homogenity_table <- renderDT(round(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), 4))
+      output$homogenity_method_results <- renderUI(
+        tagList(
+           if(round(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+                                             '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
+           else if(1 - ci < res$p.value) h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
+                                       '. Assim sugere que ',strong('não há diferênças significantes'),' entre as variâncias das variáveis')
+           else h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+                   '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
+        )
+      )
     }
+  })
+
+  observeEvent(input$load_esfericity, {
+
+    output$sphericity_results <- renderUI(
+      tagList(
+        h4('Teste de Esfericidade de Mauchly'),
+        DTOutput('maunchly_test'),
+        h4('Correções de esfericidade'),
+        DTOutput('sphericity_corrections')
+      )
+    )
+
+    dt <- values$c_data_info
+    dt$id <- seq(values$nrow)
+    res <- anova_test(data = dt, dv = Dados, wid = id, within = Classificação)
+    output$maunchly_test <- renderDT(res$`Mauchly's Test for Sphericity`)
+    output$sphericity_corrections <- renderDT(res$`Sphericity Corrections`)
   })
 
   observeEvent(input$load_bidimensional,{
@@ -560,6 +630,9 @@ server <- function (input, output, session){
     options$ancova_sumsq <- input$ancova_sumsq
   }
 
+    #Homogenity
+    # options$homogenity_ci <- input$homogenity_ci
+
     #Gráfico em Mesh
     { options$examp_select_mesh <- input$examp_select_mesh
     options$checkbox_mesh <- input$checkbox_mesh }
@@ -928,7 +1001,7 @@ server <- function (input, output, session){
           inputId = 'transform_bi_variable',
           label = 'Escolha a variavel para ser plotada: ',
           choices = names(values$bidimensional_data),
-          selected = options$transform_bi_variable
+          selected = ''
         ),
         actionButton("load_transform_bi",
                      strong('Carregue!'),
@@ -944,13 +1017,13 @@ server <- function (input, output, session){
           inputId = 'ancova_variable',
           label = 'Escolha a variavel dependente: ',
           choices = names(values$bidimensional_data),
-          selected = options$anova_variable
+          selected = ''
         ),
         selectInput(
           inputId = 'ancova_group_variable',
           label = 'Escolha a variavel independente: ',
           choices = names((values$bidimensional_data)),
-          selected = options$anova_group_variable
+          selected = ''
         ),
         actionButton("load_anova",
                      strong('Carregue!'),
@@ -967,19 +1040,19 @@ server <- function (input, output, session){
           inputId = 'ancova_variable',
           label = 'Escolha a variavel dependente: ',
           choices = names(values$bidimensional_data),
-          selected = options$ancova_variable
+          selected = ''
         ),
         selectInput(
           inputId = 'ancova_covariable',
           label = 'Escolha a covariavel: ',
           choices = names((values$bidimensional_data)),
-          selected = options$ancova_covariable
+          selected = ''
         ),
         selectInput(
           inputId = 'ancova_group_variable',
           label = 'Escolha a variavel independente: ',
           choices = names((values$bidimensional_data)),
-          selected = options$ancova_group_variable
+          selected = ''
         ),
         actionButton("load_ancova",
                      strong('Carregue!'),
