@@ -29,7 +29,6 @@ get_bin_freq <- function (data_info, bins = NULL, min = NULL, max = NULL, algori
     dados <- dados[1,]
 
     data <- data.frame(Dados = NULL, Classificação = NULL, Freq = NULL)
-    # names(data) <- c('Dados', 'Classificação', 'Freq')
 
     for (i in  seq(length(freq))){
       data <- rbind(data, data.frame(Dados = dados[i], Freq = freq[i], Classificação = names(dados)[i]))
@@ -114,7 +113,7 @@ setAncovaValues <- function (values, options){
   group1 <- options$ancova_group_variable
 
   dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
-  values$names_bi <- name <- names(dt)
+  values$names_bi <- names(dt)
   names(dt) <- c('vard', 'cov', 'vari')
   values$data_info_bi <- dt
 }
@@ -160,4 +159,14 @@ posthoc_table <- function (values, options){
   posthoc$p.adj <- round(posthoc$p.adj, 4)
   names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
   posthoc
+}
+
+
+ftest <- function (first, sec, data){
+  data <- data.frame(data[which(data$`Classificação` == first | data$`Classificação` == sec),]$Dados, data[which(data$Classificação == first | data$Classificação == sec),]$`Classificação`)
+  names(data) <- c('Dados', 'Classificacao')
+
+  res <- var.test(Dados ~ Classificacao, data = data)
+  res <- data.frame(F = res$statistic,Num_df = res$parameter[1], Denom_df = res$parameter[2] ,p = res$p.value)
+
 }

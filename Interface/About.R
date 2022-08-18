@@ -9,7 +9,7 @@ about_page <- function (){
                      bem como a tomada de decisão orientada por dados. Pode ser definida como um conjunto de estratégias, ferramentas e técnicas para coleta, transformação e análise de dados realizadas por
                      equipes multidisciplinares formadas por pesquisadores com conhecimento substantivo do problema em análise, estatístico, matemáticos e cientistas da computação.
 '),
-                    actionButton('tutorial_button', 'Ver artigo com descrição do protótipo'),
+                    actionButton('tutorial_button', 'Ver tutorial'),
                     br(), br(),
                     a('Download Tutorial', href = 'Shiny Data Visualization - Tutorial.pdf', target = "_blank"),
                     h4(strong('Equipe de Desenvolvedores')),

@@ -36,12 +36,15 @@ source('Interface/DotPlot2D.R')
 source('Interface/Density2D.R')
 source('Interface/ErrorPlot.R')
 source('Interface/AvaliandoNorm.R')
+source('Interface/Homogeneity_of_Variance.R')
+source('Interface/Assumption_of_sphericity.R')
 source('Interface/Histogram3D.R')
 source('Interface/Density3D.R')
 source('Interface/DotPlot3D.R')
 source('Interface/BarPlot3D.R')
 source('Interface/ImportBidimensional.R')
 source('Interface/ANCOVA.R')
+source('Interface/ANOVA.R')
 source('Interface/ImportTridimensional.R')
 source('Interface/Mesh.R')
 source('Interface/Config.R')
@@ -106,8 +109,8 @@ tags$style(HTML("
                tabPanel('Checando os dados',
                         tabsetPanel(
                           check_norm_page(),
-                          tabPanel('Homogeneidade  das variâncias'),
-                          tabPanel('Avaliando a esfericidade'),
+                          homogenity_var_page(),
+                          sphericity_page(),
                           tabPanel('Transformando os dados para normalidade')
                         )
                ),
@@ -130,7 +133,9 @@ tags$style(HTML("
                tabPanel('Comparando multiplas médias',
                         tabsetPanel(
                           ancova_page(),
-                          tabPanel('ANOVA')
+                          anova_page(),
+                          tabPanel('ANCOVA repetida'),
+                          tabPanel('MANOVA')
                         )
                ),
     ),

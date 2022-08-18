@@ -6,7 +6,7 @@ import_tridimensional_page <- function (){
                                   label = 'Escolha a próxima ação:',
                                   choices = c(
                                     " " = "null",
-                                    "Importar arquivo excel" = "import",
+                                    "Importar arquivo .xlsx" = "import",
                                     "Usar um arquivo exemplo" = "example"
                                   ),
                                   selected = "null"

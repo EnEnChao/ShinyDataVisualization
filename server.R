@@ -22,6 +22,7 @@ server <- function (input, output, session){
   output$title_name_insert <- renderUI(h2(strong('Digite os dados:')))
 
   output$table_import_bi_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
+  output$homogenity_results <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$table_transform_bi_data_output <- renderUI(tagList(h2(strong('Escolha a variável na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$title_name_insert_bi <- renderUI(h2(strong('Digite os dados:')))
 
@@ -148,6 +149,44 @@ server <- function (input, output, session){
 
   })
 
+  observeEvent(input$load_homogenity,{
+
+   output$homogenity_results <- renderUI(tagList(
+      uiOutput('homogenity_method_name'),
+      DTOutput('homogenity_table'),
+      uiOutput('homogenity_method_results')
+    ))
+
+    choosen <- input$homogenity_tests
+
+    if(choosen == 'f_test'){
+      first <- input$first_var_f_test
+      sec <- input$sec_var_f_test
+
+      if(first == sec)
+        output$homogenity_results <- renderUI(h4('Erro: Foi selecionada variáveis repetidas'))
+      else{
+        output$homogenity_method_name <- renderUI(h3('Teste F para comparação de duas variáveis'))
+        output$homogenity_table <- renderDT(ftest(first, sec, values$c_data_info))
+      }
+    }
+    else if(choosen == 'bartlett_test'){
+      res <- bartlett.test(Dados ~ Classificação, data = values$c_data_info)
+      output$homogenity_method_name <- renderUI(h3('Teste de Bartlett para comparação múltiplas variáveis'))
+      output$homogenity_table <- renderDT(data.frame(F = res$statistic, df = res$parameter, p = res$p.value))
+    }
+    else if(choosen == 'levene_test'){
+      output$homogenity_method_name <- renderUI(h3('Teste de Levene para comparação múltiplas variáveis'))
+      output$homogenity_table <- renderDT(as.data.frame(leveneTest(Dados ~ Classificação, data = values$c_data_info)))
+    }
+    else if(choosen == 'fk_test'){
+      res <- fligner.test(weight ~ group, data = PlantGrowth)
+      output$homogenity_method_name <- renderUI(h3('Teste de Fligner-Killeen para comparação múltiplas variáveis'))
+      output$homogenity_table <- renderDT(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value))
+
+    }
+  })
+
   observeEvent(input$load_bidimensional,{
     output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
     output$ancova_statistics <- renderUI(p(''))
@@ -161,7 +200,7 @@ server <- function (input, output, session){
       if(input$examp_select_bi == 'anxiety') {
         data("anxiety", package = "datarium")
         dt <- data.frame(anxiety)
-        names(dt) <- c('Id', 'Grupo', 'Var Dep', 'T2', 'Cov')
+        names(dt) <- c('Id', 'Grupo', 'T1', 'T2', 'T3')
       }
       if(input$examp_select_bi == 'escolaridade'){
         dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
@@ -835,90 +874,131 @@ server <- function (input, output, session){
   output$summary_text <- renderDT(summaryDataTable(values, options))
 
     #----------- GRÁFICOS -----------
-  { output$plotly_linear_histogram <- renderPlotly(renderHistogramLinear(values, options))
+  {
+    output$plotly_linear_histogram <- renderPlotly(renderHistogramLinear(values, options))
 
-  output$plot_histogram <- renderPlot(renderHistogramRidges(values, options))
+    output$plot_histogram <- renderPlot(renderHistogramRidges(values, options))
 
-  output$plotly_box_plot <- renderPlotly(renderBoxPlot(values, options))
+    output$plotly_box_plot <- renderPlotly(renderBoxPlot(values, options))
 
-  output$plotly_violin <- renderPlotly(renderViolinPlot(values, options))
+    output$plotly_violin <- renderPlotly(renderViolinPlot(values, options))
 
-  output$plotly_dot_plot <- renderPlotly(renderDotPlot(values, options))
+    output$plotly_dot_plot <- renderPlotly(renderDotPlot(values, options))
 
-  output$plotly_beeswarm_dot_plot <- renderPlotly(renderBeeSwarm(values, options))
+    output$plotly_beeswarm_dot_plot <- renderPlotly(renderBeeSwarm(values, options))
 
-  output$plotly_density_plot <- renderPlotly(renderDensityPlot(values, options))
+    output$plotly_density_plot <- renderPlotly(renderDensityPlot(values, options))
 
-  output$plotly_error_bar <- renderPlotly(renderErrorBar(values, options))
+    output$plotly_error_bar <- renderPlotly(renderErrorBar(values, options))
 
-  output$plotly_norm_density <- renderPlotly(renderCheckNormDensity(values, options))
-  output$plotly_norm_qq <- renderPlotly(renderCheckNormQQ(values, options))
-  output$check_norm_table <- renderDT(renderCheckNormTable(values, options))
+    output$plotly_norm_density <- renderPlotly(renderCheckNormDensity(values, options))
+    output$plotly_norm_qq <- renderPlotly(renderCheckNormQQ(values, options))
+    output$check_norm_table <- renderDT(renderCheckNormTable(values, options))
 
-  output$plotly_histogram3d <- renderPlotly(renderHistogram3d(values, options))
+    output$plotly_histogram3d <- renderPlotly(renderHistogram3d(values, options))
 
-  output$plotly_density3d <- renderPlotly(renderDensityPlot3d(values, options))
+    output$plotly_density3d <- renderPlotly(renderDensityPlot3d(values, options))
 
-  output$plotly_scatter3d <- renderPlotly(renderScatterPlot3d(values, options))
+    output$plotly_scatter3d <- renderPlotly(renderScatterPlot3d(values, options))
 
-  output$plotly_beeswarm3d <- renderPlotly(renderBeeSwarm3d(values, options))
+    output$plotly_beeswarm3d <- renderPlotly(renderBeeSwarm3d(values, options))
 
-  output$plotly_bar3d <- renderPlotly(barHistogram3d(values, options))
+    output$plotly_bar3d <- renderPlotly(barHistogram3d(values, options))
 
-  output$transform_bi_table <- renderUI(
-    tagList(
-      selectInput(
-        inputId = 'transform_bi_variable',
-        label = 'Escolha a variavel para ser plotada: ',
-        choices = names(values$bidimensional_data),
-        selected = options$transform_bi_variable
-      ),
-      actionButton("load_transform_bi",
-                   strong('Carregue!'),
-                   style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                   width = "80%",
-                   class = "btn-info"
+    output$var_f_test <- renderUI(
+      tagList(
+        selectInput(
+          inputId = 'first_var_f_test',
+          label = 'Escolha o primeiro grupo',
+          choices = names(values$data_info),
+          selected = ''
+        ),
+        selectInput(
+          inputId = 'sec_var_f_test',
+          label = 'Escolha o segundo grupo',
+          choices = names(values$data_info),
+          selected = ''
+        )
       )
     )
-  )
-  output$ancova_variables <- renderUI(
-    tagList(
-      selectInput(
-        inputId = 'ancova_variable',
-        label = 'Escolha a variavel dependente: ',
-        choices = names(values$bidimensional_data),
-        selected = options$ancova_variable
-      ),
-      selectInput(
-        inputId = 'ancova_covariable',
-        label = 'Escolha a covariavel: ',
-        choices = names((values$bidimensional_data)),
-        selected = options$ancova_covariable
-      ),
-      selectInput(
-        inputId = 'ancova_group_variable',
-        label = 'Escolha a variavel independente: ',
-        choices = names((values$bidimensional_data)),
-        selected = options$ancova_group_variable
-      ),
-      actionButton("load_ancova",
-                   strong('Carregue!'),
-                   style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                   width = "80%",
-                   class = "btn-info"
+
+    output$transform_bi_table <- renderUI(
+      tagList(
+        selectInput(
+          inputId = 'transform_bi_variable',
+          label = 'Escolha a variavel para ser plotada: ',
+          choices = names(values$bidimensional_data),
+          selected = options$transform_bi_variable
+        ),
+        actionButton("load_transform_bi",
+                     strong('Carregue!'),
+                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                     width = "80%",
+                     class = "btn-info"
+        )
       )
-    ),
-  )
-
-  output$checkbox_mesh_ui <- renderUI(
-    checkboxGroupButtons(
-      inputId = "checkbox_mesh",
-      label = '',
-      choices = seq(options$num_sheets_imported_tri),
-      checkIcon = list(yes = tags$i(class = "fa fa-check-square", style = "color: steelblue"),
-                       no = tags$i(class = "fa fa-square-o", style = "color: steelblue"))
     )
-  )
+    output$anova_variables <- renderUI(
+      tagList(
+        selectInput(
+          inputId = 'ancova_variable',
+          label = 'Escolha a variavel dependente: ',
+          choices = names(values$bidimensional_data),
+          selected = options$anova_variable
+        ),
+        selectInput(
+          inputId = 'ancova_group_variable',
+          label = 'Escolha a variavel independente: ',
+          choices = names((values$bidimensional_data)),
+          selected = options$anova_group_variable
+        ),
+        actionButton("load_anova",
+                     strong('Carregue!'),
+                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                     width = "80%",
+                     class = "btn-info"
+        )
+      ),
+    )
 
-  output$plotly_mesh3d <- renderPlotly(renderMesh3D(values, options)) }
+    output$ancova_variables <- renderUI(
+      tagList(
+        selectInput(
+          inputId = 'ancova_variable',
+          label = 'Escolha a variavel dependente: ',
+          choices = names(values$bidimensional_data),
+          selected = options$ancova_variable
+        ),
+        selectInput(
+          inputId = 'ancova_covariable',
+          label = 'Escolha a covariavel: ',
+          choices = names((values$bidimensional_data)),
+          selected = options$ancova_covariable
+        ),
+        selectInput(
+          inputId = 'ancova_group_variable',
+          label = 'Escolha a variavel independente: ',
+          choices = names((values$bidimensional_data)),
+          selected = options$ancova_group_variable
+        ),
+        actionButton("load_ancova",
+                     strong('Carregue!'),
+                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
+                     width = "80%",
+                     class = "btn-info"
+        )
+      ),
+    )
+
+    output$checkbox_mesh_ui <- renderUI(
+      checkboxGroupButtons(
+        inputId = "checkbox_mesh",
+        label = '',
+        choices = seq(options$num_sheets_imported_tri),
+        checkIcon = list(yes = tags$i(class = "fa fa-check-square", style = "color: steelblue"),
+                         no = tags$i(class = "fa fa-square-o", style = "color: steelblue"))
+      )
+    )
+
+    output$plotly_mesh3d <- renderPlotly(renderMesh3D(values, options)) }
 }
