@@ -84,6 +84,7 @@ renderCheckNormTable <- function (values, options){
   ci <- 0.05
   data <- values$data_info
   fig <- data.frame(
+    values$names,
     sapply(data, function (x) signif(shapiro.test(x)$p.value, 4)),
     'Teste Shapiro-Wilk' = sapply(data, function (x) {
       p <- shapiro.test(x)$p.value
@@ -92,6 +93,7 @@ renderCheckNormTable <- function (values, options){
       else
         'Não normal'
     }),
+    values$names,
     sapply(data, function (x) signif(ks.test(x, 'pnorm')$p.value, 4)),
     sapply(data, function (x){
       p <- ks.test(x, 'pnorm')$p.value
@@ -101,7 +103,6 @@ renderCheckNormTable <- function (values, options){
         'Não normal'
     })
   )
-  names(fig) <- c('Teste Shapiro-Wilk', 'Decisão - teste Shapiro-Wilk', 'Teste Kolmogorov-Smirnov', 'Desisão - teste Kolmogorov-Smirnov')
   fig
 
 }

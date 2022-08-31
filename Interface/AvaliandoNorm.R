@@ -253,12 +253,8 @@ check_norm_page <- function (){
                ),
                tabPanel(title = 'Tabela de verificação de normalidade',
                         h3("Tabela de verificação de normalidade", style="text-align:center; font-size:50px;"),
-                      shinycssloaders::withSpinner(
-                        DTOutput('check_norm_table'),
-                        type = spinnerType,
-                        color = spinnerColor,
-                        size = spinnerSize
-                      )
+                        tags$head(tags$style(HTML(".cell-border-right{border-right: 1px solid #000}"))),
+                        DTOutput('check_norm_table')
                )
              )
            )

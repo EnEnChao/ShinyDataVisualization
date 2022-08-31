@@ -17,7 +17,28 @@ sphericity_page <- function (){
                      style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
                      width = "80%",
                      class = "btn-info"
-        )
+        ),
+        br(),
+        conditionalPanel(condition = 'input.load_esfericity >= 1',
+                                    pickerInput(
+                                      inputId = "sphericity_picker",
+                                      label = "Selecione os testes a serem mostrados",
+                                      choices = c(
+                                        'ANOVA' = 'anova',
+                                        'Teste de Mauchly' = 'mauchly',
+                                        'Correções' = 'corrections',
+                                        'Resultados' = 'results'
+                                      ),
+                                      selected = c('anova', 'mauchly', 'corrections', 'results'),
+                                      options = list(
+                                        `actions-box` = TRUE,
+                                        size = 10,
+                                        `selected-text-format` = "count > 3"
+                                      ),
+                                      multiple = TRUE
+                                    )
+        ),
+        uiOutput('sphericity_correc_anova')
       )
     )}
     ),

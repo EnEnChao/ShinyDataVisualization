@@ -243,18 +243,69 @@ server <- function (input, output, session){
 
     output$sphericity_results <- renderUI(
       tagList(
-        h4('Teste de Esfericidade de Mauchly'),
-        DTOutput('maunchly_test'),
-        h4('Correções de esfericidade'),
-        DTOutput('sphericity_corrections')
+        conditionalPanel(condition = 'input.sphericity_picker == ""',
+                         h3('Escolha uma ou mais tabelas para serem mostradas no controle de opções a direita')
+        ),
+        conditionalPanel(condition = 'input.sphericity_picker.includes("anova")',
+                         h3(strong('ANOVA')),
+                         DTOutput('sphericity_anova_test')
+        ),
+        conditionalPanel(condition = 'input.sphericity_picker.includes("mauchly")',
+                         h3(strong('Teste de Esfericidade de Mauchly')),
+                         DTOutput('maunchly_test')
+        ),
+        conditionalPanel(condition = 'input.sphericity_picker.includes("corrections")',
+                         h3(strong('Correções de esfericidade')),
+                         fluidRow(
+                           column(6,
+                                  h4('Correção Greenhouse-Geisser', align = 'center'),
+                                  DTOutput('sphericity_corrections_gg')
+                           ),
+                           column(6,
+                                  h4('Correção Huynh-Feldt', align = 'center'),
+                                  DTOutput('sphericity_corrections_hf')
+                           )
+                         )
+        ),
+        conditionalPanel(condition = 'input.sphericity_picker.includes("results")',
+                         h3(strong('Resultados:')),
+                         uiOutput('sphericity_statistics')
+        )
       )
     )
 
     dt <- values$c_data_info
     dt$id <- seq(values$nrow)
     res <- anova_test(data = dt, dv = Dados, wid = id, within = Classificação)
-    output$maunchly_test <- renderDT(res$`Mauchly's Test for Sphericity`)
-    output$sphericity_corrections <- renderDT(res$`Sphericity Corrections`)
+    if('anova' %in% input$sphericity_picker){
+        output$sphericity_correc_anova <- renderUI(selectInput(
+          'sphericity_correc_anova_2',
+          label = 'Escolha a correção para a tabela ANOVA: ',
+          choices = c('auto', 'GG', 'HF', 'none'),
+          selected = 'auto'
+        ))
+      correction <- input$sphericity_correc_anova_2
+      output$sphericity_anova_test <- renderDT(get_anova_table(res, correction = correction))
+    }
+
+    maunchly <- res$`Mauchly's Test for Sphericity`[2:3]
+    maunchly$Significância <- if(maunchly$p <= 1 - input$esfericity_ci) 'Significante' else 'Não Significante'
+    if('mauchly' %in% input$sphericity_picker) {
+      output$maunchly_test <- renderDT(maunchly)
+    }
+
+    if('corrections' %in% input$sphericity_picker) {
+      output$sphericity_corrections_gg <- renderDT(res$`Sphericity Corrections`[2:5])
+      output$sphericity_corrections_hf <- renderDT(res$`Sphericity Corrections`[6:9])
+    }
+    if('results' %in% input$sphericity_picker) {
+      output$sphericity_statistics <- renderUI(h4(
+        'Pelo teste de esfericidade de Maunchly, ', strong('p =', maunchly$p), '.', if(maunchly$p <= 1 - input$esfericity_ci)
+          h4('As variâncias das diferenças entre os grupo ',strong('não são iguais'),' assim não podemos assumir a esfericidade.')
+        else h4('As variâncias das diferenças entre os grupo',strong('são iguais'),' conforme o intervalo de confiança, assim podemos assumir
+        a esfericidade.'), br())
+      )
+    }
   })
 
   observeEvent(input$load_bidimensional,{
@@ -966,7 +1017,27 @@ server <- function (input, output, session){
 
     output$plotly_norm_density <- renderPlotly(renderCheckNormDensity(values, options))
     output$plotly_norm_qq <- renderPlotly(renderCheckNormQQ(values, options))
-    output$check_norm_table <- renderDT(renderCheckNormTable(values, options))
+
+    output$check_norm_table_names <- renderDT(data.frame(Dados = values$names))
+    output$check_norm_table <- renderDT(
+      datatable(
+        renderCheckNormTable(values, options),rownames = FALSE,
+        container = withTags(table(
+          class = 'display',
+          thead(tr(
+            th(colspan = 3, 'Shapiro-Wilk'),
+            th(colspan = 3, 'Kolmogorov-Smirnov')
+          ), tr(
+            lapply(rep(c('Dados', 'p', 'Decisão'), 2), th)
+          ))
+        )),
+        options = list(initComplete = JS(
+          "function(settings, json) {",
+          "var headerBorder = [0,1];",
+          "var header = $(this.api().table().header()).find('tr:first > th').filter(function(index) {return $.inArray(index,headerBorder) > -1 ;}).addClass('cell-border-right');",
+          "}"),columnDefs=list(list(className="dt-right cell-border-right",targets=2))
+        ))
+    )
 
     output$plotly_histogram3d <- renderPlotly(renderHistogram3d(values, options))
 
