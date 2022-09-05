@@ -22,7 +22,8 @@ server <- function (input, output, session){
   output$title_name_insert <- renderUI(h2(strong('Digite os dados:')))
 
   output$table_import_bi_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
-  output$homogenity_results <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
+  output$homogenity_results <- renderUI(tagList(h2(strong('Escolha os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
+  output$transform_norm_results <- renderUI(tagList(h2(strong('Escolha os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$table_transform_bi_data_output <- renderUI(tagList(h2(strong('Escolha a variável na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$title_name_insert_bi <- renderUI(h2(strong('Digite os dados:')))
 
@@ -308,6 +309,54 @@ server <- function (input, output, session){
     }
   })
 
+  observeEvent(input$load_transform_norm, {
+    output$transform_norm_results <- renderUI(tagList(
+      uiOutput('transform_norm_results_method_name'),
+      plotlyOutput('transform_norm_results_plotly'),
+      uiOutput('transform_norm_results_method_statistics'),
+      downloadButton('transform_norm_download','Baixe a nova tabela!')
+    ))
+
+    choosen <- paste0(input$transform_norm_distributions, ' - ', input$transform_norm_distributions_skewed)
+    # output$transform_norm_results_method_name <- renderUI(h3(choosen))
+    data <- values$c_data_info
+    df <- data
+    logy <- if(input$transform_norm_distributions_logy == 1 || input$transform_norm_distributions_logy == -1) 10 else input$transform_norm_distributions_logy
+    df$Dados <- switch(
+      input$transform_norm_distributions,
+      'none' = data$Dados,
+      'sqrt' = if(input$transform_norm_distributions_skewed) sqrt(data$Dados) else sqrt(max(data$Dados + 1) - data$Dados),
+      'log10' = if(input$transform_norm_distributions_skewed) log10(data$Dados) else log10(max(data$Dados + 1) - data$Dados),
+      'logy' = if(input$transform_norm_distributions_skewed) log(data$Dados, logy) else log(max(data$Dados + 1) - data$Dados, logy),
+      '1/x' = if(input$transform_norm_distributions_skewed) 1/(data$Dados) else 1/(max(data$Dados + 1) - data$Dados)
+    )
+
+    fig <- ggplotly(
+      ggdensity(data = df, x = "Dados", color = 'Classificação')
+        # + stat_overlay_normal_density(linetype = "dashed")
+    )
+    output$transform_norm_results_plotly <- renderPlotly(fig)
+    if (input$transform_norm_distributions == 'none')
+      output$transform_norm_results_method_statistics <- renderUI(
+         h4('O coeficiente de distorção é : ', round(skewness(data$Dados, na.rm = TRUE), 4))
+      )
+    else
+      output$transform_norm_results_method_statistics <- renderUI(tagList(
+         h4('O coeficiente de distorção é : ', round(skewness(data$Dados, na.rm = TRUE), 4)),
+         h4('O novo coeficiente de distorção é : ', round(skewness(df$Dados, na.rm = TRUE), 4))
+      ))
+
+    # Download the new df
+    dfDownload <- values$data_info
+    for (i in values$names)
+      dfDownload[,i] <- df$Dados[which(df$`Classificação` == i)]
+
+    output$transform_norm_download <- downloadHandler(
+      filename = function() { "transformed_df.xlsx"},
+      content = function(file) {write_xlsx(dfDownload, path = file)}
+    )
+  })
+
   observeEvent(input$load_bidimensional,{
     output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
     output$ancova_statistics <- renderUI(p(''))
@@ -465,11 +514,19 @@ server <- function (input, output, session){
 
     values$usr_title <- paste0(input$title_id_import_tri)
     if(input$mesh_file_selector == 'example') {
-       for (i in 1:20){
-        file <- paste0('Data/Machine Learning/', options$examp_select_mesh, '/', options$examp_select_mesh, '_', i, '.txt')
-        values$data_info_tri[[i]] <- as.matrix(data.frame(read_table(file)))
+      if(input$examp_select_mesh == 'gas') {
+        options$num_sheets_imported_tri <- 5
+        values$data_info_tri <- sapply(seq(options$num_sheets_imported_tri), function(x) {
+          as.matrix(data.frame(read_excel(path = 'Data/DADOS_MESH_3D.xlsx', sheet = x)))
+        })
       }
-      options$num_sheets_imported_tri <- 20
+      else {
+        options$num_sheets_imported_tri <- 20
+        for (i in 1:options$num_sheets_imported_tri) {
+          file <- paste0('Data/Machine Learning/', options$examp_select_mesh, '/', options$examp_select_mesh, '_', i, '.txt')
+          values$data_info_tri[[i]] <- as.matrix(data.frame(read_table(file)))
+        }
+      }
       output$mesh_insert_result <- renderUI(
           h3(strong('Arquivo carregado: \"', input$examp_select_mesh,' - ', values$usr_title, '\"'))
          )

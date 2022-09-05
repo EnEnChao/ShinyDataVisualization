@@ -6,6 +6,7 @@ if (!(require(shinydashboard))){install.packages("shinydashboard"); require(shin
 if (!(require(shinyWidgets))){install.packages("shinyWidgets"); require(shinyWidgets, quietly=TRUE)}
 if (!(require(plotly))){install.packages("plotly"); require(plotly, quietly=TRUE)}
 if (!(require(openxlsx))){install.packages("openxlsx"); require(openxlsx, quietly=TRUE)}
+if (!(require(writexl))){install.packages("writexl"); require(writexl, quietly=TRUE)}
 if (!(require(vtable))){install.packages("vtable"); require(vtable, quietly=TRUE)}
 if (!(require(ggridges))){install.packages("ggridges"); require(ggridges, quietly=TRUE)}
 if (!(require(beeswarm))){install.packages("beeswarm"); require(beeswarm, quietly=TRUE)}
@@ -21,6 +22,7 @@ if (!(require(multcomp))){install.packages("multcomp"); require(multcomp, quietl
 if (!(require(emmeans))){install.packages("emmeans"); require(emmeans, quietly=TRUE)}
 if (!(require(readxl))){install.packages("readxl"); require(readxl, quietly=TRUE)}
 if (!(require(slickR))){install.packages("slickR"); require(slickR, quietly=TRUE)}
+if (!(require(moments))){install.packages("moments"); require(moments, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')
@@ -35,9 +37,10 @@ source('Interface/Violin.R')
 source('Interface/DotPlot2D.R')
 source('Interface/Density2D.R')
 source('Interface/ErrorPlot.R')
-source('Interface/AvaliandoNorm.R')
+source('Interface/AssessingNorm.R')
 source('Interface/Homogeneity_of_Variance.R')
 source('Interface/Assumption_of_sphericity.R')
+source('Interface/TransformingNormality.R')
 source('Interface/Histogram3D.R')
 source('Interface/Density3D.R')
 source('Interface/DotPlot3D.R')
@@ -111,7 +114,7 @@ tags$style(HTML("
                           check_norm_page(),
                           homogenity_var_page(),
                           sphericity_page(),
-                          tabPanel('Transformando os dados para normalidade')
+                          transform_norm_page()
                         )
                ),
     ),

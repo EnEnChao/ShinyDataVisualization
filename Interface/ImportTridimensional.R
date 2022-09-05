@@ -15,10 +15,11 @@ import_tridimensional_page <- function (){
                                        selectInput('examp_select_mesh',
                                                    'Escolha os dados de exemplo',
                                                    choices = c(
+                                                     'Gas' = 'gas',
                                                      'zoneA' = 'zoneA',
                                                      'zoneB' = 'zoneB'
                                                    ),
-                                                   selected = 'zoneA'
+                                                   selected = 'gas'
                                        )
                       ),
                   conditionalPanel('input.mesh_file_selector == "import"',
