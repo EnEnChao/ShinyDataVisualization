@@ -13,10 +13,11 @@ import_bidimensional_page <- function (){
                          ),
                          selected = "null"
              ),
-             conditionalPanel(condition = "input.file_selector_bi == 'import'", {
+             conditionalPanel(condition = "input.file_selector_bi == 'import'",
                #Arquivo a ser carregado
-               fileInput(inputId = "file_imported_bi", "Insira o arquivo", accept = '.xlsx')
-             }),
+               fileInput(inputId = "file_imported_bi", "Insira o arquivo", accept = '.xlsx'),
+               switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
+             ),
              conditionalPanel(condition = "input.file_selector_bi == 'example'", {
                selectInput('examp_select_bi',
                            'Escolha os dados de exemplo',
@@ -55,6 +56,7 @@ insert_bidimensional <- function (){
              h3(strong('Digite ou cole na planilha a esquerda:')),
              #Caso tenha escolhido alguma das opções, aparece o botão grande " Carregue! "
              textInput('title_id_insert_bi', 'Digíte o título', 'Título'),
+             switchInput(inputId = 'inserted_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE),
              actionButton("load_spreadsheet_bi",
                           strong('Carregue!'),
                           style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
@@ -74,29 +76,4 @@ insert_bidimensional <- function (){
            ),
   column(12,hr())
 )
-}
-
-transform_bidimensional <- function (){
-  tabPanel('Transformar seus dados',
-           column(4,
-                  tabPanel(
-                    h3(strong("Controle de opções:"), align = 'center'),
-                    {accordion(
-                      id = 'accordion_ancova',
-                      accordionItem(
-                        title = 'Variáveis',
-                        status = accordionStatus,
-                        collapsed = FALSE,
-                        uiOutput('transform_bi_table')
-                      )
-                    )}
-                  )
-           ),
-           column(8,
-                  tabPanel(
-                    column(12, uiOutput('title_name_transform_bi'), align = 'center'),
-                    uiOutput("table_transform_bi_data_output")
-                  )
-           )
-  )
 }

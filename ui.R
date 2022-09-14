@@ -23,6 +23,7 @@ if (!(require(emmeans))){install.packages("emmeans"); require(emmeans, quietly=T
 if (!(require(readxl))){install.packages("readxl"); require(readxl, quietly=TRUE)}
 if (!(require(slickR))){install.packages("slickR"); require(slickR, quietly=TRUE)}
 if (!(require(moments))){install.packages("moments"); require(moments, quietly=TRUE)}
+if (!(require(coin))){install.packages("coin"); require(coin, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')
@@ -46,6 +47,8 @@ source('Interface/Density3D.R')
 source('Interface/DotPlot3D.R')
 source('Interface/BarPlot3D.R')
 source('Interface/ImportBidimensional.R')
+source('Interface/testT.R')
+source('Interface/wilcoxonTest.R')
 source('Interface/ANCOVA.R')
 source('Interface/ANOVA.R')
 source('Interface/ImportTridimensional.R')
@@ -83,7 +86,7 @@ tags$style(HTML("
     '',
     home_page(),
     about_page(),
-    navbarMenu('Dados unidimensionais',
+    navbarMenu('Gráficos Básicos',
                tabPanel('Carregue seus dados',
                         tabsetPanel(
                             import_unidimensional_page(),
@@ -109,6 +112,14 @@ tags$style(HTML("
                           bar3D_page()
                         )
                ),
+    ),
+    navbarMenu('Testes Estatísticos',
+               tabPanel('Carregue seus dados',
+                        tabsetPanel(
+                          import_bidimensional_page(),
+                          insert_bidimensional()
+                        )
+               ),
                tabPanel('Checando os dados',
                         tabsetPanel(
                           check_norm_page(),
@@ -117,19 +128,10 @@ tags$style(HTML("
                           transform_norm_page()
                         )
                ),
-    ),
-    navbarMenu('Dados bidimensionais',
-               tabPanel('Carregue seus dados',
-                        tabsetPanel(
-                          import_bidimensional_page(),
-                          insert_bidimensional()
-                        )
-               ),
-               transform_bidimensional(),
                tabPanel('Comparando duas médias',
                         tabsetPanel(
-                          tabPanel('Teste - T'),
-                          tabPanel('Teste Wilcoxon'),
+                          test_t_page(),
+                          wilcoxon_t_page(),
                           tabPanel('Teste do sinal (Sign test)')
                         )
                ),
@@ -142,7 +144,7 @@ tags$style(HTML("
                         )
                ),
     ),
-    navbarMenu('Dados tridimensionais',
+    navbarMenu('Gráficos 3D em Mesh',
                import_tridimensional_page(),
                mesh_page()
     ),

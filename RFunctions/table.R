@@ -7,6 +7,15 @@ consolidated_data <- function (data_info){
     }
   return(data_aux)
 }
+#
+# flat_data <- function (c_data_info){
+#   names <- names(table(c_data_info[,2]))
+#   data_aux <- data.frame()
+#   sapply(names, function (x){
+#    data_aux$x <- c_data_info[which(c_data_info[,2] == x,1), 1]
+#   })
+# }
+#
 
 setUniValues <- function (values, data){
   values$nrow <- nrow(data)
@@ -82,21 +91,23 @@ ellipse_data <- function (data_info, colnames, ci){
 
 renderCheckNormTable <- function (values, options){
   ci <- 0.05
-  data <- values$data_info
+  data <- data.frame(values$bidimensional_data[options$assessing_norm_vi], values$bidimensional_data[options$assessing_norm_vd])
+  colnames(data) <- c('Classificação', 'Dados')
+  names <-  names(table(data$`Classificação`))
   fig <- data.frame(
-    values$names,
-    sapply(data, function (x) signif(shapiro.test(x)$p.value, 4)),
-    'Teste Shapiro-Wilk' = sapply(data, function (x) {
-      p <- shapiro.test(x)$p.value
+    names,
+    sapply(names, function (x) signif(shapiro.test(data$Dados[which(data$`Classificação` == x)])$p.value, 4)),
+    'Teste Shapiro-Wilk' = sapply(names, function (x) {
+      p <- shapiro.test(data$Dados[which(data$`Classificação` == x)])$p.value
       if(p > ci)
         'Normal'
       else
         'Não normal'
     }),
-    values$names,
-    sapply(data, function (x) signif(ks.test(x, 'pnorm')$p.value, 4)),
-    sapply(data, function (x){
-      p <- ks.test(x, 'pnorm')$p.value
+    names,
+    sapply(names, function (x) signif(ks.test(data$Dados[which(data$`Classificação` == x)], 'pnorm')$p.value, 4)),
+    sapply(names, function (x){
+      p <- ks.test(data$Dados[which(data$`Classificação` == x)], 'pnorm')$p.value
             if(p > ci)
         'Normal'
       else
@@ -129,7 +140,7 @@ ancova_table <- function (values, options){
     rownames(dt) <- c(values$names_bi[c(2, 3)], 'Residuos')
   else
     rownames(dt) <- c('Intercept',values$names_bi[c(2, 3)], 'Residuos')
-  dt <- round(dt, 4)
+  dt <- signif(dt, 4)
 
   return(dt)
 }
@@ -137,14 +148,14 @@ ancova_table <- function (values, options){
 levene_table <- function (values, options){
   levene <- leveneTest(aov(vard ~ cov + vari, data = values$data_info_bi)$residuals ~ values$data_info_bi$vari)
   levene <- data.frame(F = levene$`F value`[1], Df1 = levene$Df[1], Df2 = levene$Df[2], p = levene$`Pr(>F)`[1])
-  levene <- round(levene, 4)
+  levene <- signif(levene, 4)
   rownames(levene) <- 'Teste de Levene'
   levene
 }
 shapiro_table <- function (values, options){
   shapiro <- shapiro.test(aov(vard ~ cov + vari, data = values$data_info_bi)$residuals)
   shapiro <- data.frame(Estatística = shapiro$statistic, p = shapiro$p.value)
-  shapiro <- round(shapiro, 4)
+  shapiro <- signif(shapiro, 4)
   rownames(shapiro) <- 'Teste de Shapiro-Wilk'
   shapiro
 }
@@ -155,9 +166,9 @@ posthoc_table <- function (values, options){
     dt %>% emmeans_test(vard ~ vari, covariate = cov, p.adjust.method = 'bonferroni')
   )
   posthoc <- posthoc[,-c(1, 2)]
-  posthoc$statistic <- round(posthoc$statistic, 4)
-  posthoc$p <- round(posthoc$p, 4)
-  posthoc$p.adj <- round(posthoc$p.adj, 4)
+  posthoc$statistic <- signif(posthoc$statistic, 4)
+  posthoc$p <- signif(posthoc$p, 4)
+  posthoc$p.adj <- signif(posthoc$p.adj, 4)
   names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
   posthoc
 }

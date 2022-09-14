@@ -8,8 +8,8 @@ mesh_page <- function (){
                   uiOutput('checkbox_mesh_ui')
            ),
            column(12,
-             h3(strong("Controle do layout:"), align = 'center'),
-             h5('Em desenvolvimento.', align = 'center'),
+             # h3(strong("Controle do layout:"), align = 'center'),
+             # h5('Em desenvolvimento.', align = 'center'),
                   # {
                   #        column(12,
                   #        accordion(

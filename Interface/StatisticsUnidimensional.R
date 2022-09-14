@@ -7,20 +7,19 @@ statistics_unidimensional_page <- function (){
                                  HTML("table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
                                      background-color: #506f8f !important; }")
                                )),
+                              h2(strong('Dados estatísticos:')),
+                               shinycssloaders::withSpinner(
+                                 DTOutput('summary_text'),
+                                             type = spinnerType,
+                                             color = spinnerColor,
+                                             size = spinnerSize
+                               ),
                                shinycssloaders::withSpinner(
                                  DTOutput("summary_data_table"),
                                              type = spinnerType,
                                              color = spinnerColor,
                                              size = spinnerSize
                                ),
-                               br(),
-                               h2(strong('Dados estatísticos:')),
-                               shinycssloaders::withSpinner(
-                                 DTOutput('summary_text'),
-                                             type = spinnerType,
-                                             color = spinnerColor,
-                                             size = spinnerSize
-                               )
                       ),
                        column(1,
                               column(3,

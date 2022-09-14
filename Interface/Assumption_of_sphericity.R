@@ -9,17 +9,18 @@ sphericity_page <- function (){
         title = 'Testes estatísticos',
         status = accordionStatus,
         collapsed = FALSE,
+        uiOutput('sphericity_variables'),
         numericInput('esfericity_ci', 'Escolha o intervalo de confiança: ',
                             min = 0, max = 1, value = 0.95, step = 0.01
         ),
-        actionButton("load_esfericity",
+        actionButton("load_sphericity",
                      strong('Carregue!'),
                      style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
                      width = "80%",
                      class = "btn-info"
         ),
         br(),
-        conditionalPanel(condition = 'input.load_esfericity >= 1',
+        conditionalPanel(condition = 'input.load_sphericity >= 1',
                                     pickerInput(
                                       inputId = "sphericity_picker",
                                       label = "Selecione os testes a serem mostrados",

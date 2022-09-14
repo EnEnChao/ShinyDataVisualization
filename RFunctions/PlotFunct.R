@@ -449,10 +449,11 @@ renderErrorBar <- function(values, options) {
   return(fig)
 }
 
-renderCheckNormDensity <- function (values, options){
-  data <- values$c_data_info
+renderAssessingNormDensity <- function (values, options){
+  data <- data.frame(values$bidimensional_data[options$assessing_norm_vi], values$bidimensional_data[options$assessing_norm_vd])
+  colnames(data) <- c('Classificação', 'Dados')
     fig <- ggplotly(
-    ggdensity(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
+    ggdensity(data = data, x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7, ggtheme = theme_minimal())
   )
 
   layoutConfig <- list(
@@ -475,8 +476,9 @@ renderCheckNormDensity <- function (values, options){
 
   return(fig)
 }
-renderCheckNormQQ <- function (values, options){
-  data <- values$c_data_info
+renderAssessingNormQQ <- function (values, options){
+  data <- data.frame(values$bidimensional_data[options$assessing_norm_vi], values$bidimensional_data[options$assessing_norm_vd])
+  colnames(data) <- c('Classificação', 'Dados')
   fig <- ggplotly(
     ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
   )

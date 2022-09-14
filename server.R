@@ -57,7 +57,6 @@ server <- function (input, output, session){
   observeEvent(input$load_unidimensional,{
     showTab(inputId = "tabs", target = "Gráficos 2D")
     showTab(inputId = "tabs", target = "Gráficos 3D")
-    showTab(inputId = "tabs", target = "Checando os dados")
     showTab(inputId = "tabs", target = "Informações gerais")
 
     # Caso a opção selecionada tenha sido um dos exemplos
@@ -122,7 +121,6 @@ server <- function (input, output, session){
   observeEvent(input$load_spreadsheet, {
     showTab(inputId = "tabs", target = "Gráficos 2D")
     showTab(inputId = "tabs", target = "Gráficos 3D")
-    showTab(inputId = "tabs", target = "Checando os dados")
     showTab(inputId = "tabs", target = "Informações gerais")
 
     dt <- data.frame(hot_to_r(input$user_data))
@@ -150,7 +148,81 @@ server <- function (input, output, session){
 
   })
 
-  observeEvent(input$load_homogenity,{
+  observeEvent(input$load_bidimensional,{
+    output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variáveis na aba de opções.'), align = 'center')))
+    output$ancova_statistics <- renderUI(p(''))
+    showTab(inputId = "tabs", target = "Comparando duas médias")
+    showTab(inputId = "tabs", target = "Checando os dados")
+    showTab(inputId = "tabs", target = "Comparando multiplas médias")
+
+    if (input$file_selector_bi == 'example'){
+      if(input$examp_select_bi == 'gas')
+      dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
+      if(input$examp_select_bi == 'anxiety') {
+        data("anxiety", package = "datarium")
+        dt <- data.frame(anxiety)
+        names(dt) <- c('Id', 'Grupo', 'T1', 'T2', 'T3')
+      }
+      if(input$examp_select_bi == 'escolaridade'){
+        dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
+      }
+    }
+    else if(input$file_selector_bi == 'import') {
+      dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
+      if(!input$imported_bi_as.factor)
+        dt <- consolidated_data(dt)
+    }
+    output$table_import_bi_data_output <- renderUI(
+      shinycssloaders::withSpinner(
+        DTOutput("table_import_bi_data_output2"),
+        type = spinnerType,
+        color = spinnerColor,
+        size = spinnerSize
+      )
+    )
+    output$table_import_bi_data_output2 <- renderDT(dt)
+
+    values$usr_title <- paste0(input$title_id_import_bi)
+      output$title_name_import_bi <- renderUI(
+         h2(strong(values$usr_title))
+      )
+    values$bidimensional_data <- dt
+  })
+
+  observeEvent(input$load_spreadsheet_bi,{
+    output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variáveis na aba de opções.'), align = 'center')))
+    output$ancova_statistics <- renderUI(p(''))
+    showTab(inputId = "tabs", target = "Comparando duas médias")
+    showTab(inputId = "tabs", target = "Checando os dados")
+    showTab(inputId = "tabs", target = "Comparando multiplas médias")
+
+    dt <- data.frame(hot_to_r(input$user_data_bi))
+    empty_columns <- colSums(dt == "") == nrow(dt)
+    dt <- dt[, !empty_columns]
+
+    if(ncol(dt) != 0) {
+      empty_rows <- rowSums(dt == "") == ncol(dt)
+      dt <- dt[!empty_rows,]
+    } else dt <- NULL
+
+    if(!is.null(dt)) {
+      names(dt) <- dt[1,]
+      # names(dt) <- gsub('\\.', ' ', names(dt))
+      dt <- dt[-1,]
+
+      dt <- as.data.frame(dt)
+      if(!input$inserted_bi_as.factor)
+        dt <- consolidated_data(dt)
+    } else output$rest_of_sidebar <- renderMenu(NULL)
+
+    values$usr_title <- paste0(input$title_id_insert_bi)
+    output$title_name_insert_bi <- renderUI(
+      h2(strong(values$usr_title)))
+
+    values$bidimensional_data <- dt
+  })
+
+    observeEvent(input$load_homogenity,{
 
    output$homogenity_results <- renderUI(tagList(
       uiOutput('homogenity_method_name'),
@@ -160,6 +232,8 @@ server <- function (input, output, session){
 
     choosen <- input$homogenity_tests
     ci <- input$homogenity_ci
+    data <- data.frame(values$bidimensional_data[input$homogenity_var_vi], values$bidimensional_data[input$homogenity_var_vd])
+    colnames(data) <- c('Classificação', 'Dados')
 
     if(choosen == 'f_test'){
       first <- input$first_var_f_test
@@ -170,39 +244,38 @@ server <- function (input, output, session){
       else{
         output$homogenity_method_name <- renderUI(h3('Teste F para comparação de duas variáveis'))
 
-        data <- values$c_data_info
         data <- data.frame(data[which(data$`Classificação` == first | data$`Classificação` == sec),]$Dados, data[which(data$Classificação == first | data$Classificação == sec),]$`Classificação`)
         names(data) <- c('Dados', 'Classificacao')
 
         res <- var.test(Dados ~ Classificacao, data = data, conf.level = ci)
-        dt <- round(data.frame(F = res$statistic,Num_df = res$parameter[1], Denom_df = res$parameter[2] ,p = res$p.value), 4)
+        dt <- signif(data.frame(F = res$statistic,Num_df = res$parameter[1], Denom_df = res$parameter[2] ,p = res$p.value), 4)
 
         output$homogenity_table <- renderDT(dt)
         output$homogenity_method_results <- renderUI(
           tagList(
             h4('Com um intervalo de confiança de ', ci*100,'%:'),
-            h4(round(res$conf.int[1], 4), round(res$conf.int[2], 4)), br(),
-            if(round(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+            h4(signif(res$conf.int[1], 4), signif(res$conf.int[2], 4)), br(),
+            if(signif(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                '. Assim sugere que ',strong('há diferênças significantes'),' entre as duas variâncias')
-            else if(1 - ci < res$p.value) h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância', 1 - ci),
+            else if(1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância', 1 - ci),
                '. Assim sugere que ',strong('não há diferênças significantes'),' entre as duas variâncias')
-            else h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+            else h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                '. Assim sugere que ',strong('há diferênças significantes'),' entre as duas variâncias')
           )
         )
       }
     }
     else if(choosen == 'bartlett_test'){
-      res <- bartlett.test(Dados ~ Classificação, data = values$c_data_info)
+      res <- bartlett.test(Dados ~ Classificação, data = data)
       output$homogenity_method_name <- renderUI(h3('Teste de Bartlett para comparação múltiplas variáveis'))
-      output$homogenity_table <- renderDT(round(data.frame(F = res$statistic, df = res$parameter, p = res$p.value)), 4)
+      output$homogenity_table <- renderDT(signif(data.frame(F = res$statistic, df = res$parameter, p = res$p.value)), 4)
       output$homogenity_method_results <- renderUI(
         tagList(
-           if(round(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+           if(signif(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                                              '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
-           else if(1 - ci < res$p.value) h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
+           else if(1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
                                        '. Assim sugere que ',strong('não há diferênças significantes'),' entre as variâncias das variáveis')
-           else h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+           else h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                    '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
         )
       )
@@ -210,37 +283,63 @@ server <- function (input, output, session){
     }
     else if(choosen == 'levene_test'){
       output$homogenity_method_name <- renderUI(h3('Teste de Levene para comparação múltiplas variáveis'))
-      res <- leveneTest(Dados ~ Classificação, data = values$c_data_info)
-      output$homogenity_table <- renderDT(round(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), 4))
+      res <- leveneTest(Dados ~ Classificação, data = data)
+      output$homogenity_table <- renderDT(signif(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), 4))
       output$homogenity_method_results <- renderUI(
         tagList(
-           if(round(res$`Pr(>F)`, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+           if(signif(res$`Pr(>F)`[1], 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                                              '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
-           else if(1 - ci < res$`Pr(>F)`) h4('O valor de p = ', strong(round(res$`Pr(>F)`, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
+           else if(1 - ci < res$`Pr(>F)`[1]) h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
                                        '. Assim sugere que ',strong('não há diferênças significantes'),' entre as variâncias das variáveis')
-           else h4('O valor de p = ', strong(round(res$`Pr(>F)`, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+           else h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                    '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
         )
       )
     }
     else if(choosen == 'fk_test'){
-      res <- fligner.test(weight ~ group, data = PlantGrowth)
+      res <- fligner.test(Dados ~ Classificação, data = data)
       output$homogenity_method_name <- renderUI(h3('Teste de Fligner-Killeen para comparação múltiplas variáveis'))
-      output$homogenity_table <- renderDT(round(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), 4))
+      output$homogenity_table <- renderDT(signif(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), 4))
       output$homogenity_method_results <- renderUI(
         tagList(
-           if(round(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+           if(signif(res$p.value, 4) == 0) h4('O valor de p é ',strong('aproximadadente 0'),', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                                              '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
-           else if(1 - ci < res$p.value) h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
+           else if(1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ',strong('maior do que o nivel de significância',1 - ci),
                                        '. Assim sugere que ',strong('não há diferênças significantes'),' entre as variâncias das variáveis')
-           else h4('O valor de p = ', strong(round(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
+           else h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância',1 - ci),
                    '. Assim sugere que ',strong('há diferênças significantes'),' entre, pelo menos 2 variâncias das variáveis')
         )
       )
     }
   })
+  observeEvent(input$load_assessing_norm,{
+    options$assessing_norm_vi <- input$assessing_norm_vi
+    options$assessing_norm_vd <- input$assessing_norm_vd
+    output$plotly_norm_density <- renderPlotly(renderAssessingNormDensity(values, options))
+    output$plotly_norm_qq <- renderPlotly(renderAssessingNormQQ(values, options))
 
-  observeEvent(input$load_esfericity, {
+    output$check_norm_table_names <- renderDT(data.frame(Dados = names(table(values$bidimensional_data[input$assessing_norm_vi])) ))
+    output$check_norm_table <- renderDT(
+      datatable(
+        renderCheckNormTable(values, options),rownames = FALSE,
+        container = withTags(table(
+          class = 'display',
+          thead(tr(
+            th(colspan = 3, 'Shapiro-Wilk'),
+            th(colspan = 3, 'Kolmogorov-Smirnov')
+          ), tr(
+            lapply(rep(c('Dados', 'p', 'Decisão'), 2), th)
+          ))
+        )),
+        options = list(initComplete = JS(
+          "function(settings, json) {",
+          "var headerBorder = [0,1];",
+          "var header = $(this.api().table().header()).find('tr:first > th').filter(function(index) {return $.inArray(index,headerBorder) > -1 ;}).addClass('cell-border-right');",
+          "}"),columnDefs=list(list(className="dt-right cell-border-right",targets=2))
+        ))
+    )
+  })
+  observeEvent(input$load_sphericity, {
 
     output$sphericity_results <- renderUI(
       tagList(
@@ -274,10 +373,17 @@ server <- function (input, output, session){
         )
       )
     )
+    dt <- data.frame(values$bidimensional_data[input$sphericity_vi], values$bidimensional_data[input$sphericity_vd])
+    colnames(dt) <- c('Classificação', 'Dados')
 
-    dt <- values$c_data_info
-    dt$id <- seq(values$nrow)
-    res <- anova_test(data = dt, dv = Dados, wid = id, within = Classificação)
+    k <- lapply(names(table(dt$Classificação)), function (x) seq(length(which(dt$Classificação == x))))
+    k2 <- NULL
+    for (i in k)
+      k2 <- append(k2, i)
+    dt$id <- k2
+
+
+    res <- anova_test(data = dt, dv = Dados,wid = id, within = Classificação)
     if('anova' %in% input$sphericity_picker){
         output$sphericity_correc_anova <- renderUI(selectInput(
           'sphericity_correc_anova_2',
@@ -291,9 +397,8 @@ server <- function (input, output, session){
 
     maunchly <- res$`Mauchly's Test for Sphericity`[2:3]
     maunchly$Significância <- if(maunchly$p <= 1 - input$esfericity_ci) 'Significante' else 'Não Significante'
-    if('mauchly' %in% input$sphericity_picker) {
+    if('mauchly' %in% input$sphericity_picker)
       output$maunchly_test <- renderDT(maunchly)
-    }
 
     if('corrections' %in% input$sphericity_picker) {
       output$sphericity_corrections_gg <- renderDT(res$`Sphericity Corrections`[2:5])
@@ -308,7 +413,6 @@ server <- function (input, output, session){
       )
     }
   })
-
   observeEvent(input$load_transform_norm, {
     output$transform_norm_results <- renderUI(tagList(
       uiOutput('transform_norm_results_method_name'),
@@ -317,9 +421,9 @@ server <- function (input, output, session){
       downloadButton('transform_norm_download','Baixe a nova tabela!')
     ))
 
-    choosen <- paste0(input$transform_norm_distributions, ' - ', input$transform_norm_distributions_skewed)
-    # output$transform_norm_results_method_name <- renderUI(h3(choosen))
-    data <- values$c_data_info
+    data <- data.frame(values$bidimensional_data[input$transform_norm_vi], values$bidimensional_data[input$transform_norm_vd])
+    colnames(data) <- c('Classificação', 'Dados')
+
     df <- data
     logy <- if(input$transform_norm_distributions_logy == 1 || input$transform_norm_distributions_logy == -1) 10 else input$transform_norm_distributions_logy
     df$Dados <- switch(
@@ -332,24 +436,22 @@ server <- function (input, output, session){
     )
 
     fig <- ggplotly(
-      ggdensity(data = df, x = "Dados", color = 'Classificação')
+      ggdensity(data = df, x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7)
         # + stat_overlay_normal_density(linetype = "dashed")
     )
     output$transform_norm_results_plotly <- renderPlotly(fig)
     if (input$transform_norm_distributions == 'none')
       output$transform_norm_results_method_statistics <- renderUI(
-         h4('O coeficiente de distorção é : ', round(skewness(data$Dados, na.rm = TRUE), 4))
+         h4('O coeficiente de distorção é : ', signif(skewness(data$Dados, na.rm = TRUE), 4))
       )
     else
       output$transform_norm_results_method_statistics <- renderUI(tagList(
-         h4('O coeficiente de distorção é : ', round(skewness(data$Dados, na.rm = TRUE), 4)),
-         h4('O novo coeficiente de distorção é : ', round(skewness(df$Dados, na.rm = TRUE), 4))
+         h4('O coeficiente de distorção é : ', signif(skewness(data$Dados, na.rm = TRUE), 4)),
+         h4('O novo coeficiente de distorção é : ', signif(skewness(df$Dados, na.rm = TRUE), 4))
       ))
 
     # Download the new df
-    dfDownload <- values$data_info
-    for (i in values$names)
-      dfDownload[,i] <- df$Dados[which(df$`Classificação` == i)]
+    dfDownload <- data
 
     output$transform_norm_download <- downloadHandler(
       filename = function() { "transformed_df.xlsx"},
@@ -357,103 +459,126 @@ server <- function (input, output, session){
     )
   })
 
-  observeEvent(input$load_bidimensional,{
-    output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
-    output$ancova_statistics <- renderUI(p(''))
-    showTab(inputId = "tabs", target = "Transformar seus dados")
-    showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Comparando multiplas médias")
+  # observeEvent(input$load_transform_bi,{
+  #   showTab(inputId = "tabs", target = "Gráficos 2D")
+  #   showTab(inputId = "tabs", target = "Gráficos 3D")
+  #   showTab(inputId = "tabs", target = "Checando os dados")
+  #   showTab(inputId = "tabs", target = "Informações gerais")
+  #
+  #   dt <- data.frame(values$bidimensional_data[input$transform_bi_variable], values$bidimensional_data[input$transform_bi_variable])
+  #
+  #   output$table_transform_bi_data_output <- renderUI(
+  #     shinycssloaders::withSpinner(
+  #       DTOutput("table_transform_bi_data_output2"),
+  #       type = spinnerType,
+  #       color = spinnerColor,
+  #       size = spinnerSize
+  #     )
+  #   )
+  #   output$table_transform_bi_data_output2 <- renderDT(dt)
+  #
+  #   setUniValues(values, dt)
+  #   output$title_name_transform_bi <- renderUI(h2(strong(values$usr_title)))
+  # })
 
-    if (input$file_selector_bi == 'example'){
-      if(input$examp_select_bi == 'gas')
-      dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
-      if(input$examp_select_bi == 'anxiety') {
-        data("anxiety", package = "datarium")
-        dt <- data.frame(anxiety)
-        names(dt) <- c('Id', 'Grupo', 'T1', 'T2', 'T3')
+  observeEvent(input$load_t_test, {
+      output$t_test_results <- renderUI(tagList(
+        h3(strong('Estatísticas'), align = 'center'),
+        DTOutput('t_test_dt'),
+        uiOutput('t_test_effect_size')
+      ))
+
+      var1 <- input$test_t_variable_ui
+
+      dt <- values$bidimensional_data
+      if(input$test_t_options == 'one') {
+        if(!is.numeric(dt[var1][, 1]))
+          output$t_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
+        else{
+          test_t <- t.test(dt[var1], mu = input$test_t_mu)
+          test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4), estimativa = signif(test_t$estimate, 4))
+          rownames(test_t_df) <- paste0('Test T - ', var1)
+          output$t_test_dt <- renderDT(test_t_df)
+
+          l <- dt[var1][,1]
+          cohensD <- abs(mean(l) - input$test_t_mu) / sd(l)
+          output$t_test_effect_size <- renderUI(p('A área de efeito da variável ', (strong(var1)), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(cohensD, 4))))
+        }
       }
-      if(input$examp_select_bi == 'escolaridade'){
-        dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
+      else if(input$test_t_options == 'two'){
+        var2 <- input$test_t_variable_ui2
+        if(var1 == var2 | !is.numeric(dt[var1][, 1]) | !is.numeric(dt[var2][, 1]))
+          output$t_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
+        else {
+          test_t <- t.test(x = dt[var1], y = dt[var2])
+          test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4), estimativa = signif(test_t$estimate, 4))
+          rownames(test_t_df) <- c(paste0('Test T - ', var1), paste0('Test T - ', var2))
+          output$t_test_dt <- renderDT(test_t_df)
+
+          l1 <- dt[var1][, 1]
+          l2 <- dt[var2][, 1]
+
+          s1 <- sd(l1)
+          s2 <- sd(l2)
+          n1 <- length(l1)
+          n2 <- length(l2)
+          pooled <- sqrt(((n1 - 1) * s1^2 + (n2 - 1) * s2^2) / (n1 + n1 - 2))
+          cohensD <- abs(mean(l1) - mean(l2)) / pooled
+          output$t_test_effect_size <-renderUI(p('A área de efeito entre as variáveis ', strong(var1),', e ',strong(var2), ' é de: ', strong(signif(cohensD, 4))))
+        }
+      }
+
+  })
+
+  observeEvent(input$load_wilcoxon_test, {
+    output$wilcoxon_test_results <- renderUI(tagList(
+        h3(strong('Estatísticas'), align = 'center'),
+        DTOutput('wilcoxon_test_dt'),
+        uiOutput('wilcoxon_test_effect_size')
+      ))
+    var1 <- input$wilcoxon_test_variable_ui
+
+    if(input$wilcoxon_test_options == 'one') {
+      dt <- data.frame(values$bidimensional_data[input$wilcoxon_test_variable_ui])
+      colnames(dt) <- 'var1'
+      mu <- input$wilcoxon_t_mu
+
+      w_test <- dt %>% rstatix::wilcox_test(var1 ~ 1, mu = mu)
+      w_test_df <- data.frame(p = signif(w_test$p[[1]], 4), estatística = signif(w_test$statistic[[1]], 4))
+      rownames(w_test_df) <- paste0('Test de Wilcoxon - ', var1)
+      output$wilcoxon_test_dt <- renderDT(w_test_df)
+
+      w_effectsize <- dt %>% wilcox_effsize(var1 ~ 1, mu = 0)
+      output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito da variável ', (strong(var1)), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize$effsize[[1]], 4))))
+    }
+    else if(input$wilcoxon_test_options == 'two'){
+      dt <- data.frame(values$bidimensional_data[input$wilcoxon_test_variable_ui], values$bidimensional_data[input$wilcoxon_test_variable_ui2])
+      colnames(dt) <- c('var1', 'var2')
+      var2 <- input$wilcoxon_test_variable_ui2
+
+      if(var1 == var2 | !is.numeric(dt$var1) | !is.numeric(dt$var2))
+        output$wilcoxon_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
+      else{
+        dt <- consolidated_data(dt)
+        w_test <- dt %>% rstatix::wilcox_test(Dados ~ Classificação)
+        w_test_df <- data.frame(p = signif(w_test$p[[1]], 4), estatística = signif(w_test$statistic[[1]], 4))
+        rownames(w_test_df) <- paste0('Test de Wilcoxon')
+        output$wilcoxon_test_dt <- renderDT(w_test_df)
+
+        w_effectsize <- dt %>% wilcox_effsize(Dados ~ Classificação)
+        output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito entre as variáveis ', (strong(var1)),', e ',(strong(var2)),  ', é de: ', strong(signif(w_effectsize$effsize[[1]], 4))))
       }
     }
-    else if(input$file_selector_bi == 'import')
-      dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
-    output$table_import_bi_data_output <- renderUI(
-      shinycssloaders::withSpinner(
-        DTOutput("table_import_bi_data_output2"),
-        type = spinnerType,
-        color = spinnerColor,
-        size = spinnerSize
-      )
-    )
-    output$table_import_bi_data_output2 <- renderDT(dt)
-
-    values$usr_title <- paste0(input$title_id_import_bi)
-      output$title_name_import_bi <- renderUI(
-         h2(strong(values$usr_title))
-      )
-    values$bidimensional_data <- dt
-  })
-
-  observeEvent(input$load_spreadsheet_bi,{
-    output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções.'), align = 'center')))
-    output$ancova_statistics <- renderUI(p(''))
-    showTab(inputId = "tabs", target = "Transformar seus dados")
-    showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Comparando multiplas médias")
-
-    dt <- data.frame(hot_to_r(input$user_data_bi))
-    empty_columns <- colSums(dt == "") == nrow(dt)
-    dt <- dt[, !empty_columns]
-
-    if(ncol(dt) != 0) {
-      empty_rows <- rowSums(dt == "") == ncol(dt)
-      dt <- dt[!empty_rows,]
-    } else dt <- NULL
-
-    if(!is.null(dt)) {
-      names(dt) <- dt[1,]
-      # names(dt) <- gsub('\\.', ' ', names(dt))
-      dt <- dt[-1,]
-
-      dt <- as.data.frame(dt)
-    } else output$rest_of_sidebar <- renderMenu(NULL)
-
-    values$usr_title <- paste0(input$title_id_insert_bi)
-    output$title_name_insert_bi <- renderUI(
-      h2(strong(values$usr_title)))
-
-    values$bidimensional_data <- dt
-  })
-
-  observeEvent(input$load_transform_bi,{
-    showTab(inputId = "tabs", target = "Gráficos 2D")
-    showTab(inputId = "tabs", target = "Gráficos 3D")
-    showTab(inputId = "tabs", target = "Checando os dados")
-    showTab(inputId = "tabs", target = "Informações gerais")
-
-    dt <- data.frame(values$bidimensional_data[input$transform_bi_variable], values$bidimensional_data[input$transform_bi_variable])
-
-    output$table_transform_bi_data_output <- renderUI(
-      shinycssloaders::withSpinner(
-        DTOutput("table_transform_bi_data_output2"),
-        type = spinnerType,
-        color = spinnerColor,
-        size = spinnerSize
-      )
-    )
-    output$table_transform_bi_data_output2 <- renderDT(dt)
-
-    setUniValues(values, dt)
-    output$title_name_transform_bi <- renderUI(h2(strong(values$usr_title)))
   })
 
   observeEvent(input$load_ancova, {
     options$ancova_variable <- input$ancova_variable
     options$ancova_covariable <- input$ancova_covariable
     options$ancova_group_variable <- input$ancova_group_variable
-
-    if(!(options$ancova_variable == options$ancova_covariable || options$ancova_variable == options$ancova_group_variable || options$ancova_covariable == options$ancova_group_variable)){
+    if(
+      options$ancova_variable != options$ancova_covariable & options$ancova_variable != options$ancova_group_variable & options$ancova_covariable != options$ancova_group_variable &
+      is.numeric(values$bidimensional_data[options$ancova_variable][[1]]) & is.numeric(values$bidimensional_data[options$ancova_covariable][[1]])
+    ){
 
       output$ancova_statistics <- renderUI(tagList(
         h3(strong('ANCOVA'), align = 'center'),
@@ -505,7 +630,8 @@ server <- function (input, output, session){
       output$ancova_posthoc <- renderDT(posthoc_table(values, options))
     }
     else{
-      output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variaveis na aba de opções. (Dados inválidos)'), align = 'center')))
+      output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variáveis na aba de opções. (Dados inválidos)'), align = 'center')))
+      output$ancova_statistics <- renderUI(p())
     }
   })
 
@@ -742,8 +868,11 @@ server <- function (input, output, session){
     # options$homogenity_ci <- input$homogenity_ci
 
     #Gráfico em Mesh
-    { options$examp_select_mesh <- input$examp_select_mesh
-    options$checkbox_mesh <- input$checkbox_mesh }
+    {
+      options$examp_select_mesh <- input$examp_select_mesh
+      options$checkbox_mesh <- input$checkbox_mesh
+      options$nrow_x_mesh3d <- input$nrow_x_mesh3d
+    }
   })
 
   #----------- LAYOUT DOS GRÁFICOS -----------
@@ -1072,30 +1201,6 @@ server <- function (input, output, session){
 
     output$plotly_error_bar <- renderPlotly(renderErrorBar(values, options))
 
-    output$plotly_norm_density <- renderPlotly(renderCheckNormDensity(values, options))
-    output$plotly_norm_qq <- renderPlotly(renderCheckNormQQ(values, options))
-
-    output$check_norm_table_names <- renderDT(data.frame(Dados = values$names))
-    output$check_norm_table <- renderDT(
-      datatable(
-        renderCheckNormTable(values, options),rownames = FALSE,
-        container = withTags(table(
-          class = 'display',
-          thead(tr(
-            th(colspan = 3, 'Shapiro-Wilk'),
-            th(colspan = 3, 'Kolmogorov-Smirnov')
-          ), tr(
-            lapply(rep(c('Dados', 'p', 'Decisão'), 2), th)
-          ))
-        )),
-        options = list(initComplete = JS(
-          "function(settings, json) {",
-          "var headerBorder = [0,1];",
-          "var header = $(this.api().table().header()).find('tr:first > th').filter(function(index) {return $.inArray(index,headerBorder) > -1 ;}).addClass('cell-border-right');",
-          "}"),columnDefs=list(list(className="dt-right cell-border-right",targets=2))
-        ))
-    )
-
     output$plotly_histogram3d <- renderPlotly(renderHistogram3d(values, options))
 
     output$plotly_density3d <- renderPlotly(renderDensityPlot3d(values, options))
@@ -1108,18 +1213,20 @@ server <- function (input, output, session){
 
     output$var_f_test <- renderUI(
       tagList(
+        hr(),
         selectInput(
           inputId = 'first_var_f_test',
-          label = 'Escolha o primeiro grupo',
-          choices = names(values$data_info),
+          label = 'Escolha o primeiro grupo: ',
+          choices = names(table(values$bidimensional_data[input$homogenity_var_vi])),
           selected = ''
         ),
         selectInput(
           inputId = 'sec_var_f_test',
-          label = 'Escolha o segundo grupo',
-          choices = names(values$data_info),
+          label = 'Escolha o segundo grupo: ',
+          choices = names(table(values$bidimensional_data[input$homogenity_var_vi])),
           selected = ''
-        )
+        ),
+        hr()
       )
     )
 
@@ -1127,7 +1234,7 @@ server <- function (input, output, session){
       tagList(
         selectInput(
           inputId = 'transform_bi_variable',
-          label = 'Escolha a variavel para ser plotada: ',
+          label = 'Escolha a variável para ser plotada: ',
           choices = names(values$bidimensional_data),
           selected = ''
         ),
@@ -1143,13 +1250,13 @@ server <- function (input, output, session){
       tagList(
         selectInput(
           inputId = 'ancova_variable',
-          label = 'Escolha a variavel dependente: ',
+          label = 'Escolha a variável dependente: ',
           choices = names(values$bidimensional_data),
           selected = ''
         ),
         selectInput(
           inputId = 'ancova_group_variable',
-          label = 'Escolha a variavel independente: ',
+          label = 'Escolha a variável independente: ',
           choices = names((values$bidimensional_data)),
           selected = ''
         ),
@@ -1161,24 +1268,121 @@ server <- function (input, output, session){
         )
       ),
     )
+  { output$assessing_norm_variables <- renderUI(tagList(
+    selectInput(
+      inputId = 'assessing_norm_vi',
+      label = 'Escolha a variável independente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    ),
+    selectInput(
+      inputId = 'assessing_norm_vd',
+      label = 'Escolha a variável dependente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    )
+  )) }
+  { output$homogenity_var_variables <- renderUI(tagList(
+    selectInput(
+      inputId = 'homogenity_var_vi',
+      label = 'Escolha a variável independente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    ),
+    selectInput(
+      inputId = 'homogenity_var_vd',
+      label = 'Escolha a variável dependente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    )
+  )) }
+  { output$sphericity_variables <- renderUI(tagList(
+    selectInput(
+      inputId = 'sphericity_vi',
+      label = 'Escolha a variável independente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    ),
+    selectInput(
+      inputId = 'sphericity_vd',
+      label = 'Escolha a variável dependente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    )
+  )) }
+  { output$transform_norm_variables <- renderUI(tagList(
+    selectInput(
+      inputId = 'transform_norm_vi',
+      label = 'Escolha a variável independente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    ),
+    selectInput(
+      inputId = 'transform_norm_vd',
+      label = 'Escolha a variável dependente: ',
+      choices = names(values$bidimensional_data),
+      selected = ''
+    )
+  )) }
+    output$test_t_variable <- renderUI(tagList(
+      selectInput(
+        inputId = 'test_t_variable_ui',
+        label = 'Escolha a primeira variável: ',
+        choices = names(values$bidimensional_data),
+        selected = ''
+      ),
+      uiOutput('test_t_variable_ui2_aux')
+    ))
+    observeEvent(input$test_t_options, {
+      if(input$test_t_options == 'two') {
+       output$test_t_variable_ui2_aux <- renderUI(
+         selectInput(
+           inputId = 'test_t_variable_ui2',
+           label = 'Escolha a segunda variável: ',
+           choices = names(values$bidimensional_data),
+           selected = ''
+         ))}
+      else output$test_t_variable_ui2_aux <- renderUI(p())
+    })
+
+    output$wilcoxon_test_variable <- renderUI(tagList(
+      selectInput(
+        inputId = 'wilcoxon_test_variable_ui',
+        label = 'Escolha a primeira variável: ',
+        choices = names(values$bidimensional_data),
+        selected = ''
+      ),
+      uiOutput('wilcoxon_test_variable_ui2_aux')
+    ))
+    observeEvent(input$wilcoxon_test_options, {
+      if(input$wilcoxon_test_options == 'two') {
+       output$wilcoxon_test_variable_ui2_aux <- renderUI(
+         selectInput(
+           inputId = 'wilcoxon_test_variable_ui2',
+           label = 'Escolha a segunda variável: ',
+           choices = names(values$bidimensional_data),
+           selected = ''
+         ))}
+      else output$test_t_variable_ui2_aux <- renderUI(p())
+    })
 
     output$ancova_variables <- renderUI(
       tagList(
         selectInput(
           inputId = 'ancova_variable',
-          label = 'Escolha a variavel dependente: ',
+          label = 'Escolha a variável dependente: ',
           choices = names(values$bidimensional_data),
           selected = ''
         ),
         selectInput(
           inputId = 'ancova_covariable',
-          label = 'Escolha a covariavel: ',
+          label = 'Escolha a covariável: ',
           choices = names((values$bidimensional_data)),
           selected = ''
         ),
         selectInput(
           inputId = 'ancova_group_variable',
-          label = 'Escolha a variavel independente: ',
+          label = 'Escolha a variável independente: ',
           choices = names((values$bidimensional_data)),
           selected = ''
         ),
