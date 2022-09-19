@@ -1,10 +1,11 @@
 #Dado uma tabela com diversas colunas, junta em uma só
-consolidated_data <- function (data_info){
+contingency_data <- function (data_info){
   data_aux <- data.frame(Dados = data_info[[1]], Classificação = names(data_info)[1])
 
     for (i in seq(ncol(data_info) - 1)){
       data_aux <- rbind(data_aux, data.frame(Dados = data_info[[i + 1]], Classificação = names(data_info)[i + 1]))
     }
+  data_aux <- data_aux[-which(is.na(data_aux$Dados)),]
   return(data_aux)
 }
 #
@@ -22,7 +23,7 @@ setUniValues <- function (values, data){
   values$ncol <- ncol(data)
   values$names <- colnames(data)
   values$data_info <- data
-  values$c_data_info <- consolidated_data(data)
+  values$c_data_info <- contingency_data(data)
   values$abs_min <- min(values$c_data_info$Dados)
   values$abs_max <- max(values$c_data_info$Dados)
   }
@@ -91,8 +92,7 @@ ellipse_data <- function (data_info, colnames, ci){
 
 renderCheckNormTable <- function (values, options){
   ci <- 0.05
-  data <- data.frame(values$bidimensional_data[options$assessing_norm_vi], values$bidimensional_data[options$assessing_norm_vd])
-  colnames(data) <- c('Classificação', 'Dados')
+  data <- contingency_data(values$bidimensional_data)
   names <-  names(table(data$`Classificação`))
   fig <- data.frame(
     names,

@@ -9,7 +9,6 @@ transform_norm_page <- function (){
                title = 'Testes estatísticos',
                status = accordionStatus,
                collapsed = FALSE,
-               uiOutput('transform_norm_variables'),
                selectInput(
                  'transform_norm_distributions',
                  'Escolha a distribuição: ',
@@ -36,7 +35,7 @@ transform_norm_page <- function (){
                                     'Dados positivamente distorcidos' = TRUE,
                                     'Dados negativamente distorcidos' = FALSE
                                   ),
-                                  selected = 'positive'
+                                  selected = TRUE
                                 )
                ),
                actionButton("load_transform_norm",

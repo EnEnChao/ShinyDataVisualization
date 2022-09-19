@@ -9,7 +9,6 @@ sphericity_page <- function (){
         title = 'Testes estatísticos',
         status = accordionStatus,
         collapsed = FALSE,
-        uiOutput('sphericity_variables'),
         numericInput('esfericity_ci', 'Escolha o intervalo de confiança: ',
                             min = 0, max = 1, value = 0.95, step = 0.01
         ),
@@ -20,26 +19,12 @@ sphericity_page <- function (){
                      class = "btn-info"
         ),
         br(),
-        conditionalPanel(condition = 'input.load_sphericity >= 1',
-                                    pickerInput(
-                                      inputId = "sphericity_picker",
-                                      label = "Selecione os testes a serem mostrados",
-                                      choices = c(
-                                        'ANOVA' = 'anova',
-                                        'Teste de Mauchly' = 'mauchly',
-                                        'Correções' = 'corrections',
-                                        'Resultados' = 'results'
-                                      ),
-                                      selected = c('anova', 'mauchly', 'corrections', 'results'),
-                                      options = list(
-                                        `actions-box` = TRUE,
-                                        size = 10,
-                                        `selected-text-format` = "count > 3"
-                                      ),
-                                      multiple = TRUE
-                                    )
-        ),
-        uiOutput('sphericity_correc_anova')
+        selectInput(
+          'sphericity_correc_anova_2',
+          label = 'Escolha a correção para a tabela ANOVA: ',
+          choices = c('auto', 'GG', 'HF', 'none'),
+          selected = 'auto'
+        )
       )
     )}
     ),

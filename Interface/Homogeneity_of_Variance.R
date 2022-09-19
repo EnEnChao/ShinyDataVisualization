@@ -6,7 +6,6 @@ homogenity_var_page <- function (){
            { accordion(
              id = 'accordion_homogenity',
              accordionItem(
-               uiOutput('homogenity_var_variables'),
                title = 'Testes estatísticos',
                status = accordionStatus,
                collapsed = FALSE,

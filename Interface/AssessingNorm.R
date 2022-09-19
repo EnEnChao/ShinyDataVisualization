@@ -3,23 +3,6 @@ check_norm_page <- function (){
     'Distribuição de dados Normais',
     column(3,
            column(12,
-              h3(strong("Controle do layout:"), align = 'center'), {
-             accordion(
-               id = 'accordion_assessing_norm',
-               accordionItem(
-                 title = 'Variáveis',
-                 status = accordionStatus,
-                 collapsed = FALSE,
-                 uiOutput('assessing_norm_variables'),
-                 actionButton("load_assessing_norm",
-                       strong('Carregue!'),
-                       style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                       width = "80%",
-                       class = "btn-info"
-                 )
-               )
-             )
-           },
              h3(strong("Controle do layout:"), align = 'center'),
              conditionalPanel(condition = 'input.check_norm_tabs == "check_norm_d"',{
                column(12,
@@ -253,7 +236,7 @@ check_norm_page <- function (){
                tabPanel(id = 'check_norm_d', value = 'check_norm_d',title = 'Gráfico de densidade',
                         h3("Gráfico de densidade", style="text-align:center; font-size:50px;"),
                         shinycssloaders::withSpinner(
-                          plotlyOutput('plotly_norm_density'),
+                          uiOutput('plotly_norm_density'),
                           type = spinnerType,
                           color = spinnerColor,
                           size = spinnerSize
@@ -262,7 +245,7 @@ check_norm_page <- function (){
                tabPanel(id = 'check_norm_qq', value = 'check_norm_qq',title = 'Gráfico quantile-quantile',
                         h3("Gráfico quantile-quantile", style="text-align:center; font-size:50px;"),
                         shinycssloaders::withSpinner(
-                          plotlyOutput('plotly_norm_qq'),
+                          uiOutput('plotly_norm_qq'),
                           type = spinnerType,
                           color = spinnerColor,
                           size = spinnerSize
@@ -271,7 +254,7 @@ check_norm_page <- function (){
                tabPanel(title = 'Tabela de verificação de normalidade',
                         h3("Tabela de verificação de normalidade", style="text-align:center; font-size:50px;"),
                         tags$head(tags$style(HTML(".cell-border-right{border-right: 1px solid #000}"))),
-                        DTOutput('check_norm_table')
+                        uiOutput('check_norm_table')
                )
              )
            )

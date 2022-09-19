@@ -449,10 +449,10 @@ renderErrorBar <- function(values, options) {
   return(fig)
 }
 
+#----------- Checking Normality -----------
 renderAssessingNormDensity <- function (values, options){
-  data <- data.frame(values$bidimensional_data[options$assessing_norm_vi], values$bidimensional_data[options$assessing_norm_vd])
-  colnames(data) <- c('Classificação', 'Dados')
-    fig <- ggplotly(
+  data <- contingency_data(values$bidimensional_data)
+  fig <- ggplotly(
     ggdensity(data = data, x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7, ggtheme = theme_minimal())
   )
 
@@ -477,8 +477,7 @@ renderAssessingNormDensity <- function (values, options){
   return(fig)
 }
 renderAssessingNormQQ <- function (values, options){
-  data <- data.frame(values$bidimensional_data[options$assessing_norm_vi], values$bidimensional_data[options$assessing_norm_vd])
-  colnames(data) <- c('Classificação', 'Dados')
+  data <- contingency_data(values$bidimensional_data)
   fig <- ggplotly(
     ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
   )
@@ -504,6 +503,7 @@ renderAssessingNormQQ <- function (values, options){
   return(fig)
 }
 
+#----------- ANCOVA -----------
 renderANCOVA <- function (values, options){
 
   dt <- values$bidimensional_data
