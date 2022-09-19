@@ -505,25 +505,29 @@ server <- function (input, output, session){
           output$t_test_effect_size <- renderUI(p('A área de efeito da variável ', (strong(var1)), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(cohensD, 4))))
         }
       }
-      else if(input$test_t_options == 'two'){
+      else if(input$test_t_options == 'two' | input$test_t_options == 'paired'){
         var2 <- input$test_t_variable_ui2
         if(var1 == var2 | !is.numeric(dt[var1][, 1]) | !is.numeric(dt[var2][, 1]))
           output$t_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
         else {
-          test_t <- t.test(x = dt[var1], y = dt[var2])
+          test_t <- if(input$test_t_options == 'two') t.test(x = dt[var1], y = dt[var2]) else if(input$test_t_options == 'paired')  t.test(x = dt[var1][[1]], y = dt[var2][[1]], paired = TRUE)
           test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4), estimativa = signif(test_t$estimate, 4))
-          rownames(test_t_df) <- c(paste0('Test T - ', var1), paste0('Test T - ', var2))
+          rownames(test_t_df) <- if(input$test_t_options == 'two') c(paste0('Test T - ', var1), paste0('Test T - ', var2)) else if(input$test_t_options == 'paired') paste0('Test T - Pareado')
           output$t_test_dt <- renderDT(test_t_df)
 
-          l1 <- dt[var1][, 1]
-          l2 <- dt[var2][, 1]
+          if(input$test_t_options == 'two') {
+            l1 <- dt[var1][, 1]
+            l2 <- dt[var2][, 1]
 
-          s1 <- sd(l1)
-          s2 <- sd(l2)
-          n1 <- length(l1)
-          n2 <- length(l2)
-          pooled <- sqrt(((n1 - 1) * s1^2 + (n2 - 1) * s2^2) / (n1 + n1 - 2))
-          cohensD <- abs(mean(l1) - mean(l2)) / pooled
+            s1 <- sd(l1)
+            s2 <- sd(l2)
+            n1 <- length(l1)
+            n2 <- length(l2)
+            pooled <- sqrt(((n1 - 1) * s1^2 + (n2 - 1) * s2^2) / (n1 + n1 - 2))
+            cohensD <- abs(mean(l1) - mean(l2)) / pooled
+          }
+          else
+            cohensD <- mean(dt[var1][, 1] - dt[var2][, 1])/sd(dt[var1][, 1] - dt[var2][, 1])
           output$t_test_effect_size <-renderUI(p('A área de efeito entre as variáveis ', strong(var1),', e ',strong(var2), ' é de: ', strong(signif(cohensD, 4))))
         }
       }
@@ -551,7 +555,7 @@ server <- function (input, output, session){
       w_effectsize <- dt %>% wilcox_effsize(var1 ~ 1, mu = 0)
       output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito da variável ', (strong(var1)), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize$effsize[[1]], 4))))
     }
-    else if(input$wilcoxon_test_options == 'two'){
+    else if(input$wilcoxon_test_options == 'two' | input$wilcoxon_test_options == 'paired'){
       dt <- data.frame(values$bidimensional_data[input$wilcoxon_test_variable_ui], values$bidimensional_data[input$wilcoxon_test_variable_ui2])
       colnames(dt) <- c('var1', 'var2')
       var2 <- input$wilcoxon_test_variable_ui2
@@ -560,14 +564,34 @@ server <- function (input, output, session){
         output$wilcoxon_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
       else{
         dt <- consolidated_data(dt)
-        w_test <- dt %>% rstatix::wilcox_test(Dados ~ Classificação)
+        w_test <- if(input$wilcoxon_test_options == 'two') dt %>% rstatix::wilcox_test(Dados ~ Classificação) else if(input$wilcoxon_test_options == 'paired')  dt %>% rstatix::wilcox_test(Dados ~ Classificação, paired = TRUE)
         w_test_df <- data.frame(p = signif(w_test$p[[1]], 4), estatística = signif(w_test$statistic[[1]], 4))
-        rownames(w_test_df) <- paste0('Test de Wilcoxon')
+        rownames(w_test_df) <- if(input$wilcoxon_test_options == 'two') paste0('Test de Wilcoxon') else paste0('Test de Wilcoxon - Pareado')
         output$wilcoxon_test_dt <- renderDT(w_test_df)
 
-        w_effectsize <- dt %>% wilcox_effsize(Dados ~ Classificação)
+        w_effectsize <- if(input$wilcoxon_test_options == 'two') dt %>% wilcox_effsize(Dados ~ Classificação) else dt %>% wilcox_effsize(Dados ~ Classificação, paired = TRUE)
         output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito entre as variáveis ', (strong(var1)),', e ',(strong(var2)),  ', é de: ', strong(signif(w_effectsize$effsize[[1]], 4))))
       }
+    }
+  })
+
+  observeEvent(input$load_sign_test,{
+    output$sign_test_results <- renderUI(tagList(
+        h3(strong('Estatísticas'), align = 'center'),
+        DTOutput('sign_test_dt')
+      ))
+    var1 <- input$sign_test_variable_ui
+    var2 <- input$sign_test_variable_ui2
+    dt <- data.frame(values$bidimensional_data[var1], values$bidimensional_data[var2])
+    colnames(dt) <- c('var1', 'var2')
+    if(var1 == var2 | !is.numeric(dt$var1) | !is.numeric(dt$var2))
+        output$sign_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
+    else{
+      dt <- consolidated_data(dt)
+      sign_test <- dt %>% rstatix::sign_test(Dados ~ Classificação)
+      sign_test_df <- data.frame(p = signif(sign_test$p[[1]], 4), estatística = signif(sign_test$statistic[[1]], 4), df = signif(sign_test$df[[1]], 4))
+      rownames(sign_test_df) <- paste0('Test do Sinal')
+      output$sign_test_dt <- renderDT(sign_test_df)
     }
   })
 
@@ -1334,7 +1358,7 @@ server <- function (input, output, session){
       uiOutput('test_t_variable_ui2_aux')
     ))
     observeEvent(input$test_t_options, {
-      if(input$test_t_options == 'two') {
+      if(input$test_t_options == 'two' | input$test_t_options == 'paired') {
        output$test_t_variable_ui2_aux <- renderUI(
          selectInput(
            inputId = 'test_t_variable_ui2',
@@ -1355,7 +1379,7 @@ server <- function (input, output, session){
       uiOutput('wilcoxon_test_variable_ui2_aux')
     ))
     observeEvent(input$wilcoxon_test_options, {
-      if(input$wilcoxon_test_options == 'two') {
+      if(input$wilcoxon_test_options == 'two' | input$wilcoxon_test_options == 'paired') {
        output$wilcoxon_test_variable_ui2_aux <- renderUI(
          selectInput(
            inputId = 'wilcoxon_test_variable_ui2',
@@ -1365,6 +1389,21 @@ server <- function (input, output, session){
          ))}
       else output$test_t_variable_ui2_aux <- renderUI(p())
     })
+
+    output$sign_test_variable <- renderUI(tagList(
+      selectInput(
+        inputId = 'sign_test_variable_ui',
+        label = 'Escolha a primeira variável: ',
+        choices = names(values$bidimensional_data),
+        selected = ''
+      ),
+      selectInput(
+        inputId = 'sign_test_variable_ui2',
+        label = 'Escolha a segunda variável: ',
+        choices = names(values$bidimensional_data),
+        selected = ''
+      )
+    ))
 
     output$ancova_variables <- renderUI(
       tagList(

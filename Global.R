@@ -1,4 +1,4 @@
-version <- '0.8.8'
+version <- '1.0.2'
 
 options(encoding = 'UTF-8')
 options(warn = -1)

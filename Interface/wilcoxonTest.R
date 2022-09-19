@@ -1,4 +1,4 @@
-wilcoxon_t_page <- function (){
+wilcoxon_test_page <- function (){
     tabPanel('Teste de Wilcoxon',
          column(3,
                 h3(strong("Controle do layout:"), align = 'center'),{
@@ -10,7 +10,8 @@ wilcoxon_t_page <- function (){
                collapsed = FALSE,
                selectInput('wilcoxon_test_options', 'Escolha o teste com as variáveis',
                            choices = c('One way' = 'one',
-                                       'Two ways' = 'two'),
+                                       'Two ways' = 'two',
+                                       'Pareado' = 'paired'),
                            selected = 'one'
                ),
                uiOutput('wilcoxon_test_variable'),

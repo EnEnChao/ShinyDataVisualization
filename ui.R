@@ -49,6 +49,7 @@ source('Interface/BarPlot3D.R')
 source('Interface/ImportBidimensional.R')
 source('Interface/testT.R')
 source('Interface/wilcoxonTest.R')
+source('Interface/SignTest.R')
 source('Interface/ANCOVA.R')
 source('Interface/ANOVA.R')
 source('Interface/ImportTridimensional.R')
@@ -120,7 +121,7 @@ tags$style(HTML("
                           insert_bidimensional()
                         )
                ),
-               tabPanel('Checando os dados',
+               tabPanel('Avaliando os dados',
                         tabsetPanel(
                           check_norm_page(),
                           homogenity_var_page(),
@@ -131,8 +132,8 @@ tags$style(HTML("
                tabPanel('Comparando duas médias',
                         tabsetPanel(
                           test_t_page(),
-                          wilcoxon_t_page(),
-                          tabPanel('Teste do sinal (Sign test)')
+                          wilcoxon_test_page(),
+                          sign_test_page()
                         )
                ),
                tabPanel('Comparando multiplas médias',
