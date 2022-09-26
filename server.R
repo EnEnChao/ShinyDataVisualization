@@ -35,7 +35,7 @@ server <- function (input, output, session){
   #Esconder todos os paineis
   hideTab(inputId = "tabs", target = "Gráficos 2D")
   hideTab(inputId = "tabs", target = "Gráficos 3D")
-  hideTab(inputId = "tabs", target = "Checando os dados")
+  hideTab(inputId = "tabs", target = "Avaliando os dados")
   hideTab(inputId = "tabs", target = "Informações gerais")
 
   hideTab(inputId = "tabs", target = "Transformar seus dados")
@@ -153,18 +153,24 @@ server <- function (input, output, session){
     output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variáveis na aba de opções.'), align = 'center')))
     output$ancova_statistics <- renderUI(p(''))
     showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Checando os dados")
+    showTab(inputId = "tabs", target = "Avaliando os dados")
     showTab(inputId = "tabs", target = "Comparando multiplas médias")
 
     if (input$file_selector_bi == 'example'){
       if(input$examp_select_bi == 'gas')
-      dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
-      if(input$examp_select_bi == 'gas2')
         dt <- data.frame(read.xlsx('Data/exemplo_two_means.xlsx'))
+      if(input$examp_select_bi == 'mice')
+        dt <- mice2[,c(2, 3)]
+      if(input$examp_select_bi == 'genderweight')
+        dt <- data.frame(sapply(levels(genderweight$group), function (x){ genderweight[which(genderweight$group == x),]$weight }))
+      if(input$examp_select_bi == 'gas2')
+        dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
       if(input$examp_select_bi == 'anxiety') {
         data("anxiety", package = "datarium")
-        dt <- data.frame(anxiety)
-        names(dt) <- c('Id', 'Grupo', 'T1', 'T2', 'T3')
+        dt <- as.data.frame(anxiety[, 2:4])
+        dt$Group <- dt$group
+        dt <- dt[,-1]
+        names(dt) <- c('T1', 'T2', 'Group')
       }
       if(input$examp_select_bi == 'escolaridade'){
         dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
@@ -195,7 +201,7 @@ server <- function (input, output, session){
     output$plotly_ancova <- renderUI(tagList(br(),br(),h3(strong('Escolha as variáveis na aba de opções.'), align = 'center')))
     output$ancova_statistics <- renderUI(p(''))
     showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Checando os dados")
+    showTab(inputId = "tabs", target = "Avaliando os dados")
     showTab(inputId = "tabs", target = "Comparando multiplas médias")
 
     dt <- data.frame(hot_to_r(input$user_data_bi))
@@ -405,15 +411,16 @@ server <- function (input, output, session){
       observeEvent(input$load_transform_norm, {
 
       data <- contingency_data(values$bidimensional_data)
+      if(length(table(is.na(data$Dados))) != 1 | names(table(is.na(data$Dados))) != 'FALSE')
+        data <- data[-which(is.na(data$Dados)),]
       df <- data
-        logy <- if(input$transform_norm_distributions_logy == 1 || input$transform_norm_distributions_logy == -1) 10 else input$transform_norm_distributions_logy
-
+        logy <- if(input$transform_norm_distributions_logy == 0) 1 else input$transform_norm_distributions_logy
       df$Dados <- switch(
         input$transform_norm_distributions,
         'none' = data$Dados,
         'sqrt' = if(input$transform_norm_distributions_skewed) sqrt(data$Dados) else sqrt(max(data$Dados + 1) - data$Dados),
         'log10' = if(input$transform_norm_distributions_skewed) log10(data$Dados) else log10(max(data$Dados + 1) - data$Dados),
-        'logy' = if(input$transform_norm_distributions_skewed) log(data$Dados, logy) else log(max(data$Dados + 1) - data$Dados, logy),
+        'logy' = if(input$transform_norm_distributions_skewed) data$Dados * logy else (max(data$Dados + 1) - data$Dados) * logy,
         '1/x' = if(input$transform_norm_distributions_skewed) 1/(data$Dados) else 1/(max(data$Dados + 1) - data$Dados)
       )
 
@@ -455,56 +462,123 @@ server <- function (input, output, session){
   })
 
   #-------------------T Test-------------------#
-  observeEvent(input$load_t_test, {
-      output$t_test_results <- renderUI(tagList(
-        h3(strong('Estatísticas'), align = 'center'),
-        DTOutput('t_test_dt'),
-        uiOutput('t_test_effect_size')
-      ))
-
-      var1 <- input$test_t_variable_ui
-
-      dt <- values$bidimensional_data
+  observeEvent(input$load_t_test,{
+    if (ncol(values$bidimensional_data) == 2 & is.numeric(values$bidimensional_data[,1]) & is.numeric(values$bidimensional_data[,2])){
       if(input$test_t_options == 'one') {
-        if(!is.numeric(dt[var1][, 1]))
-          output$t_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
-        else{
-          test_t <- t.test(dt[var1], mu = input$test_t_mu)
-          test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4), estimativa = signif(test_t$estimate, 4))
-          rownames(test_t_df) <- paste0('Test T - ', var1)
-          output$t_test_dt <- renderDT(test_t_df)
+        dt <- values$bidimensional_data
+        output$t_test_predict <- renderUI(tagList(
+          h3(strong('Testando Normalidade', align = 'center')),
+          column(6,
+                 h4(names(dt)[1]),
+                 plotlyOutput('t_test_normality_1'),
+                 uiOutput('t_test_normality_results_1'), align = 'center'
+          ),
+          column(6,
+                 h4(names(dt)[2]),
+                 plotlyOutput('t_test_normality_2'),
+                 uiOutput('t_test_normality_results_2'), align = 'center'
+            ),
+          column(12,
+                 br(),
+                 h3(strong('Verificando Outliers', align = 'center'))
+          ),
+          column(6,
+                 plotlyOutput('t_test_boxplot_1'),
+                 uiOutput('t_test_outliers_1'), align = 'center'
+          ),
+          column(6,
+                 plotlyOutput('t_test_boxplot_2'),
+                 uiOutput('t_test_outliers_2'), align = 'center'
+          ),
+          h3(strong('Resultados', align = 'center'))
+        ))
+        output$t_test_normality_1 <- renderPlotly(ggplotly(ggqqplot(dt[,1], color = '#F8766D')))
+        output$t_test_normality_results_1 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(dt[,1])$p.value, 4)))
+        output$t_test_normality_2 <- renderPlotly(ggplotly(ggqqplot(dt[,2], color = '#28B3B6')))
+        output$t_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(dt[,2])$p.value, 4)))
+        output$t_test_boxplot_1 <- renderPlotly(plot_ly(data.frame(), y = dt[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(dt)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
+        output$t_test_outliers_1 <- renderUI(if(nrow(identify_outliers(dt[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(dt[1])), ' outliers.'))
+        output$t_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = dt[,2], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(dt)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
+        output$t_test_outliers_2 <- renderUI(if(nrow(identify_outliers(dt[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(dt[2])), ' outliers.'))
 
-          l <- dt[var1][,1]
-          cohensD <- abs(mean(l) - input$test_t_mu) / sd(l)
-          output$t_test_effect_size <- renderUI(p('A área de efeito da variável ', (strong(var1)), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(cohensD, 4))))
-        }
+        mu <- input$test_t_mu
+        output$t_test_results <- renderUI(tagList(
+          column(6,
+                 h4(strong('Teste T - ',names(values$bidimensional_data)[1]), align = 'center'),
+                 DTOutput('t_test_dt_1'),
+                 uiOutput('t_test_effect_size1')
+          ),
+          column(6,
+                 h4(strong('Teste T - ',names(values$bidimensional_data)[2]), align = 'center'),
+                 DTOutput('t_test_dt_2'),
+                 uiOutput('t_test_effect_size2')
+          )
+        ))
+        test_t <- t.test(dt[1], mu = mu)
+        test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4))
+        rownames(test_t_df) <- paste0('Test T - ', names(dt)[1])
+        output$t_test_dt_1 <- renderDT(test_t_df)
+        test_t <- t.test(dt[2], mu = mu)
+        test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4))
+        rownames(test_t_df) <- paste0('Test T - ', names(dt)[2])
+        output$t_test_dt_2 <- renderDT(test_t_df)
+
+        output$t_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(dt)[1])), ', com mu = ', strong(mu), ' é de: ', strong(signif(abs(mean(dt[,1]) - mu) / sd(dt[,1]), 4))))
+        output$t_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(dt)[2])), ', com mu = ', strong(mu), ' é de: ', strong(signif(abs(mean(dt[,2]) - mu) / sd(dt[,2]), 4))))
       }
-      else if(input$test_t_options == 'two' | input$test_t_options == 'paired'){
-        var2 <- input$test_t_variable_ui2
-        if(var1 == var2 | !is.numeric(dt[var1][, 1]) | !is.numeric(dt[var2][, 1]))
-          output$t_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
-        else {
-          test_t <- if(input$test_t_options == 'two') t.test(x = dt[var1], y = dt[var2]) else if(input$test_t_options == 'paired')  t.test(x = dt[var1][[1]], y = dt[var2][[1]], paired = TRUE)
-          test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4), estimativa = signif(test_t$estimate, 4))
-          rownames(test_t_df) <- if(input$test_t_options == 'two') c(paste0('Test T - ', var1), paste0('Test T - ', var2)) else if(input$test_t_options == 'paired') paste0('Test T - Pareado')
-          output$t_test_dt <- renderDT(test_t_df)
+      if(input$test_t_options == 'two' | input$test_t_options == 'paired'){
+        output$t_test_predict <- renderUI(tagList(
+          column(6, h3(strong('Testando Normalidade', align = 'center'))),
+          column(6, h3(strong('Verificando Outliers', align = 'center'))),
 
-          if(input$test_t_options == 'two') {
-            l1 <- dt[var1][, 1]
-            l2 <- dt[var2][, 1]
+          column(12, plotlyOutput('t_test_plotly')),
 
-            s1 <- sd(l1)
-            s2 <- sd(l2)
-            n1 <- length(l1)
-            n2 <- length(l2)
-            pooled <- sqrt(((n1 - 1) * s1^2 + (n2 - 1) * s2^2) / (n1 + n1 - 2))
-            cohensD <- abs(mean(l1) - mean(l2)) / pooled
-          }
-          else
-            cohensD <- mean(dt[var1][, 1] - dt[var2][, 1])/sd(dt[var1][, 1] - dt[var2][, 1])
-          output$t_test_effect_size <-renderUI(p('A área de efeito entre as variáveis ', strong(var1),', e ',strong(var2), ' é de: ', strong(signif(cohensD, 4))))
-        }
+          column(6, uiOutput('t_test_normality_results')),
+          column(6, DTOutput('t_test_outliers')),
+
+          column(12,
+                 h3(strong('Teste de Homostaciedade')),
+                 DTOutput('t_test_homostacity'),
+                 h3(strong('Resultados: ')),align = 'center'
+          )
+        ))
+        output$t_test_results <- renderUI(tagList(
+          column(12,
+                 DTOutput('t_test_dt'),
+                 uiOutput('t_test_effect_size')
+          )
+        ))
+        dt <- contingency_data(values$bidimensional_data)
+
+        # output$t_test_normality <- renderPlotly(renderAssessingNormQQ(values))
+        fig1 <- renderAssessingNormQQ(values)
+        shap <- dt %>% group_by(Classificação) %>% shapiro_test(Dados) %>% as.data.frame()
+        shap <- shap[-c(2,3)]
+
+        output$t_test_normality_results <- renderUI(p('Os valores de p utilizando o teste de Shapiro Wilk é de: ',
+                                                      strong(shap[1,1],' - ', signif(shap[1,2], 4)), ' e ',
+                                                      strong(shap[2,1],' - ', signif(shap[2,2], 4)))
+        )
+        # output$t_test_boxplot <- renderPlotly(plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box'))
+        fig2 <- plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box')
+        outliers_dt <- dt %>% group_by(Classificação) %>% identify_outliers(Dados) %>% data.frame()
+        output$t_test_outliers <- if(nrow(outliers_dt) != 0) renderDT(outliers_dt)
+
+        output$t_test_plotly <- renderPlotly(subplot(fig1, fig2, margin = 0.1))
+        ftest <- var.test(Dados ~ Classificação, dt)
+        ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate), 'p' = signif(ftest$p.value), 'Estatística' = signif(ftest$statistic))
+        output$t_test_homostacity <- renderDT(ftest_dt)
+
+        test_t <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = TRUE)
+        test_t_df <- data.frame(p = signif(test_t$p, 4), estatística = signif(test_t$statistic, 4), df = signif(test_t$df, 4))
+        rownames(test_t_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
+        output$t_test_dt <- renderDT(test_t_df)
+        cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
+        output$t_test_effect_size <-renderUI(p('A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4))))
       }
+    }
+    else
+      output$t_test_results <- renderUI(h3('A tabela inserida deve conter apenas duas colunas', align = 'center'))
 
   })
 
@@ -1250,26 +1324,6 @@ server <- function (input, output, session){
         )
       ),
     )
-    output$test_t_variable <- renderUI(tagList(
-      selectInput(
-        inputId = 'test_t_variable_ui',
-        label = 'Escolha a primeira variável: ',
-        choices = names(values$bidimensional_data),
-        selected = ''
-      ),
-      uiOutput('test_t_variable_ui2_aux')
-    ))
-    observeEvent(input$test_t_options, {
-      if(input$test_t_options == 'two' | input$test_t_options == 'paired') {
-       output$test_t_variable_ui2_aux <- renderUI(
-         selectInput(
-           inputId = 'test_t_variable_ui2',
-           label = 'Escolha a segunda variável: ',
-           choices = names(values$bidimensional_data),
-           selected = ''
-         ))}
-      else output$test_t_variable_ui2_aux <- renderUI(p())
-    })
 
     output$wilcoxon_test_variable <- renderUI(tagList(
       selectInput(

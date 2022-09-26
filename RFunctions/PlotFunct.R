@@ -476,11 +476,12 @@ renderAssessingNormDensity <- function (values, options){
 
   return(fig)
 }
-renderAssessingNormQQ <- function (values, options){
+renderAssessingNormQQ <- function (values, options = NULL){
   data <- contingency_data(values$bidimensional_data)
   fig <- ggplotly(
     ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
   )
+  if(is.null(options))return(fig)
 
     layoutConfig <- list(
     bgcolor = if(is.null(options$colors_check_norm_qq)) options$bgColorPlotly else{

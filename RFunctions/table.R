@@ -2,21 +2,11 @@
 contingency_data <- function (data_info){
   data_aux <- data.frame(Dados = data_info[[1]], Classificação = names(data_info)[1])
 
-    for (i in seq(ncol(data_info) - 1)){
-      data_aux <- rbind(data_aux, data.frame(Dados = data_info[[i + 1]], Classificação = names(data_info)[i + 1]))
-    }
-  data_aux <- data_aux[-which(is.na(data_aux$Dados)),]
+  for (i in seq(ncol(data_info) - 1))
+    data_aux <- rbind(data_aux, data.frame(Dados = data_info[[i + 1]], Classificação = names(data_info)[i + 1]))
+
   return(data_aux)
 }
-#
-# flat_data <- function (c_data_info){
-#   names <- names(table(c_data_info[,2]))
-#   data_aux <- data.frame()
-#   sapply(names, function (x){
-#    data_aux$x <- c_data_info[which(c_data_info[,2] == x,1), 1]
-#   })
-# }
-#
 
 setUniValues <- function (values, data){
   values$nrow <- nrow(data)
@@ -118,6 +108,7 @@ renderCheckNormTable <- function (values, options){
 
 }
 
+#-----------------ANCOVA------------------
 setAncovaValues <- function (values, options){
   dt <- values$bidimensional_data
   var1 <- options$ancova_variable

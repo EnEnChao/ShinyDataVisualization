@@ -19,16 +19,26 @@ import_bidimensional_page <- function (){
                switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
              ),
              conditionalPanel(condition = "input.file_selector_bi == 'example'", {
-               selectInput('examp_select_bi',
+               pickerInput('examp_select_bi',
                            'Escolha os dados de exemplo',
-                           choices = c(
-                             'Combustível' = 'gas',
-                             'Combustível2' = 'gas2',
-                             'Ansiedade' = 'anxiety',
-                             'Escolaridade' = 'escolaridade'
+                           choices = list(
+                             `Duas Médias` = c(
+                               'Combustível' = 'gas',
+                               'Ratos' = 'mice',
+                               'Peso entre gêneros' = 'genderweight'
+                             ),
+                             `Multiplas Médias - ANOVA` = c(
+                               'Combustível' = 'gas2'
+                             ),
+                             `Multiplas Médias - ANCOVA` = c(
+                               'Combustível' = 'gas3',
+                               'Ansiedade' = 'anxiety',
+                               'Escolaridade' = 'escolaridade'
+                             )
                            ),
                            selected = 'gas'
-               ) }),
+               )
+             }),
              conditionalPanel(condition = "input.file_selector_bi != 'null'",
                               textInput('title_id_import_bi', 'Digíte o título', 'Título'),
                               actionButton("load_bidimensional",

@@ -16,13 +16,13 @@ transform_norm_page <- function (){
                    'Nenhuma' = 'none',
                    'sqrt(x)' = 'sqrt',
                    'log10(x)' = 'log10',
-                   'logY(x)' = 'logy',
+                   'Numeric' = 'logy',
                    '1/x' = '1/x'
                  ),
                  selected = 'none'
                ),
                conditionalPanel(condition = 'input.transform_norm_distributions == "logy"',
-                                numericInput('transform_norm_distributions_logy', 'Escolha a base do log(x) (Y = 1 ou Y -1, sua base será 10 automaticamente): ',
+                                numericInput('transform_norm_distributions_logy', 'Escolha um número para multiplicar o dataframe: ',
                                              value = 10, step = 1
                                 )
 
