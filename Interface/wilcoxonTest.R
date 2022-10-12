@@ -12,9 +12,8 @@ wilcoxon_test_page <- function (){
                            choices = c('One way' = 'one',
                                        'Two ways' = 'two',
                                        'Pareado' = 'paired'),
-                           selected = 'one'
+                           selected = 'two'
                ),
-               uiOutput('wilcoxon_test_variable'),
                conditionalPanel(condition = 'input.wilcoxon_test_options == "one"',
                                 numericInput('wilcoxon_t_mu', 'Valor verdadeiro da média:', value = 0, step = 1)
                ),
@@ -32,6 +31,7 @@ wilcoxon_test_page <- function (){
            column(9,
                   h3('Teste de Wilcoxon', style="text-align:center; font-size:50px;"),
                   br(),
+                  uiOutput('wilcoxon_test_predict'),
                   uiOutput('wilcoxon_test_results'),
                   align = 'center'
            ),

@@ -17,9 +17,7 @@ anova_page <- function (){
     ),
     column(9,
            tabsetPanel(
-             tabPanel('ANOVA One-Way', h3("ANOVA One-Way", style="text-align:center; font-size:50px;")),
-             tabPanel('ANOVA Two-Ways', h3("ANOVA Two-Ways", style="text-align:center; font-size:50px;")),
-             tabPanel('ANOVA Three-Ways', h3("ANOVA Three-Ways", style="text-align:center; font-size:50px;"))
+
            )
     ),
     column(12, hr())

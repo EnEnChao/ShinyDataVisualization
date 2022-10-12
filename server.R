@@ -498,7 +498,7 @@ server <- function (input, output, session){
         output$t_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(dt[,2])$p.value, 4)))
         output$t_test_boxplot_1 <- renderPlotly(plot_ly(data.frame(), y = dt[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(dt)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
         output$t_test_outliers_1 <- renderUI(if(nrow(identify_outliers(dt[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(dt[1])), ' outliers.'))
-        output$t_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = dt[,2], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(dt)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
+        output$t_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = dt[,2], type = 'box', boxpoints = "all", fillcolor = '#D4F0F0', name = names(dt)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
         output$t_test_outliers_2 <- renderUI(if(nrow(identify_outliers(dt[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(dt[2])), ' outliers.'))
 
         mu <- input$test_t_mu
@@ -514,14 +514,14 @@ server <- function (input, output, session){
                  uiOutput('t_test_effect_size2')
           )
         ))
-        test_t <- t.test(dt[1], mu = mu)
-        test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4))
-        rownames(test_t_df) <- paste0('Test T - ', names(dt)[1])
-        output$t_test_dt_1 <- renderDT(test_t_df)
-        test_t <- t.test(dt[2], mu = mu)
-        test_t_df <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4))
-        rownames(test_t_df) <- paste0('Test T - ', names(dt)[2])
-        output$t_test_dt_2 <- renderDT(test_t_df)
+        test_w <- t.test(dt[1], mu = mu)
+        test_w_df <- data.frame(p = signif(test_w$p.value, 4), estatística = signif(test_w$estimate, 4), df = signif(test_w$parameter, 4))
+        rownames(test_w_df) <- paste0('Test T - ', names(dt)[1])
+        output$t_test_dt_1 <- renderDT(test_w_df)
+        test_w <- t.test(dt[2], mu = mu)
+        test_w_df <- data.frame(p = signif(test_w$p.value, 4), estatística = signif(test_w$estimate, 4), df = signif(test_w$parameter, 4))
+        rownames(test_w_df) <- paste0('Test T - ', names(dt)[2])
+        output$t_test_dt_2 <- renderDT(test_w_df)
 
         output$t_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(dt)[1])), ', com mu = ', strong(mu), ' é de: ', strong(signif(abs(mean(dt[,1]) - mu) / sd(dt[,1]), 4))))
         output$t_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(dt)[2])), ', com mu = ', strong(mu), ' é de: ', strong(signif(abs(mean(dt[,2]) - mu) / sd(dt[,2]), 4))))
@@ -550,7 +550,6 @@ server <- function (input, output, session){
         ))
         dt <- contingency_data(values$bidimensional_data)
 
-        # output$t_test_normality <- renderPlotly(renderAssessingNormQQ(values))
         fig1 <- renderAssessingNormQQ(values)
         shap <- dt %>% group_by(Classificação) %>% shapiro_test(Dados) %>% as.data.frame()
         shap <- shap[-c(2,3)]
@@ -569,81 +568,164 @@ server <- function (input, output, session){
         ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate), 'p' = signif(ftest$p.value), 'Estatística' = signif(ftest$statistic))
         output$t_test_homostacity <- renderDT(ftest_dt)
 
-        test_t <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = TRUE)
-        test_t_df <- data.frame(p = signif(test_t$p, 4), estatística = signif(test_t$statistic, 4), df = signif(test_t$df, 4))
-        rownames(test_t_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
-        output$t_test_dt <- renderDT(test_t_df)
+        #Remove outliers
+        if(input$test_t_options != 'paired')
+          dt <- removeOutliers(dt)
+
+        test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = TRUE)
+        test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic, 4), df = signif(test_w$df, 4))
+        rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
+        output$t_test_dt <- renderDT(test_w_df)
         cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
         output$t_test_effect_size <-renderUI(p('A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4))))
       }
     }
     else
       output$t_test_results <- renderUI(h3('A tabela inserida deve conter apenas duas colunas', align = 'center'))
-
   })
-
-
   #-------------------Wilcoxon Test-------------------#
   observeEvent(input$load_wilcoxon_test, {
-    output$wilcoxon_test_results <- renderUI(tagList(
-        h3(strong('Estatísticas'), align = 'center'),
-        DTOutput('wilcoxon_test_dt'),
-        uiOutput('wilcoxon_test_effect_size')
-      ))
-    var1 <- input$wilcoxon_test_variable_ui
+    if (ncol(values$bidimensional_data) == 2 & is.numeric(values$bidimensional_data[,1]) & is.numeric(values$bidimensional_data[,2])){
+      if(input$wilcoxon_test_options == 'one') {
+        dt <- values$bidimensional_data
+        output$wilcoxon_test_predict <- renderUI(tagList(
+          h3(strong('Testando Normalidade', align = 'center')),
+          column(6,
+                 h4(names(dt)[1]),
+                 plotlyOutput('wilcoxon_test_normality_1'),
+                 uiOutput('wilcoxon_test_normality_results_1'), align = 'center'
+          ),
+          column(6,
+                 h4(names(dt)[2]),
+                 plotlyOutput('wilcoxon_test_normality_2'),
+                 uiOutput('wilcoxon_test_normality_results_2'), align = 'center'
+            ),
+          column(12,
+                 br(),
+                 h3(strong('Verificando Outliers', align = 'center'))
+          ),
+          column(6,
+                 plotlyOutput('wilcoxon_test_boxplot_1'),
+                 uiOutput('wilcoxon_test_outliers_1'), align = 'center'
+          ),
+          column(6,
+                 plotlyOutput('wilcoxon_test_boxplot_2'),
+                 uiOutput('wilcoxon_test_outliers_2'), align = 'center'
+          ),
+          h3(strong('Resultados', align = 'center'))
+        ))
+        output$wilcoxon_test_normality_1 <- renderPlotly(ggplotly(ggqqplot(dt[,1], color = '#F8766D')))
+        output$wilcoxon_test_normality_results_1 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(dt[,1])$p.value, 4)))
+        output$wilcoxon_test_normality_2 <- renderPlotly(ggplotly(ggqqplot(dt[,2], color = '#28B3B6')))
+        output$wilcoxon_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(dt[,2])$p.value, 4)))
+        output$wilcoxon_test_boxplot_1 <- renderPlotly(plot_ly(data.frame(), y = dt[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(dt)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
+        output$wilcoxon_test_outliers_1 <- renderUI(if(nrow(identify_outliers(dt[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(dt[1])), ' outliers.'))
+        output$wilcoxon_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = dt[,2], type = 'box', boxpoints = "all", fillcolor = '#D4F0F0', name = names(dt)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
+        output$wilcoxon_test_outliers_2 <- renderUI(if(nrow(identify_outliers(dt[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(dt[2])), ' outliers.'))
 
-    if(input$wilcoxon_test_options == 'one') {
-      dt <- data.frame(values$bidimensional_data[input$wilcoxon_test_variable_ui])
-      colnames(dt) <- 'var1'
-      mu <- input$wilcoxon_t_mu
+        mu <- input$wilcoxon_t_mu
+        output$wilcoxon_test_results <- renderUI(tagList(
+          column(6,
+                 h4(strong('Teste de Wilcoxon - ',names(values$bidimensional_data)[1]), align = 'center'),
+                 DTOutput('wilcoxon_test_dt_1'),
+                 uiOutput('wilcoxon_test_effect_size1')
+          ),
+          column(6,
+                 h4(strong('Teste T - ',names(values$bidimensional_data)[2]), align = 'center'),
+                 DTOutput('wilcoxon_test_dt_2'),
+                 uiOutput('wilcoxon_test_effect_size2')
+          )
+        ))
+        w_test1 <- rstatix::wilcox_test(data = data.frame(data = dt[[1]]),data ~ 1, mu = mu)
+        w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], 4))
+        rownames(w_test_df1) <- paste0('Test de Wilcoxon - ', names(dt)[1])
+        output$wilcoxon_test_dt_1 <- renderDT(w_test_df1)
+        w_effectsize1 <- wilcox_effsize(data.frame(data = dt[[1]]), data ~ 1, mu = mu)
+        output$wilcoxon_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(dt)[1])), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], 4))))
 
-      w_test <- dt %>% rstatix::wilcox_test(var1 ~ 1, mu = mu)
-      w_test_df <- data.frame(p = signif(w_test$p[[1]], 4), estatística = signif(w_test$statistic[[1]], 4))
-      rownames(w_test_df) <- paste0('Test de Wilcoxon - ', var1)
-      output$wilcoxon_test_dt <- renderDT(w_test_df)
+        w_test2 <- rstatix::wilcox_test(data = data.frame(data = dt[[2]]),data ~ 1, mu = mu)
+        w_test_df2 <- data.frame(p = signif(w_test2$p[[1]], 4), estatística = signif(w_test2$statistic[[1]], 4))
+        rownames(w_test_df2) <- paste0('Test de Wilcoxon - ', names(dt)[2])
+        output$wilcoxon_test_dt_2 <- renderDT(w_test_df2)
+        w_effectsize2 <- wilcox_effsize(data.frame(data = dt[[2]]), data ~ 1, mu = mu)
+        output$wilcoxon_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(dt)[2])), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize2$effsize[[1]], 4))))
+      }
+      else if(input$wilcoxon_test_options == 'two' | input$wilcoxon_test_options == 'paired'){
+        output$wilcoxon_test_predict <- renderUI(tagList(
+          column(6, h3(strong('Testando Normalidade', align = 'center'))),
+          column(6, h3(strong('Verificando Outliers', align = 'center'))),
 
-      w_effectsize <- dt %>% wilcox_effsize(var1 ~ 1, mu = 0)
-      output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito da variável ', (strong(var1)), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize$effsize[[1]], 4))))
-    }
-    else if(input$wilcoxon_test_options == 'two' | input$wilcoxon_test_options == 'paired'){
-      dt <- data.frame(values$bidimensional_data[input$wilcoxon_test_variable_ui], values$bidimensional_data[input$wilcoxon_test_variable_ui2])
-      colnames(dt) <- c('var1', 'var2')
-      var2 <- input$wilcoxon_test_variable_ui2
+          column(12, plotlyOutput('wilcoxon_test_plotly')),
 
-      if(var1 == var2 | !is.numeric(dt$var1) | !is.numeric(dt$var2))
-        output$wilcoxon_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
-      else{
-        dt <- contingency_data(dt)
-        w_test <- if(input$wilcoxon_test_options == 'two') dt %>% rstatix::wilcox_test(Dados ~ Classificação) else if(input$wilcoxon_test_options == 'paired')  dt %>% rstatix::wilcox_test(Dados ~ Classificação, paired = TRUE)
-        w_test_df <- data.frame(p = signif(w_test$p[[1]], 4), estatística = signif(w_test$statistic[[1]], 4))
-        rownames(w_test_df) <- if(input$wilcoxon_test_options == 'two') paste0('Test de Wilcoxon') else paste0('Test de Wilcoxon - Pareado')
-        output$wilcoxon_test_dt <- renderDT(w_test_df)
+          column(6, uiOutput('wilcoxon_test_normality_results')),
+          column(6, DTOutput('wilcoxon_test_outliers')),
 
-        w_effectsize <- if(input$wilcoxon_test_options == 'two') dt %>% wilcox_effsize(Dados ~ Classificação) else dt %>% wilcox_effsize(Dados ~ Classificação, paired = TRUE)
-        output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito entre as variáveis ', (strong(var1)),', e ',(strong(var2)),  ', é de: ', strong(signif(w_effectsize$effsize[[1]], 4))))
+          column(12,
+                 h3(strong('Teste de Homostaciedade')),
+                 DTOutput('wilcoxon_test_homostacity'),
+                 h3(strong('Resultados: ')),align = 'center'
+          )
+        ))
+        output$wilcoxon_test_results <- renderUI(tagList(
+          column(12,
+                 DTOutput('wilcoxon_test_dt'),
+                 uiOutput('wilcoxon_test_effect_size')
+          )
+        ))
+        dt <- contingency_data(values$bidimensional_data)
+        fig1 <- renderAssessingNormQQ(values)
+        shap <- dt %>% group_by(Classificação) %>% shapiro_test(Dados) %>% as.data.frame()
+        shap <- shap[-c(2,3)]
+
+        output$wilcoxon_test_normality_results <- renderUI(p('Os valores de p utilizando o teste de Shapiro Wilk é de: ',
+                                                      strong(shap[1,1],' - ', signif(shap[1,2], 4)), ' e ',
+                                                      strong(shap[2,1],' - ', signif(shap[2,2], 4)))
+        )
+        fig2 <- plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box')
+        outliers_dt <- dt %>% group_by(Classificação) %>% identify_outliers(Dados) %>% data.frame()
+        output$wilcoxon_test_outliers <- if(nrow(outliers_dt) != 0) renderDT(outliers_dt)
+
+        output$wilcoxon_test_plotly <- renderPlotly(subplot(fig1, fig2, margin = 0.1))
+        ftest <- var.test(Dados ~ Classificação, dt)
+        ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate), 'p' = signif(ftest$p.value), 'Estatística' = signif(ftest$statistic))
+        output$wilcoxon_test_homostacity <- renderDT(ftest_dt)
+
+        #Remove Outliers
+        if(input$wilcoxon_test_options != 'paired')
+          dt <- removeOutliers(dt)
+
+        test_w <- rstatix::wilcox_test(dt, Dados ~ Classificação, paired = input$wilcoxon_test_options == 'paired')
+        test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic[[1]], 4))
+        rownames(test_w_df) <- if(input$wilcoxon_test_options == 'two') paste0('Teste de Wilcoxon') else if(input$wilcoxon_test_options == 'paired') paste0('Teste de Wilcoxon - Pareado')
+        output$wilcoxon_test_dt <- renderDT(test_w_df)
+        w_effectsize <- rstatix::wilcox_effsize(dt, Dados ~ Classificação, paired = input$wilcoxon_test_options == 'paired')$effsize[[1]]
+        output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito entre as variáveis ', (strong(names(values$bidimensional_data)[1])),', e ',(strong(names(values$bidimensional_data)[2])),  ', é de: ', strong(signif(w_effectsize, 4))))
       }
     }
+    else
+      output$wilcoxon_test_results <- renderUI(h3('A tabela inserida deve conter apenas duas colunas', align = 'center'))
   })
 
   #-------------------Sign Test-------------------#
   observeEvent(input$load_sign_test,{
-    output$sign_test_results <- renderUI(tagList(
-        h3(strong('Estatísticas'), align = 'center'),
-        DTOutput('sign_test_dt')
-      ))
-    var1 <- input$sign_test_variable_ui
-    var2 <- input$sign_test_variable_ui2
-    dt <- data.frame(values$bidimensional_data[var1], values$bidimensional_data[var2])
-    colnames(dt) <- c('var1', 'var2')
-    if(var1 == var2 | !is.numeric(dt$var1) | !is.numeric(dt$var2))
-        output$sign_test_results <- renderUI('Escolha as variáveis na aba de opções. (Dados inválidos)')
-    else{
-      dt <- contingency_data(dt)
-      sign_test <- dt %>% rstatix::sign_test(Dados ~ Classificação)
-      sign_test_df <- data.frame(p = signif(sign_test$p[[1]], 4), estatística = signif(sign_test$statistic[[1]], 4), df = signif(sign_test$df[[1]], 4))
-      rownames(sign_test_df) <- paste0('Test do Sinal')
-      output$sign_test_dt <- renderDT(sign_test_df)
-    }
+        if (ncol(values$bidimensional_data) == 2 & is.numeric(values$bidimensional_data[,1]) & is.numeric(values$bidimensional_data[,2])) {
+          output$sign_test_results <- renderUI(tagList(
+            plotlyOutput('sign_test_outliers'),
+            h3(strong('Estatísticas'), align = 'center'),
+            DTOutput('sign_test_dt')
+          ))
+          dt <- values$bidimensional_data
+          colnames(dt) <- c('var1', 'var2')
+          dt <- contingency_data(dt)
+          output$sign_test_outliers <- renderPlotly(plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box'))
+
+          sign_test <- dt %>% rstatix::sign_test(Dados ~ Classificação)
+          sign_test_df <- data.frame(p = signif(sign_test$p[[1]], 4), estatística = signif(sign_test$statistic[[1]], 4), df = signif(sign_test$df[[1]], 4))
+          rownames(sign_test_df) <- paste0('Test do Sinal')
+          output$sign_test_dt <- renderDT(sign_test_df)
+        }
+    else
+      output$sign_test_results <- renderUI(h3('A tabela inserida deve conter apenas duas colunas', align = 'center'))
   })
 
   #-------------------ANCOVA-------------------#
@@ -1302,64 +1384,6 @@ server <- function (input, output, session){
         )
       )
     )
-    output$anova_variables <- renderUI(
-      tagList(
-        selectInput(
-          inputId = 'ancova_variable',
-          label = 'Escolha a variável dependente: ',
-          choices = names(values$bidimensional_data),
-          selected = ''
-        ),
-        selectInput(
-          inputId = 'ancova_group_variable',
-          label = 'Escolha a variável independente: ',
-          choices = names((values$bidimensional_data)),
-          selected = ''
-        ),
-        actionButton("load_anova",
-                     strong('Carregue!'),
-                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                     width = "80%",
-                     class = "btn-info"
-        )
-      ),
-    )
-
-    output$wilcoxon_test_variable <- renderUI(tagList(
-      selectInput(
-        inputId = 'wilcoxon_test_variable_ui',
-        label = 'Escolha a primeira variável: ',
-        choices = names(values$bidimensional_data),
-        selected = ''
-      ),
-      uiOutput('wilcoxon_test_variable_ui2_aux')
-    ))
-    observeEvent(input$wilcoxon_test_options, {
-      if(input$wilcoxon_test_options == 'two' | input$wilcoxon_test_options == 'paired') {
-       output$wilcoxon_test_variable_ui2_aux <- renderUI(
-         selectInput(
-           inputId = 'wilcoxon_test_variable_ui2',
-           label = 'Escolha a segunda variável: ',
-           choices = names(values$bidimensional_data),
-           selected = ''
-         ))}
-      else output$test_t_variable_ui2_aux <- renderUI(p())
-    })
-
-    output$sign_test_variable <- renderUI(tagList(
-      selectInput(
-        inputId = 'sign_test_variable_ui',
-        label = 'Escolha a primeira variável: ',
-        choices = names(values$bidimensional_data),
-        selected = ''
-      ),
-      selectInput(
-        inputId = 'sign_test_variable_ui2',
-        label = 'Escolha a segunda variável: ',
-        choices = names(values$bidimensional_data),
-        selected = ''
-      )
-    ))
 
     output$ancova_variables <- renderUI(
       tagList(

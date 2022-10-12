@@ -8,7 +8,6 @@ sign_test_page <- function (){
                title = 'Testes estatísticos',
                status = accordionStatus,
                collapsed = FALSE,
-               uiOutput('sign_test_variable'),
                actionButton("load_sign_test",
                      strong('Carregue!'),
                      style = "border-radius: 10px; border-width: 3px; font-size: 20px;",

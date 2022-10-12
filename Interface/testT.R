@@ -11,8 +11,7 @@ test_t_page <- function (){
                selectInput('test_t_options', 'Escolha o teste com as variáveis',
                            choices = c('One way' = 'one',
                                        'Two ways' = 'two',
-                                       'Pareado' = 'paired'
-                           ),
+                                       'Pareado' = 'paired'),
                            selected = 'two'
                ),
                conditionalPanel(condition = 'input.test_t_options == "one"',

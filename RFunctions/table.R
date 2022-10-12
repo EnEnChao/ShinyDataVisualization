@@ -151,6 +151,7 @@ shapiro_table <- function (values, options){
   shapiro
 }
 
+#Constroi a tabela posthoc
 posthoc_table <- function (values, options){
   dt <- values$data_info_bi
   posthoc <- as.data.frame(
@@ -162,4 +163,16 @@ posthoc_table <- function (values, options){
   posthoc$p.adj <- signif(posthoc$p.adj, 4)
   names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
   posthoc
+}
+
+#Remove os outliers do data frame
+#Data frame enviado tem que estar no formato da função contingency_data(data_info)
+removeOutliers <- function (data){
+  data <- data[-which(is.na(data$Dados)),]
+  quartiles <- quantile(data$Dados, probs=c(.25, .75), na.rm = FALSE)
+  IQR <- IQR(data$Dados)
+  Lower <- quartiles[1] - 1.5*IQR
+  Upper <- quartiles[2] + 1.5*IQR
+  data <- subset(data, data$Dados > Lower & data$Dados < Upper)
+  return(data)
 }
