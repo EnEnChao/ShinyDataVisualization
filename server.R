@@ -168,8 +168,12 @@ server <- function (input, output, session){
       }
       if(input$examp_select_bi == 'PlantGrowth')
         dt <- PlantGrowth
-      if(input$examp_select_bi == 'selfesteem')
-        dt <- data.frame(score = selfesteem[3], time = selfesteem[2], id = selfesteem[1])
+      if(input$examp_select_bi == 'selfesteem'){
+        s2 <- datarium::selfesteem %>%
+          gather(key = "time", value = "score", t1, t2, t3) %>%
+            convert_as_factor(id, time)
+        dt <- data.frame(score = s2[3], time = s2[2], id = as.character(s2[[1]]))
+      }
       if(input$examp_select_bi == 'gas3')
         dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
       if(input$examp_select_bi == 'anxiety') {
@@ -462,7 +466,6 @@ server <- function (input, output, session){
   }
     else
       output$sphericity_results <- renderUI(h3('A tabela inserida deve conter mais de duas variáveis', align = 'center'))
-
   })
 
   #-------------------Comparando duas médias-------------------#
@@ -861,9 +864,10 @@ server <- function (input, output, session){
      }
        else
          output$anova_statistics <- renderUI(p('Erro nos dados'))
-       #-------------------ANOVA - Repeted Measures-------------------#
-       if(ncol(values$bidimensional_data) == 3)
-       {
+
+       if(ncol(values$bidimensional_data) == 3){
+         #-------------------ANOVA - Repeted Measures-------------------#
+          {
        output$anova_rep_statistics <- renderUI(tagList(
          column(6,
                   h3(strong('Testando Normalidade', align = 'center')),
@@ -914,12 +918,75 @@ server <- function (input, output, session){
        posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
        output$anova_rep_posthoc <- renderDT(posthoc[-c(1:5, 10)])
      }
-       else
+         #-------------------ANOVA - Mixed Measures-------------------#
+          {
+       output$anova_mix_statistics <- renderUI(tagList(
+         column(6,
+                  h3(strong('Testando Normalidade', align = 'center')),
+                  plotlyOutput('anova_mix_qq_plot'),
+                  uiOutput('anova_mix_shapiro')
+
+           ),
+          column(6,
+                 h3(strong('Verificando Outliers', align = 'center')),
+                 plotlyOutput('anova_mix_box_plot'),
+                 DTOutput('anova_mix_outliers')
+          ),br(),
+           column(12,
+                  h3(strong('Verificando Homogeneidade de Variância', align = 'center')),
+                  DTOutput('anova_mix_mauchly_dt'),
+                  uiOutput('anova_mix_mauchly_results'),br(),
+
+                  h3(strong('Verificando Homogeniedade de Covariância', align = 'center')),
+                  DTOutput('anova_mix_boxm'),
+
+                  h3(strong('Resultado do teste de ANOVA', align = 'center')),
+                  DTOutput('anova_mix_dt'),
+                  uiOutput('anova_mix_statistics'),
+                  h3(strong('Tabela Post Hoc', align = 'center')),
+                  DTOutput('anova_mix_posthoc')
+           )))
+       df <- values$bidimensional_data
+       names <- names(df)
+       names(df) <- c('vd', 'vi', 'wid')
+       model <- lm(df$vd ~ df$vi)
+
+       #Normalidade
+       output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
+       shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
+       output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+
+       #Outliers
+       output$anova_mix_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
+       if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
+         output$anova_mix_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
+
+       #Teste de Esfericidade de Mauchly
+       anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
+       mauchly <- anova_dt$`Mauchly's Test for Sphericity`
+       output$anova_mix_mauchly_dt <- renderDT(mauchly[-4])
+       output$anova_mix_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
+
+        #Teste de Homogeniedade das Covariâncias
+        box_m <- box_m(df[, "vd", drop = FALSE], df$vi)
+        output$anova_mix_boxm <- renderDT(box_m)
+
+       #ANOVA
+       output$anova_mix_dt <- renderDT(get_anova_table(anova_dt))
+       output$anova_mix_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
+       posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
+       output$anova_rep_posthoc <- renderDT(posthoc[-c(1:5, 10)])
+     }
+       }
+       else{
          output$anova_rep_statistics <- renderUI(p('Erro nos dados'))
+         output$anova_mix_statistics <- renderUI(p('Erro nos dados'))
+       }
      }
     else{
        output$anova_statistics <- renderUI(p('Erro nos dados'))
        output$anova_rep_statistics <- renderUI(p('Erro nos dados'))
+       output$anova_mix_statistics <- renderUI(p('Erro nos dados'))
      }
   })
 
