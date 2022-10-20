@@ -2,20 +2,6 @@ sign_test_page <- function (){
     tabPanel('Teste do Sinal',
          column(3,
                 h3(strong("Controle do layout:"), align = 'center'),{
-           accordion(
-             id = 'accordion_sign_test',
-             accordionItem(
-               title = 'Testes estatísticos',
-               status = accordionStatus,
-               collapsed = FALSE,
-               actionButton("load_sign_test",
-                     strong('Carregue!'),
-                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                     width = "80%",
-                     class = "btn-info"
-               )
-             )
-           )
          }
 
          ),

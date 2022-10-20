@@ -25,12 +25,6 @@ homogenity_var_page <- function (){
                ),
                numericInput('homogenity_ci', 'Escolha o intervalo de confiança: ',
                             min = 0, max = 1, value = 0.95, step = 0.01
-               ),
-               actionButton("load_homogenity",
-                     strong('Carregue!'),
-                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                     width = "80%",
-                     class = "btn-info"
                )
              )
            )}

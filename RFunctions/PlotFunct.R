@@ -508,12 +508,9 @@ renderAssessingNormQQ <- function (values, options = NULL){
 renderANCOVA <- function (values, options){
 
   dt <- values$bidimensional_data
-  var1<- options$ancova_variable
-  cov1 <- options$ancova_covariable
-  group1 <- options$ancova_group_variable
-  groups <- names(table(dt[group1]))
+  groups <- names(table(dt[,3]))
 
-  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
+  dt <- data.frame(var = sapply(dt[,1], function (x) as.double(x)), cov = sapply(dt[,2], function (x) as.double(x)), group = sapply(dt[,3], function (x) as.character(x)))
   names(dt) <- c('var', 'cov', 'group')
   lm <- lm(data = dt, cov ~ var + group)
 

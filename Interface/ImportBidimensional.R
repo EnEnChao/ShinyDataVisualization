@@ -28,7 +28,11 @@ import_bidimensional_page <- function (){
                                'Peso entre gêneros' = 'genderweight'
                              ),
                              `Multiplas Médias - ANOVA` = c(
-                               'Combustível' = 'gas2'
+                               'Combustível' = 'gas2',
+                               'Crescimento de Plantas' = 'PlantGrowth'
+                             ),
+                             `Multiplas Médias - ANOVA medidas repetidas` = c(
+                               'Auto estima' = 'selfesteem'
                              ),
                              `Multiplas Médias - ANCOVA` = c(
                                'Combustível' = 'gas3',

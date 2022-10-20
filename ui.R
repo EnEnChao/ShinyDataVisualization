@@ -50,8 +50,10 @@ source('Interface/ImportBidimensional.R')
 source('Interface/testT.R')
 source('Interface/wilcoxonTest.R')
 source('Interface/SignTest.R')
-source('Interface/ANCOVA.R')
 source('Interface/ANOVA.R')
+source('Interface/ANOVA_rep.R')
+source('Interface/ANOVA_mix.R')
+source('Interface/ANCOVA.R')
 source('Interface/ImportTridimensional.R')
 source('Interface/Mesh.R')
 source('Interface/Config.R')
@@ -138,10 +140,11 @@ tags$style(HTML("
                ),
                tabPanel('Comparando multiplas médias',
                         tabsetPanel(
-                          ancova_page(),
                           anova_page(),
-                          tabPanel('ANCOVA repetida'),
-                          tabPanel('MANOVA')
+                          anova_rep_page(),
+                          anova_mix_page(),
+                          tabPanel('MANOVA'),
+                          ancova_page(),
                         )
                ),
     ),

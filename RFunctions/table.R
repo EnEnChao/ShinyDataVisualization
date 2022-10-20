@@ -108,68 +108,11 @@ renderCheckNormTable <- function (values, options){
 
 }
 
-#-----------------ANCOVA------------------
-setAncovaValues <- function (values, options){
-  dt <- values$bidimensional_data
-  var1 <- options$ancova_variable
-  cov1 <- options$ancova_covariable
-  group1 <- options$ancova_group_variable
-
-  dt <- data.frame(var = sapply(dt[var1], function (x) as.double(x)), cov = sapply(dt[cov1], function (x) as.double(x)), group = sapply(dt[group1], function (x) as.character(x)))
-  values$names_bi <- names(dt)
-  names(dt) <- c('vard', 'cov', 'vari')
-  values$data_info_bi <- dt
-}
-
-ancova_table <- function (values, options){
-  values$model_ancova <- aov(vard ~ cov + vari, data = values$data_info_bi)
-
-  dt <- Anova(values$model_ancova, type = options$ancova_sumsq)
-  dt <- data.frame('Soma de quadrados' = dt$`Sum Sq`, 'DF' = dt$Df, 'F' = dt$`F value`, 'p' = dt$`Pr(>F)`)
-
-  if(options$ancova_sumsq == 2)
-    rownames(dt) <- c(values$names_bi[c(2, 3)], 'Residuos')
-  else
-    rownames(dt) <- c('Intercept',values$names_bi[c(2, 3)], 'Residuos')
-  dt <- signif(dt, 4)
-
-  return(dt)
-}
-
-levene_table <- function (values, options){
-  levene <- leveneTest(aov(vard ~ cov + vari, data = values$data_info_bi)$residuals ~ values$data_info_bi$vari)
-  levene <- data.frame(F = levene$`F value`[1], Df1 = levene$Df[1], Df2 = levene$Df[2], p = levene$`Pr(>F)`[1])
-  levene <- signif(levene, 4)
-  rownames(levene) <- 'Teste de Levene'
-  levene
-}
-shapiro_table <- function (values, options){
-  shapiro <- shapiro.test(aov(vard ~ cov + vari, data = values$data_info_bi)$residuals)
-  shapiro <- data.frame(Estatística = shapiro$statistic, p = shapiro$p.value)
-  shapiro <- signif(shapiro, 4)
-  rownames(shapiro) <- 'Teste de Shapiro-Wilk'
-  shapiro
-}
-
-#Constroi a tabela posthoc
-posthoc_table <- function (values, options){
-  dt <- values$data_info_bi
-  posthoc <- as.data.frame(
-    dt %>% emmeans_test(vard ~ vari, covariate = cov, p.adjust.method = 'bonferroni')
-  )
-  posthoc <- posthoc[,-c(1, 2)]
-  posthoc$statistic <- signif(posthoc$statistic, 4)
-  posthoc$p <- signif(posthoc$p, 4)
-  posthoc$p.adj <- signif(posthoc$p.adj, 4)
-  names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
-  posthoc
-}
-
 #Remove os outliers do data frame
 #Data frame enviado tem que estar no formato da função contingency_data(data_info)
 removeOutliers <- function (data){
   data <- data[-which(is.na(data$Dados)),]
-  quartiles <- quantile(data$Dados, probs=c(.25, .75), na.rm = FALSE)
+  quartiles <- quantile(data$Dados, probs=c(.025, .975), na.rm = FALSE)
   IQR <- IQR(data$Dados)
   Lower <- quartiles[1] - 1.5*IQR
   Upper <- quartiles[2] + 1.5*IQR

@@ -16,12 +16,6 @@ wilcoxon_test_page <- function (){
                ),
                conditionalPanel(condition = 'input.wilcoxon_test_options == "one"',
                                 numericInput('wilcoxon_t_mu', 'Valor verdadeiro da média:', value = 0, step = 1)
-               ),
-               actionButton("load_wilcoxon_test",
-                     strong('Carregue!'),
-                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                     width = "80%",
-                     class = "btn-info"
                )
              )
            )

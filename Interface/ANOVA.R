@@ -4,21 +4,12 @@ anova_page <- function (){
     column(3,
            column(12,
              h3(strong("Controle de opções:"), align = 'center'),
-                  { accordion(
-                    id = 'accordion_anova',
-                    accordionItem(
-                      title = 'Variáveis',
-                      status = accordionStatus,
-                      collapsed = FALSE,
-                      uiOutput('anova_variables')
-                    )
-                  ) }
            )
     ),
     column(9,
-           tabsetPanel(
-
-           )
+           h3('ANOVA', style="text-align:center; font-size:50px;"),
+           uiOutput('anova_statistics'),
+           align = 'center'
     ),
     column(12, hr())
   )

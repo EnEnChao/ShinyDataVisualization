@@ -16,12 +16,6 @@ test_t_page <- function (){
                ),
                conditionalPanel(condition = 'input.test_t_options == "one"',
                                 numericInput('test_t_mu', 'Valor verdadeiro da média:', value = 0, step = 1),
-               ),
-               actionButton("load_t_test",
-                     strong('Carregue!'),
-                     style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
-                     width = "80%",
-                     class = "btn-info"
                )
              )
            )
@@ -36,4 +30,11 @@ test_t_page <- function (){
            ),
            column(12, hr())
   )
+}
+
+test_t_uni <- function (vector, mu){
+  test_t <- t.test(vector, mu = mu)
+  test_t2 <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4))
+  rownames(test_t2) <- paste0('Test T - ', names(vector)[1])
+  return(test_t2)
 }
