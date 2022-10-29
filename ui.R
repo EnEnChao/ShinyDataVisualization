@@ -127,8 +127,8 @@ tags$style(HTML("
                         tabsetPanel(
                           check_norm_page(),
                           homogenity_var_page(),
-                          sphericity_page(),
-                          transform_norm_page()
+                          transform_norm_page(),
+                          sphericity_page()
                         )
                ),
                tabPanel('Comparando duas médias',

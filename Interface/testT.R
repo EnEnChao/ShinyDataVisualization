@@ -25,7 +25,6 @@ test_t_page <- function (){
            column(9,
                   h3('Teste T', style="text-align:center; font-size:50px;"),
                   uiOutput('t_test_predict'),
-                  uiOutput('t_test_results'),
                   align = 'center'
            ),
            column(12, hr())

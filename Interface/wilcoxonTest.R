@@ -10,9 +10,9 @@ wilcoxon_test_page <- function (){
                collapsed = FALSE,
                selectInput('wilcoxon_test_options', 'Escolha o teste com as variáveis',
                            choices = c('One way' = 'one',
-                                       'Two ways' = 'two',
+                                       'Mann–Whitney' = 'rank_sum',
                                        'Pareado' = 'paired'),
-                           selected = 'two'
+                           selected = 'rank_sum'
                ),
                conditionalPanel(condition = 'input.wilcoxon_test_options == "one"',
                                 numericInput('wilcoxon_t_mu', 'Valor verdadeiro da média:', value = 0, step = 1)
@@ -26,7 +26,6 @@ wilcoxon_test_page <- function (){
                   h3('Teste de Wilcoxon', style="text-align:center; font-size:50px;"),
                   br(),
                   uiOutput('wilcoxon_test_predict'),
-                  uiOutput('wilcoxon_test_results'),
                   align = 'center'
            ),
            column(12, hr())
