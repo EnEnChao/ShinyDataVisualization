@@ -1,5 +1,11 @@
 A shiny app for data visualization
 
-Sobre o aplicativo: Este aplicativo tem função de visualizar e comparar vários dados, com uma única variável discreta, do mesmo tipo. O aplicativo aceita dados em arquivos .xlsx, no qual a primeira linha são os nomes dos dados, e as n linhas restantes são os dados de cada uma das colunas. O aplicativo também possui uma interface com uma planilha interativa onde ele é valido, apenas que os espaços para os nomes das colunas já estão definidos. Com os dados já inseridos, o aplicativo possui três funcionalidades, mostrar um resumo com algumas informações sobre os dados inseridos, um painel contendo gráficos 2D e um painel contendo gráficos 3D. Existem 6 tipos de gráficos 2D: Histogramas, Box Plot, Violino, Dot Plot, Gráfico de Densidade e Gráfico de Erros, e existem 6 tipos de gráficos 3D: Histogramas, Gráfico em Mesh, Gráfico em Superfice, Elipse, Dot Plot e Gráfico de Barras. Cada um dos gráficos pode ser personalizado, modificando cores, estilos, tamanhos e algoritmos para o cálculo dos gráficos, dependendo de cada um dos gráficos. Para esta função existe uma barra de controle de opções na lateral, específica para cada um dos gráficos. Por fim, todos os gráficos podem ser baixados em um arquivo
+Sobre o aplicativo: Este aplicativo tem função de visualizar, comparar diversos dados e realizar testes estatísticos com múltiplas variáveis, mostrando observações e predições. O aplicativo aceita dados em arquivos ".xlsx", e possui três funcionalidades.
+
+A primeira o usuário envia uma tabela, e consegue projetar diversos gráficos 2D e 3D, com diversas configurações, além de uma tabela mostrando dados estatísticos importantes.
+
+A segunda funcionalidade são os testes estatísticos, em que o usuário insere a tabela desejada, e o software calcula cada um dos testes. São testes que podem ser comparados com 2 ou mais grupos.
+
+A terceira, por fim é uma tabela específica para projetar gráficos Mesh, onde o usuário insere um arquivo ".xlsx" com diversas planilhas, e o programa mostra os gráficos.
 
 Para mais informações leia o manual

@@ -916,7 +916,7 @@ server <- function (input, output, session){
        output$anova_rep_dt <- renderDT(get_anova_table(anova_dt))
        output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
        posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
-       output$anova_rep_posthoc <- renderDT(posthoc[-c(1:5, 10)])
+       output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
      }
          #-------------------ANOVA - Mixed Measures-------------------#
           {
@@ -933,7 +933,7 @@ server <- function (input, output, session){
                  DTOutput('anova_mix_outliers')
           ),br(),
            column(12,
-                  h3(strong('Verificando Homogeneidade de Variância', align = 'center')),
+                  h3(strong('Esfericidade de Mauchly', align = 'center')),
                   DTOutput('anova_mix_mauchly_dt'),
                   uiOutput('anova_mix_mauchly_results'),br(),
 

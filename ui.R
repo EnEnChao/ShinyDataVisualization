@@ -143,8 +143,10 @@ tags$style(HTML("
                           anova_page(),
                           anova_rep_page(),
                           anova_mix_page(),
-                          tabPanel('MANOVA'),
                           ancova_page(),
+                          tabPanel('MANOVA'),
+                          tabPanel('Kruskal-Wallis Test'),
+                          tabPanel('Friedman Test')
                         )
                ),
     ),
