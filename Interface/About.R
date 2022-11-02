@@ -14,7 +14,23 @@ about_page <- function (){
                     a('Download Tutorial', href = 'Shiny Data Visualization - Tutorial.pdf', target = "_blank"),
                     h4(strong('Equipe de Desenvolvedores')),
                     hr(),
-                    wellPanel(),
+                    fluidRow(
+                      wellPanel(
+                        splitLayout(cellWidths = c("25%", "25%"),
+                        HTML('<img src="AndreMiyazawa_profile_picture.jpeg" width=30% height=30%>'),
+                        HTML('<img src="WericksonRocha_profile_picture.jpg" width=30% height=30%>'),
+                                    HTML(''),
+                                    HTML(''),
+                        align = 'center'
+                      ),splitLayout(cellWidths = c("25%", "25%"),
+                        h5(strong('André Miyazawa')),
+                        h5(strong('Werickson Rocha')),
+                                    p(''),
+                                    p(''),
+                        align = 'center'
+                      ),
+                      )
+                    ),
                     hr()
              )
     )

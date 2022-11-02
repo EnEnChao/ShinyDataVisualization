@@ -8,6 +8,19 @@ contingency_data <- function (data_info){
   return(data_aux)
 }
 
+checandoDados <- function (data, type){
+  if(type == 'two_col')
+    return(ncol(data) == 2 & is.numeric(data[,1]) & is.numeric(data[,2]))
+  if(type == 'anova')
+    return(ncol(data) == 2 & is.numeric(data[,1]) & min(table(data[,2])) > 1)
+  if(type == 'anova_2groups')
+    return(ncol(data) == 3 & is.numeric(data[,1]) & min(table(data[,2])) > 1  & min(table(data[,3])) > 1)
+  if(type == 'ancova')
+    return(ncol(data) == 3 & is.numeric(data[,1]) & is.numeric(data[,2]) & min(table(data[,3])) > 1)
+
+  return(FALSE)
+}
+
 setUniValues <- function (values, data){
   values$nrow <- nrow(data)
   values$ncol <- ncol(data)

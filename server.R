@@ -151,71 +151,92 @@ server <- function (input, output, session){
 
   #-------------------Load Bidimensional Data-------------------#
   observeEvent(input$load_bidimensional,{
-    output$ancova_statistics <- renderUI(p(''))
-    showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Avaliando os dados")
-    showTab(inputId = "tabs", target = "Comparando multiplas médias")
-
+    type <- NULL
     if (input$file_selector_bi == 'example'){
       #Duas Médias
-      if(input$examp_select_bi == 'gas')
+      if(input$examp_select_bi == 'gas') {
         dt <- data.frame(read.xlsx('Data/exemplo_two_means.xlsx'))
-      if(input$examp_select_bi == 'mice')
+        type <- 'two_col'
+      }
+      if(input$examp_select_bi == 'mice'){
         dt <- mice2[,c(2, 3)]
-      if(input$examp_select_bi == 'genderweight')
+        type <- 'two_col'
+      }
+      if(input$examp_select_bi == 'genderweight'){
         dt <- data.frame(sapply(levels(genderweight$group), function (x){ genderweight[which(genderweight$group == x),]$weight }))
+        type <- 'two_col'
+      }
       #ANOVA
       if(input$examp_select_bi == 'gas2') {
         dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
         dt <- dt[,-2]
+        type <- 'anova'
       }
-      if(input$examp_select_bi == 'PlantGrowth')
+      if(input$examp_select_bi == 'PlantGrowth'){
         dt <- PlantGrowth
+        type <- 'anova'
+      }
       if(input$examp_select_bi == 'selfesteem'){
         s2 <- datarium::selfesteem %>%
           gather(key = "time", value = "score", t1, t2, t3) %>%
             convert_as_factor(id, time)
         dt <- data.frame(score = s2[3], time = s2[2], id = as.character(s2[[1]]))
+        type <- 'anova_2groups'
       }
-      if(input$examp_select_bi == 'gas3')
+      if(input$examp_select_bi == 'gas3') {
         dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
+        type <- 'ancova'
+      }
       if(input$examp_select_bi == 'anxiety') {
         data("anxiety", package = "datarium")
         dt <- as.data.frame(anxiety[, 2:4])
         dt$Group <- dt$group
         dt <- dt[,-1]
         names(dt) <- c('T1', 'T2', 'Group')
+        type <- 'ancova'
       }
-      if(input$examp_select_bi == 'escolaridade')
+      if(input$examp_select_bi == 'escolaridade'){
         dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
+        type <- 'ancova'
+      }
+      if(input$examp_select_bi == 'iris_manova'){
+        dt <- iris %>% rstatix::select(Sepal.Length, Petal.Length, Species) %>% add_column(id = seq_len(nrow(iris)), .before = 1)
+        type <- 'manova'
+      }
     }
     else if(input$file_selector_bi == 'import') {
       dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
-      if(!input$imported_bi_as.factor)
-        dt <- contingency_data(dt)
+      type <- input$imported_bi_type
     }
-    output$table_import_bi_data_output <- renderUI(
-      shinycssloaders::withSpinner(
-        DTOutput("table_import_bi_data_output2"),
-        type = spinnerType,
-        color = spinnerColor,
-        size = spinnerSize
-      )
-    )
-    output$table_import_bi_data_output2 <- renderDT(dt)
+    if ((type %in% c('two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
+      showTab(inputId = "tabs", target = "Comparando duas médias")
+      showTab(inputId = "tabs", target = "Avaliando os dados")
+      showTab(inputId = "tabs", target = "Comparando multiplas médias")
+       output$table_import_bi_data_output <- renderUI(
+         shinycssloaders::withSpinner(
+           DTOutput("table_import_bi_data_output2"),
+           type = spinnerType,
+           color = spinnerColor,
+           size = spinnerSize
+         )
+       )
+      output$table_import_bi_data_output2 <- renderDT(dt)
 
-    values$usr_title <- paste0(input$title_id_import_bi)
+      values$usr_title <- paste0(input$title_id_import_bi)
       output$title_name_import_bi <- renderUI(
-         h2(strong(values$usr_title))
+        h2(strong(values$usr_title))
       )
-    values$bidimensional_data <- dt
+      values$bidimensional_data <- dt
+      values$bidimensional_data_type <- type
+    }
+    else {
+      output$table_import_bi_data_output <- renderUI(h3(frase_erro, align = 'center'))
+      hideTab(inputId = "tabs", target = "Comparando duas médias")
+      hideTab(inputId = "tabs", target = "Avaliando os dados")
+      hideTab(inputId = "tabs", target = "Comparando multiplas médias")
+    }
   })
   observeEvent(input$load_spreadsheet_bi,{
-    output$ancova_statistics <- renderUI(p(''))
-    showTab(inputId = "tabs", target = "Comparando duas médias")
-    showTab(inputId = "tabs", target = "Avaliando os dados")
-    showTab(inputId = "tabs", target = "Comparando multiplas médias")
-
     dt <- data.frame(hot_to_r(input$user_data_bi))
     empty_columns <- colSums(dt == "") == nrow(dt)
     dt <- dt[, !empty_columns]
@@ -231,15 +252,25 @@ server <- function (input, output, session){
       dt <- dt[-1,]
 
       dt <- as.data.frame(dt)
-      if(!input$inserted_bi_as.factor)
-        dt <- contingency_data(dt)
     } else output$rest_of_sidebar <- renderMenu(NULL)
 
-    values$usr_title <- paste0(input$title_id_insert_bi)
-    output$title_name_insert_bi <- renderUI(
+    type <- output$inserted_bi_type
+    if ((type %in% c('two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
+      values$usr_title <- paste0(input$title_id_insert_bi)
+      output$title_name_insert_bi <- renderUI(
       h2(strong(values$usr_title)))
+      showTab(inputId = "tabs", target = "Comparando duas médias")
+      showTab(inputId = "tabs", target = "Avaliando os dados")
+      showTab(inputId = "tabs", target = "Comparando multiplas médias")
 
-    values$bidimensional_data <- dt
+      values$bidimensional_data_type <- type
+      values$bidimensional_data <- dt
+    }
+    else{
+      hideTab(inputId = "tabs", target = "Comparando duas médias")
+      hideTab(inputId = "tabs", target = "Avaliando os dados")
+      hideTab(inputId = "tabs", target = "Comparando multiplas médias")
+    }
   })
 
   #-------------------Avaliando os dados-------------------#
@@ -473,7 +504,7 @@ server <- function (input, output, session){
 
   #-------------------Comparando duas médias-------------------#
   observe(if(!is.null(values$bidimensional_data)){
-      if (ncol(values$bidimensional_data) == 2 & is.numeric(values$bidimensional_data[,1]) & is.numeric(values$bidimensional_data[,2])){
+      if (values$bidimensional_data_type == 'two_col'){
         #-------------------T Test-------------------#
         {
           if(input$test_t_options == 'one') {
@@ -545,6 +576,7 @@ server <- function (input, output, session){
               column(12,
                      h3(strong('Teste de homocedasticidade')),
                      DTOutput('t_test_homostacity'),
+                     uiOutput('t_test_homostacity_results'),
                      h3(strong('Resultados: ')),
                      DTOutput('t_test_dt'),
                      uiOutput('t_test_effect_size')
@@ -557,9 +589,9 @@ server <- function (input, output, session){
             shap <- dt %>% group_by(Classificação) %>% shapiro_test(Dados) %>% as.data.frame()
             shap <- shap[-c(2,3)]
 
-            output$t_test_normality_results <- renderUI(p('Os valores de p utilizando o teste de Shapiro Wilk é de: ',
-                                                          strong(shap[1,1],' - ', signif(shap[1,2], 4)), ' e ',
-                                                          strong(shap[2,1],' - ', signif(shap[2,2], 4)))
+            output$t_test_normality_results <- renderUI(p('Os valores de p utilizando o teste de Shapiro Wilk de',
+                                                          strong(shap[1,1],' é de: ', signif(shap[1,2], 4)), ifelse(signif(shap[1,2], 4) > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)'), ' e ',
+                                                          strong(shap[2,1],' é de: ', signif(shap[2,2], 4)), ifelse(signif(shap[2,2], 4) > 0.05, '(Estatísticamente Normal).', '(Estatísticamente não normal).'))
             )
             # output$t_test_boxplot <- renderPlotly(plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box'))
             fig2 <- plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box')
@@ -570,6 +602,7 @@ server <- function (input, output, session){
             ftest <- var.test(Dados ~ Classificação, dt)
             ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate), 'p' = signif(ftest$p.value), 'Estatística' = signif(ftest$statistic))
             output$t_test_homostacity <- renderDT(ftest_dt)
+            output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',ftest_dt$p, 'ou seja,', ifelse(ftest_dt$p > 0.05, ' estatísticamente não há variância entre os grupos.', 'estatísticamente há variância entre os grupos.')))
 
             #Remove outliers
             # if(input$test_t_options != 'paired')
@@ -580,7 +613,9 @@ server <- function (input, output, session){
             rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
             output$t_test_dt <- renderDT(test_w_df)
             cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
-            output$t_test_effect_size <-renderUI(p('A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4))))
+            output$t_test_effect_size <-renderUI(p('O valor p do teste T é: ', test_w_df$p, ' ou seja, ', ifelse(test_w_df$p > 0.05, 'os dados médios de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes'),
+                                                   br(),
+                                                   'A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4))))
           }
         }
         #-------------------Wilcoxon Test-------------------#
@@ -675,7 +710,9 @@ server <- function (input, output, session){
         rownames(test_w_df) <- if(input$wilcoxon_test_options == 'two') paste0('Teste de Wilcoxon') else if(input$wilcoxon_test_options == 'paired') paste0('Teste de Wilcoxon - Pareado')
         output$wilcoxon_test_dt <- renderDT(test_w_df)
         w_effectsize <- rstatix::wilcox_effsize(dt, Dados ~ Classificação, paired = input$wilcoxon_test_options == 'paired')$effsize[[1]]
-        output$wilcoxon_test_effect_size <- renderUI(p('A área de efeito entre as variáveis ', (strong(names(values$bidimensional_data)[1])),', e ',(strong(names(values$bidimensional_data)[2])),  ', é de: ', strong(signif(w_effectsize, 4))))
+        output$wilcoxon_test_effect_size <- renderUI(p('O valor p do teste de Wilxoxon é: ', test_w_df$p, ' ou seja, ', ifelse(test_w_df$p > 0.05, 'os dados médios de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes'),
+                                                   br(),
+          'A área de efeito entre as variáveis ', (strong(names(values$bidimensional_data)[1])),', e ',(strong(names(values$bidimensional_data)[2])),  ', é de: ', strong(signif(w_effectsize, 4))))
       }
     }
         #-------------------Sign Test-------------------#
@@ -683,7 +720,8 @@ server <- function (input, output, session){
           output$sign_test_results <- renderUI(tagList(
             plotlyOutput('sign_test_outliers'),
             h3(strong('Estatísticas'), align = 'center'),
-            DTOutput('sign_test_dt')
+            DTOutput('sign_test_dt'),
+            uiOutput('sign_test_p')
           ))
           dt <- values$bidimensional_data
           colnames(dt) <- c('var1', 'var2')
@@ -694,6 +732,8 @@ server <- function (input, output, session){
           sign_test_df <- data.frame(p = signif(sign_test$p[[1]], 4), estatística = signif(sign_test$statistic[[1]], 4), df = signif(sign_test$df[[1]], 4))
           rownames(sign_test_df) <- paste0('Test do Sinal')
           output$sign_test_dt <- renderDT(sign_test_df)
+          output$sign_test_p <- renderUI(p('O valor p do teste do Sinal é é: ', sign_test_df$p, ' ou seja, ', ifelse(sign_test_df$p > 0.05, 'os dados médios de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes')),
+          )
         }
       }
       else{
@@ -703,86 +743,11 @@ server <- function (input, output, session){
       }
     })
 
-  #-------------------ANCOVA-------------------#
-  observe({ if(!is.null(values$bidimensional_data)){
-    if(ncol(values$bidimensional_data) == 3 & is.numeric(values$bidimensional_data[,1]) & is.numeric(values$bidimensional_data[,2])){
-      output$ancova_statistics <- renderUI(tagList(
-        h3(strong('ANCOVA'), align = 'center'),
-        column(6,
-               h3(strong('Teste de Linearidade'), align = 'center'),
-               plotOutput('ancova_linearity')
-        ),
-        column(6,
-               h3(strong('Regressão de Homogeniedade'), align = 'center'),
-               DTOutput('ancova_regression'),
-               uiOutput('ancova_regression_results')
-
-        ),
-        column(12,), br(),
-        column(12,
-          column(6,
-                 h3(strong('Homogeniedade das Variâncias'), align = 'center'),
-                 DTOutput('ancova_levene_test')
-          ),
-          column(6,
-                 h3(strong('Teste de Normalidade'), align = 'center'),
-                 DTOutput('ancova_shapiro_test')
-          )
-        ),
-        column(12,
-          h3(strong('Tabela Posthoc:'), align = 'center'),
-          DTOutput('ancova_posthoc'),
-          h3(strong('Resultados:'), align = 'center'),
-          br(),
-          uiOutput('ancova_results')
-        )
-
-      ))
-
-      df <- values$bidimensional_data
-      names(df) <- c('vd', 'cov', 'vi')
-      # output$ancova_linearity <- renderPlotly(renderANCOVA(values, options))
-      output$ancova_linearity <- renderPlot(
-        ggscatter(df, x = "cov", y = "vd", color = "vi", add = "reg.line")+
-          stat_regline_equation(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~"), color = vi))
-      )
-      regression <- as.data.frame(anova_test(df, vd ~ vi*cov))
-      output$ancova_test <- renderDT(regression)
-      output$ancova_regression_results <- renderUI(p('O valor de F(',regression$DFn[3], ', ',regression$DFd[3],') = ', regression$F[3], ' e o valor de P é: ', regression$p[3]))
-
-      #Teste de levene
-      levene <- ancova_levene_test(df)
-      output$ancova_levene_test <- renderDT(levene)
-      #Teste de shapiro wilk
-      shapiro <- ancova_shapiro_test(df)
-      output$ancova_shapiro_test <- renderDT(shapiro)
-
-      #Resultados/interpretações
-      output$ancova_results <- renderUI(tagList(
-        if(as.double(shapiro$p) > options$ancova_ci) h4('O teste de Shapiro-Wilk não foi significante (p > ',options$ancova_ci,'), assim podemos
-        assumir a normalidade dos residuos')
-        else h4('O teste de Shapiro-Wilk foi significante (p <= ',options$ancova_ci,'), não podemos
-        assumir a normalidade dos resíduos.'),
-
-        if(as.double(levene$p) > options$ancova_ci) h4('O teste de Levene não foi significante (p > ',options$ancova_ci,'), assim podemos
-        assumir a igualdade da variância dos resíduos para todos os grupos.')
-        else h4('O teste de Levene foi significante (p <= ',options$ancova_ci,'), não podemos
-        assumir a igualdade da variância dos resíduos.')
-      ))
-      #Posthoc
-      output$ancova_posthoc <- renderDT(posthoc_ancova_table(df))
-    }
-      else
-      output$ancova_statistics <- renderUI(tagList(br(),br(),h3(strong(frase_erro), align = 'center')))
-    }
-    else
-      output$ancova_statistics <-renderUI(tagList(br(),br(),h3(strong(frase_erro), align = 'center')))
-  })
-
+  #-------------------ANOVA's-------------------#
   observe(if (!is.null(values$bidimensional_data) ) {
-     if(ncol(values$bidimensional_data) >= 2 & is.numeric(values$bidimensional_data[,1]) & !is.numeric(values$bidimensional_data[,2])){
+     if(values$bidimensional_data_type == 'anova' | values$bidimensional_data_type == 'anova_2groups'){
        #-------------------ANOVA-------------------#
-       if(ncol(values$bidimensional_data) == 2)
+       if(values$bidimensional_data_type == 'anova')
        {
          output$anova_statistics <- renderUI(
            tagList(
@@ -842,7 +807,7 @@ server <- function (input, output, session){
        else
          output$anova_statistics <- renderUI(h3(frase_erro))
 
-       if(ncol(values$bidimensional_data) == 3){
+       if(values$bidimensional_data_type == 'anova_2groups'){
          #-------------------ANOVA - Repeted Measures-------------------#
           {
        output$anova_rep_statistics <- renderUI(tagList(
@@ -967,6 +932,136 @@ server <- function (input, output, session){
        output$anova_rep_statistics <- renderUI(h3(frase_erro))
        output$anova_mix_statistics <- renderUI(h3(frase_erro))
      }
+  })
+
+  #-------------------ANCOVA-------------------#
+  observe({ if(!is.null(values$bidimensional_data)){
+    if(values$bidimensional_data_type == 'ancova'){
+      output$ancova_statistics <- renderUI(tagList(
+        h3(strong('ANCOVA'), align = 'center'),
+        column(6,
+               h3(strong('Teste de Linearidade'), align = 'center'),
+               plotOutput('ancova_linearity')
+        ),
+        column(6,
+               h3(strong('Regressão de Homogeniedade'), align = 'center'),
+               DTOutput('ancova_regression'),
+               uiOutput('ancova_regression_results')
+
+        ),
+        column(12,), br(),
+        column(12,
+          column(6,
+                 h3(strong('Homogeniedade das Variâncias'), align = 'center'),
+                 DTOutput('ancova_levene_test')
+          ),
+          column(6,
+                 h3(strong('Teste de Normalidade'), align = 'center'),
+                 DTOutput('ancova_shapiro_test')
+          )
+        ),
+        column(12,
+          h3(strong('Tabela Posthoc:'), align = 'center'),
+          DTOutput('ancova_posthoc'),
+          h3(strong('Resultados:'), align = 'center'),
+          br(),
+          uiOutput('ancova_results')
+        )
+
+      ))
+
+      df <- values$bidimensional_data
+      names(df) <- c('vd', 'cov', 'vi')
+      # output$ancova_linearity <- renderPlotly(renderANCOVA(values, options))
+      output$ancova_linearity <- renderPlot(
+        ggscatter(df, x = "cov", y = "vd", color = "vi", add = "reg.line")+
+          stat_regline_equation(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~"), color = vi))
+      )
+      regression <- as.data.frame(anova_test(df, vd ~ vi*cov))
+      output$ancova_test <- renderDT(regression)
+      output$ancova_regression_results <- renderUI(p('O valor de F(',regression$DFn[3], ', ',regression$DFd[3],') = ', regression$F[3], ' e o valor de P é: ', regression$p[3]))
+
+      #Teste de levene
+      levene <- ancova_levene_test(df)
+      output$ancova_levene_test <- renderDT(levene)
+      #Teste de shapiro wilk
+      shapiro <- ancova_shapiro_test(df)
+      output$ancova_shapiro_test <- renderDT(shapiro)
+
+      #Resultados/interpretações
+      output$ancova_results <- renderUI(tagList(
+        if(as.double(shapiro$p) > options$ancova_ci) h4('O teste de Shapiro-Wilk não foi significante (p > ',options$ancova_ci,'), assim podemos
+        assumir a normalidade dos residuos')
+        else h4('O teste de Shapiro-Wilk foi significante (p <= ',options$ancova_ci,'), não podemos
+        assumir a normalidade dos resíduos.'),
+
+        if(as.double(levene$p) > options$ancova_ci) h4('O teste de Levene não foi significante (p > ',options$ancova_ci,'), assim podemos
+        assumir a igualdade da variância dos resíduos para todos os grupos.')
+        else h4('O teste de Levene foi significante (p <= ',options$ancova_ci,'), não podemos
+        assumir a igualdade da variância dos resíduos.')
+      ))
+      #Posthoc
+      output$ancova_posthoc <- renderDT(posthoc_ancova_table(df))
+    }
+      else
+      output$ancova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+    }
+    else
+      output$ancova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+  })
+  #-------------------MANOVA-------------------#
+  observe({if(!is.null(values$bidimensional_data)) {
+    if (values$bidimensional_data_type == 'manova'){
+        output$manova_statistics <- renderUI(
+               tagList(
+                 column(12,
+                        h3(strong('Dados', align = 'center')),
+                        plotlyOutput('manova_boxplot'),
+                        h3(strong('Detectando Outliers', align = 'center')),
+                 ),
+                 column(6,
+                        h3(strong('Outliers Univariados', align = 'center')),
+                        DTOutput('manova_outliers_uni')
+
+                 ),
+                 column(6,
+                       h3(strong('Outliers Multivariados', align = 'center')),
+                       DTOutput('manova_outliers_multi')
+                 ),br(),
+                 column(12, h3(strong('Checando Normalidade', align = 'center'))),
+                 column(6,
+                        h3(strong('Normalidade Univariada', align = 'center')),
+                        plotlyOutput('manova_outliers_uni'),
+                        h3(strong('Identificando Multicollinearidade', align = 'center')),
+                        DTOutput('manova_ulticollinearity'),
+                        h3(strong('Checando Homogeniedade das Covariâncias', align = 'center')),
+                        DTOutput('manova_covariance')
+
+                 ),
+                 column(6,
+                       h3(strong('Normalidade Multivariada', align = 'center')),
+                       DTOutput('manova_outliers_multi'),
+                        h3(strong('Checando Linearidade', align = 'center')),
+                        DTOutput('manova_linearity'),
+                        h3(strong('Checando Homogeniedade das Variâncias', align = 'center')),
+                        DTOutput('manova_variance')
+                 ),br(),
+               column(12,
+                      h3(strong('Resultado do teste de MANOVA', align = 'center')),
+                      DTOutput('manova_dt'),
+                      uiOutput('manova_res'),
+                      h3(strong('Tabela Post Hoc', align = 'center')),
+                      DTOutput('manova_posthoc')
+               )
+               )
+        )
+        output$manova_boxplot <- renderPlotly(ggplotly(ggboxplot(iris, x = "Species", y = c("Sepal.Length", "Petal.Length"), merge = TRUE, palette = "jco")))
+      }
+    else
+        output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+  }
+  else
+    output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
   })
 
   #-------------------Load Tridimensional Data-------------------#

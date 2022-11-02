@@ -54,6 +54,7 @@ source('Interface/ANOVA.R')
 source('Interface/ANOVA_rep.R')
 source('Interface/ANOVA_mix.R')
 source('Interface/ANCOVA.R')
+source('Interface/MANOVA.R')
 source('Interface/ImportTridimensional.R')
 source('Interface/Mesh.R')
 source('Interface/Config.R')
@@ -144,7 +145,7 @@ tags$style(HTML("
                           anova_rep_page(),
                           anova_mix_page(),
                           ancova_page(),
-                          tabPanel('MANOVA'),
+                          manova_page(),
                           tabPanel('Kruskal-Wallis Test'),
                           tabPanel('Friedman Test')
                         )

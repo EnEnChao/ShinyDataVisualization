@@ -16,7 +16,10 @@ import_bidimensional_page <- function (){
              conditionalPanel(condition = "input.file_selector_bi == 'import'",
                #Arquivo a ser carregado
                fileInput(inputId = "file_imported_bi", "Insira o arquivo", accept = '.xlsx'),
-               switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
+                awesomeRadio(inputId = 'imported_bi_type', label = "Escolha o tipo de teste",
+                             choices = c("Comparando duas Médias", "ANOVA", "ANOVA dois grupos", 'ANCOVA', 'MANOVA'),
+                             inline = TRUE, status = "success"),
+               # switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
              ),
              conditionalPanel(condition = "input.file_selector_bi == 'example'", {
                pickerInput('examp_select_bi',
@@ -69,9 +72,11 @@ insert_bidimensional <- function (){
              h2(strong("Controle de opções:")),
              #Selecione se deseja utilizar um arquivo existente ou um exemplar
              h3(strong('Digite ou cole na planilha a esquerda:')),
+             awesomeRadio(inputId = 'inserted_bi_type', label = "Escolha o tipo de teste",
+                             choices = c("Comparando duas Médias", "ANOVA", "ANOVA dois grupos", 'ANCOVA', 'MANOVA'),
+                             inline = TRUE, status = "success"),
              #Caso tenha escolhido alguma das opções, aparece o botão grande " Carregue! "
              textInput('title_id_insert_bi', 'Digíte o título', 'Título'),
-             switchInput(inputId = 'inserted_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE),
              actionButton("load_spreadsheet_bi",
                           strong('Carregue!'),
                           style = "border-radius: 10px; border-width: 3px; font-size: 20px;",
