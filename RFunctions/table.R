@@ -9,6 +9,8 @@ contingency_data <- function (data_info){
 }
 
 checandoDados <- function (data, type){
+  if(type == 'uni_data')
+    return(ncol(data) == 1 & is.numeric(data[,1]))
   if(type == 'two_col')
     return(ncol(data) == 2 & is.numeric(data[,1]) & is.numeric(data[,2]))
   if(type == 'anova')
@@ -17,7 +19,14 @@ checandoDados <- function (data, type){
     return(ncol(data) == 3 & is.numeric(data[,1]) & min(table(data[,2])) > 1  & min(table(data[,3])) > 1)
   if(type == 'ancova')
     return(ncol(data) == 3 & is.numeric(data[,1]) & is.numeric(data[,2]) & min(table(data[,3])) > 1)
-
+  if(type == 'manova'){
+    if(ncol(data) > 5 | ncol(data) < 2)
+      return(FALSE)
+    for (i in seq(ncol(data) - 1))
+      if(!(is.numeric(data[,i])))
+        return(FALSE)
+    return(min(table(data[,ncol(data)])) > 1)
+  }
   return(FALSE)
 }
 

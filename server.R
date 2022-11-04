@@ -195,12 +195,8 @@ server <- function (input, output, session){
         names(dt) <- c('T1', 'T2', 'Group')
         type <- 'ancova'
       }
-      if(input$examp_select_bi == 'escolaridade'){
-        dt <- data.frame(read.xlsx('Data/Escolaridade.xlsx'))
-        type <- 'ancova'
-      }
       if(input$examp_select_bi == 'iris_manova'){
-        dt <- iris %>% rstatix::select(Sepal.Length, Petal.Length, Species) %>% add_column(id = seq_len(nrow(iris)), .before = 1)
+        dt <- iris
         type <- 'manova'
       }
     }
@@ -608,7 +604,7 @@ server <- function (input, output, session){
             # if(input$test_t_options != 'paired')
             #   dt <- removeOutliers(dt)
 
-            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = TRUE)
+            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ifelse(ftest$p > 0.05, TRUE, FALSE))
             test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic, 4), df = signif(test_w$df, 4))
             rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
             output$t_test_dt <- renderDT(test_w_df)
@@ -1009,53 +1005,90 @@ server <- function (input, output, session){
     else
       output$ancova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
   })
+
   #-------------------MANOVA-------------------#
   observe({if(!is.null(values$bidimensional_data)) {
     if (values$bidimensional_data_type == 'manova'){
         output$manova_statistics <- renderUI(
                tagList(
                  column(12,
-                        h3(strong('Dados', align = 'center')),
+                        h3(strong('Dados')),
                         plotlyOutput('manova_boxplot'),
-                        h3(strong('Detectando Outliers', align = 'center')),
+                        h3(strong('Detectando Outliers Multivariados')),
+                        DTOutput('manova_outliers_multi'),
+                        h3(strong('Checando Normalidade Multivariada')),
+                        DTOutput('manova_normality_multi'),
+                        align = 'center'
+                 ),
+                 br(),
+                 column(6,
+                        h3(strong('Checando Tamanho da Amostra')),
+                        h3(strong('Checando Homogeniedade das Covariâncias')),
+                        DTOutput('manova_covariancia'),
+                        align = 'center'
                  ),
                  column(6,
-                        h3(strong('Outliers Univariados', align = 'center')),
-                        DTOutput('manova_outliers_uni')
-
-                 ),
-                 column(6,
-                       h3(strong('Outliers Multivariados', align = 'center')),
-                       DTOutput('manova_outliers_multi')
-                 ),br(),
-                 column(12, h3(strong('Checando Normalidade', align = 'center'))),
-                 column(6,
-                        h3(strong('Normalidade Univariada', align = 'center')),
-                        plotlyOutput('manova_outliers_uni'),
-                        h3(strong('Identificando Multicollinearidade', align = 'center')),
-                        DTOutput('manova_ulticollinearity'),
-                        h3(strong('Checando Homogeniedade das Covariâncias', align = 'center')),
-                        DTOutput('manova_covariance')
-
-                 ),
-                 column(6,
-                       h3(strong('Normalidade Multivariada', align = 'center')),
-                       DTOutput('manova_outliers_multi'),
-                        h3(strong('Checando Linearidade', align = 'center')),
-                        DTOutput('manova_linearity'),
-                        h3(strong('Checando Homogeniedade das Variâncias', align = 'center')),
-                        DTOutput('manova_variance')
+                        h3(strong('Identificando Multicollinearidade')),
+                        DTOutput('manova_multicollinearity'),
+                        h3(strong('Checando Homogeniedade das Variâncias')),
+                        DTOutput('manova_variance'),
+                        align = 'center'
                  ),br(),
                column(12,
-                      h3(strong('Resultado do teste de MANOVA', align = 'center')),
+                      h3(strong('Resultado do teste de MANOVA')),
                       DTOutput('manova_dt'),
                       uiOutput('manova_res'),
-                      h3(strong('Tabela Post Hoc', align = 'center')),
-                      DTOutput('manova_posthoc')
-               )
-               )
+                      h3(strong('Tabela Post Hoc')),
+                      DTOutput('manova_posthoc'),
+                      align = 'center'
+               ))
         )
-        output$manova_boxplot <- renderPlotly(ggplotly(ggboxplot(iris, x = "Species", y = c("Sepal.Length", "Petal.Length"), merge = TRUE, palette = "jco")))
+      df <- values$bidimensional_data
+      df_ncol <- ncol(df)
+      df <- df %>% df_select(vars = names(df)[seq_len(ncol(df))]) %>% add_column(id = seq_len(nrow(df)), .before = 1)
+      output$manova_boxplot <- renderPlotly(ggboxplot(df, x = names(df)[df_ncol], y = names(df)[2:(df_ncol - 1)], merge = TRUE, palette = "jco") %>% ggplotly())
+      output$manova_outliers_multi <- df %>% group_by(var = names(df)[df_ncol]) %>% mahalanobis_distance(-id) %>% filter(is.outlier == TRUE) %>% as.data.frame() %>% renderDT()
+      output$manova_normality_multi <- df %>% df_select(vars = names(df)[2:(df_ncol - 1)]) %>% mshapiro_test() %>% as.data.frame() %>% renderDT()
+      dt_multicollinearity <- df %>% cor_test(vars = names(df)[2:(df_ncol - 1)]) %>% as.data.frame()
+      dt_multicollinearity <- dt_multicollinearity[-c(3, 6, 7, 8)]
+      dt_multicollinearity[3:4] <- signif(dt_multicollinearity[3:4], 4)
+      output$manova_multicollinearity <- dt_multicollinearity %>% renderDT()
+      dt_cov <- box_m(df[, names(df)[2:(df_ncol - 1)]], df[,df_ncol]) %>% as.data.frame()
+      dt_cov2 <- data.frame(`Estatística` = dt_cov$statistic, p = dt_cov$p.value, df = dt_cov$parameter, `Método` = 'Box\'s M-test')
+      dt_cov2[c(1, 2)] <- signif(dt_cov2[c(1, 2)], 4)
+      output$manova_covariancia <- dt_cov2 %>% renderDT()
+      output$manova_variance <- df %>% gather(key = "variable", value = "value", names(df)[2:(df_ncol - 1)]) %>% group_by(variable) %>% levene_test(value ~ df[,df_ncol]) %>% as.data.frame() %>% renderDT()
+      # model <- lm(cbind(Sepal.Length, Petal.Length) ~ Species, df)
+      # output$manova_dt <- Manova(model, test.statistic = "Pillai") %>% as.data.frame() %>% renderDT()
+
+
+      output$manova_unidimensional_assumptions <- renderUI(tagList(
+        column(12,
+               h3(strong('Checando Normalidade')),
+               plotlyOutput('manova_normality_uni'),
+               DTOutput('manova_shapiro_uni'),
+               h3(strong('Checando Linearidade')),
+               plotOutput('manova_linearity_plot1'),
+               plotOutput('manova_linearity_plot2'),
+               plotOutput('manova_linearity_plot3'),
+               align = 'center'
+        )
+      ))
+      #Testes de Normalidade
+      fig1 <- ggplotly(ggqqplot(df, names(df)[2], color = names(df)[df_ncol], ggtheme = theme_bw()))
+      fig2 <- ggplotly(ggqqplot(df, names(df)[3], color = names(df)[df_ncol], ggtheme = theme_bw()))
+      output$manova_normality_uni <- renderPlotly(subplot(fig1, fig2, margin = 0.1))
+      #Shapiro Wilk
+      dt_shapiro_uni <- df %>% group_by(var = names(df)[df_ncol]) %>% shapiro_test(vars = names(df)[2:(df_ncol - 1)]) %>% arrange(variable) %>% as.data.frame()
+      dt_shapiro_uni[3:4] <- signif(dt_shapiro_uni[3:4], 4)
+      output$manova_shapiro_uni <- dt_shapiro_uni %>% renderDT()
+
+      #Testes de Linearidade
+      results <- df %>% df_select(vars = names(df)[2:(df_ncol - 1)]) %>% group_by(var = names(df)[df_ncol]) %>% doo(~ggpairs(.) + theme_bw(), result = "plots")
+      output$manova_linearity_plot1 <- renderPlot(results$plots[[1]])
+      output$manova_linearity_plot2 <- renderPlot(results$plots[[2]])
+      output$manova_linearity_plot3 <- renderPlot(results$plots[[3]])
+
       }
     else
         output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
@@ -1064,6 +1097,132 @@ server <- function (input, output, session){
     output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
   })
 
+  #-------------------ANOVA testes não parametricos-------------------#
+  observe({if(!is.null(values$bidimensional_data)){
+    #-------------------Kruskal-Wallis-------------------#
+    if(values$bidimensional_data_type == 'anova'){
+      output$kruskal_test_statistics <- renderUI(tagList(
+        column(
+          12,
+          h3(strong('Detectando Outliers')),
+          plotlyOutput('kruskal_boxplot'),
+          br(),
+          h3(strong('Calculo do Teste de Kruskal Wallis')),
+          DTOutput('kruskal_dt'),
+          uiOutput('kruskal_interpretation'),
+          h3(strong('Área de Efeito')),
+          DTOutput('kruskal_effectArea'),
+          uiOutput('kruskal_effectArea_interpretation'),
+          br(),
+          h3(strong('Múltiplas comparações entre pares')),
+          column(6,
+                 h3(strong('Teste de Dunn')),
+                 DTOutput('kruskal_dunn_test')
+          ),
+          column(6,
+                 h3(strong('Teste de Wilcoxon')),
+                 DTOutput('kruskal_wilcoxon_test')
+          )
+          , align = 'center'
+        )
+      ))
+      df <- values$bidimensional_data
+      #Boxplot
+      output$kruskal_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
+      #Cálculo do Teste
+      dfkruskal_dt <- df %>% rstatix::kruskal_test(df[[1]] ~ df[[2]])
+      dfkruskal_dt <- dfkruskal_dt[3:6]
+      dfkruskal_dt[1] <- signif(dfkruskal_dt[1], 4)
+      dfkruskal_dt[3] <- signif(dfkruskal_dt[3], 4)
+      output$kruskal_dt <- renderDT(dfkruskal_dt)
+
+      #Area de Efeito
+      dfkruskal_effectArea <- df %>% rstatix::kruskal_effsize(df[[1]] ~ df[[2]])
+      dfkruskal_effectArea <- dfkruskal_effectArea[3:5]
+      dfkruskal_effectArea[1] <- signif(dfkruskal_effectArea[1], 4)
+      output$kruskal_effectArea <- renderDT(dfkruskal_effectArea)
+      names(df) <- c('Dados', 'Grupos')
+
+      #Dumm's test
+      df_dumm_test <- df %>% rstatix::dunn_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
+      df_dumm_test <- df_dumm_test[c(2, 3, 6, 7)]
+      df_dumm_test[3] <- signif(df_dumm_test[3], 4)
+      df_dumm_test[4] <- signif(df_dumm_test[4], 4)
+      output$kruskal_dunn_test <- renderDT(df_dumm_test)
+
+      #Wilcoxon's test
+      df_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
+      df_wilcoxon_test <- df_wilcoxon_test[c(2, 3, 6, 7)]
+      df_wilcoxon_test[3] <- signif(df_wilcoxon_test[3], 4)
+      df_wilcoxon_test[4] <- signif(df_wilcoxon_test[4], 4)
+      output$kruskal_wilcoxon_test <- renderDT(df_wilcoxon_test)
+    }
+    else
+      output$kruskal_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+
+    #-------------------Friedman Test-------------------#
+    if(values$bidimensional_data_type == 'anova_2groups') {
+      output$friedman_test_statistics <- renderUI(tagList(
+        column(
+          12,
+          h3(strong('Detectando Outliers')),
+          plotlyOutput('friedman_boxplot'),
+          br(),
+          h3(strong('Calculo do Teste de friedman Wallis')),
+          DTOutput('friedman_dt'),
+          uiOutput('friedman_interpretation'),
+          h3(strong('Área de Efeito')),
+          DTOutput('friedman_effectArea'),
+          uiOutput('friedman_effectArea_interpretation'),
+          br(),
+          h3(strong('Múltiplas comparações entre pares')),
+          column(6,
+                 h3(strong('Teste de Wilcoxon')),
+                 DTOutput('friedman_wilcoxon_test')
+          ),
+          column(6,
+                 h3(strong('Teste do Sinal')),
+                 DTOutput('friedman_sign_test')
+          )
+          , align = 'center'
+        )
+      ))
+      df <- values$bidimensional_data
+      #Boxplot
+      output$friedman_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
+      #Cálculo do Teste
+      names(df) <- c('Dados', 'Grupo', 'id')
+      df_friedman_dt <- (df %>% rstatix::friedman_test(Dados ~ Grupo | id) %>% data.frame())[3:6]
+      df_friedman_dt[3] <- signif(df_friedman_dt[3], 4)
+      output$friedman_dt <- renderDT(df_friedman_dt)
+
+      #Area de Efeito
+      df_friedman_effectArea <- (df %>% rstatix::friedman_effsize(Dados ~ Grupo | id) %>% data.frame())[-(1:2)]
+      df_friedman_effectArea[1] <- signif(df_friedman_effectArea[1], 4)
+      output$friedman_effectArea <- renderDT(df_friedman_effectArea)
+
+      #Sign's test
+      df_friedman_sign_test <- df %>% rstatix::sign_test(Dados ~ Grupo, p.adjust.method = "bonferroni")
+      df_friedman_sign_test <- df_friedman_sign_test[c(2, 3, 6, 7, 8)]
+      df_friedman_sign_test[3] <- signif(df_friedman_sign_test[3], 5)
+      df_friedman_sign_test[5] <- signif(df_friedman_sign_test[5], 5)
+      output$friedman_sign_test <- renderDT(df_friedman_sign_test)
+
+      #Wilcoxon's test
+      df_friedman_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupo, p.adjust.method = "bonferroni", paired = TRUE)
+      df_friedman_wilcoxon_test <- df_friedman_wilcoxon_test[c(2, 3, 6, 7)]
+      df_friedman_wilcoxon_test[3] <- signif(df_friedman_wilcoxon_test[3], 4)
+      df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], 4)
+      output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
+    }
+    else
+      output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+  }
+    else{
+    output$kruskal_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+    output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+  }
+  })
   #-------------------Load Tridimensional Data-------------------#
   observeEvent(input$load_tridimensional, {
     showTab(inputId = "tabs", target = "Gráfico em Mesh")

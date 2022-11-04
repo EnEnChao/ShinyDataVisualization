@@ -26,7 +26,6 @@ import_bidimensional_page <- function (){
                            'Escolha os dados de exemplo',
                            choices = list(
                              `Duas Médias` = c(
-                               'Combustível' = 'gas',
                                'Ratos' = 'mice',
                                'Peso entre gêneros' = 'genderweight'
                              ),
@@ -39,8 +38,10 @@ import_bidimensional_page <- function (){
                              ),
                              `ANCOVA` = c(
                                'Combustível' = 'gas3',
-                               'Ansiedade' = 'anxiety',
-                               'Escolaridade' = 'escolaridade'
+                               'Ansiedade' = 'anxiety'
+                             ),
+                             `MANOVA` = c(
+                               'Iris' = 'iris_manova'
                              )
                            ),
                            selected = 'gas'

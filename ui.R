@@ -24,6 +24,7 @@ if (!(require(readxl))){install.packages("readxl"); require(readxl, quietly=TRUE
 if (!(require(slickR))){install.packages("slickR"); require(slickR, quietly=TRUE)}
 if (!(require(moments))){install.packages("moments"); require(moments, quietly=TRUE)}
 if (!(require(coin))){install.packages("coin"); require(coin, quietly=TRUE)}
+if (!(require(GGally))){install.packages("GGally"); require(GGally, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')
@@ -55,6 +56,8 @@ source('Interface/ANOVA_rep.R')
 source('Interface/ANOVA_mix.R')
 source('Interface/ANCOVA.R')
 source('Interface/MANOVA.R')
+source('Interface/Friedman_Test.R')
+source('Interface/Kruskal-Wallis_Test.R')
 source('Interface/ImportTridimensional.R')
 source('Interface/Mesh.R')
 source('Interface/Config.R')
@@ -146,8 +149,8 @@ tags$style(HTML("
                           anova_mix_page(),
                           ancova_page(),
                           manova_page(),
-                          tabPanel('Kruskal-Wallis Test'),
-                          tabPanel('Friedman Test')
+                          kruskal_wallis_test_page(),
+                          friedman_test_page()
                         )
                ),
     ),
