@@ -598,20 +598,23 @@ server <- function (input, output, session){
             ftest <- var.test(Dados ~ Classificação, dt)
             ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate), 'p' = signif(ftest$p.value), 'Estatística' = signif(ftest$statistic))
             output$t_test_homostacity <- renderDT(ftest_dt)
-            output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',ftest_dt$p, 'ou seja,', ifelse(ftest_dt$p > 0.05, ' estatísticamente não há variância entre os grupos.', 'estatísticamente há variância entre os grupos.')))
+            output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',strong(signif(ftest_dt$p, 4)), 'ou seja,', ifelse(ftest_dt$p > 0.05, 'a variância entre os grupos é estatísticamente igual.', 'a variância entre os grupos é estatísticamente diferente.')))
 
             #Remove outliers
             # if(input$test_t_options != 'paired')
             #   dt <- removeOutliers(dt)
 
-            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ifelse(ftest$p > 0.05, TRUE, FALSE))
+            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ftest_dt$p > 0.05 | input$test_t_options == 'paired')
+            # test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = F)
             test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic, 4), df = signif(test_w$df, 4))
             rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
             output$t_test_dt <- renderDT(test_w_df)
             cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
-            output$t_test_effect_size <-renderUI(p('O valor p do teste T é: ', test_w_df$p, ' ou seja, ', ifelse(test_w_df$p > 0.05, 'os dados médios de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes'),
+            output$t_test_effect_size <-renderUI(tagList(p('O valor p do teste T é: ',strong(test_w_df$p) , ' ou seja, ', ifelse(test_w_df$p > 0.05, 'as variâncias de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes'),
                                                    br(),
-                                                   'A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4))))
+                                                   'A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4)),br()),
+                                                   if(ftest_dt$p <= 0.05 & input$test_t_options != 'paired') p('O algoritmo para calcular a área de efeito foi o ', strong('o algoritmo de Welch,'), ' como as variâncias foram diferentes.')
+            ))
           }
         }
         #-------------------Wilcoxon Test-------------------#
