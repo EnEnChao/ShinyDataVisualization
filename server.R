@@ -153,11 +153,16 @@ server <- function (input, output, session){
   observeEvent(input$load_bidimensional,{
     type <- NULL
     if (input$file_selector_bi == 'example'){
-      #Duas Médias
-      if(input$examp_select_bi == 'gas') {
-        dt <- data.frame(read.xlsx('Data/exemplo_two_means.xlsx'))
-        type <- 'two_col'
+      #Uma variável
+      if(input$examp_select_bi == 'Sepal.Lenght'){
+        dt <- data.frame(`Tamanho da Sépala` = iris$Sepal.Length)
+        type <- 'uni_data'
       }
+      if(input$examp_select_bi == 'waste'){
+        dt <- data.frame(`Quantidade de Resíduos` = waste$waste)
+        type <- 'uni_data'
+      }
+      #Duas Médias
       if(input$examp_select_bi == 'mice'){
         dt <- mice2[,c(2, 3)]
         type <- 'two_col'
@@ -204,7 +209,7 @@ server <- function (input, output, session){
       dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
       type <- input$imported_bi_type
     }
-    if ((type %in% c('two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
+    if ((type %in% c('uni_data', 'two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
       showTab(inputId = "tabs", target = "Comparando duas médias")
       showTab(inputId = "tabs", target = "Avaliando os dados")
       showTab(inputId = "tabs", target = "Comparando multiplas médias")
@@ -244,14 +249,13 @@ server <- function (input, output, session){
 
     if(!is.null(dt)) {
       names(dt) <- dt[1,]
-      # names(dt) <- gsub('\\.', ' ', names(dt))
       dt <- dt[-1,]
 
       dt <- as.data.frame(dt)
     } else output$rest_of_sidebar <- renderMenu(NULL)
 
     type <- output$inserted_bi_type
-    if ((type %in% c('two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
+    if ((type %in% c('uni_data', 'two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
       values$usr_title <- paste0(input$title_id_insert_bi)
       output$title_name_insert_bi <- renderUI(
       h2(strong(values$usr_title)))
@@ -269,9 +273,24 @@ server <- function (input, output, session){
     }
   })
 
-  #-------------------Avaliando os dados-------------------#
+  observeEvent(values$bidimensional_data_type, {
+    useShinyjs()
+    if(values$bidimensional_data_type == 'uni_data') {
+      # output$select_test_t_options <- renderUI(numericInput('test_t_mu', 'Valor verdadeiro da média:', value = 0, step = 1))
+      updateSelectInput(session, 'test_t_options', choices = c('One way' = 'one'))
+      updateSelectInput(session, 'wilcoxon_test_options', choices = c('One way' = 'one'))
+    }
+    else if(values$bidimensional_data_type == 'two_col'){
+      updateSelectInput(session, 'test_t_options', choices  = c('One way' = 'one', 'Two ways' = 'two', 'Pareado' = 'paired'), selected = 'two')
+      updateSelectInput(session, 'wilcoxon_test_options',choices = c('One way' = 'one', 'Mann–Whitney' = 'rank_sum', 'Pareado' = 'paired'), selected = 'rank_sum')
+    }
+  })
+
+  #-------------------Testes Estatísticos-------------------#
   observe(if(!is.null(values$bidimensional_data)){
-    if(ncol(values$bidimensional_data) == 2 & is.numeric(values$bidimensional_data[,1]) & is.numeric(values$bidimensional_data[,2])) {
+    #---------------Avaliando os dados---------------#
+  {
+    if(values$bidimensional_data_type == 'two_col') {
     #-------------------Homogenity of Variance-------------------#
     {
         output$homogenity_results <- renderUI(tagList(
@@ -452,7 +471,7 @@ server <- function (input, output, session){
       output$transform_norm_results <- renderUI(h3(frase_erro, align = 'center'))
     }
     #-------------------Assumption of Sphericity-------------------#
-    if (ncol(values$bidimensional_data) == 3 & length(table(values$bidimensional_data[,ncol(values$bidimensional_data)])) == 3 & !is.numeric(values$bidimensional_data[,ncol(values$bidimensional_data)]))
+    if (values$bidimensional_data_type == 'three_col')
       {
       output$sphericity_results <- renderUI(
         tagList(
@@ -496,11 +515,77 @@ server <- function (input, output, session){
   }
     else
       output$sphericity_results <- renderUI(h3(frase_erro, align = 'center'))
-  })
+  }
+    #-------------Comparando duas médias-------------#
+  {
+    #-------Comparando duas médias - One way---------#
+    if (values$bidimensional_data_type == 'uni_data'){
+      #-------------------T Test-------------------#
+    {
+      df <- values$bidimensional_data
+      output$t_test_predict <- renderUI(tagList(
+        column(6,
+               h3(strong('Testando Normalidade', align = 'center')),
+               plotlyOutput('t_test_uni_normality'),
+               uiOutput('t_test_uni_normality_results'), align = 'center'
+        ),
+        column(6,
+               h3(strong('Verificando Outliers', align = 'center')),
+               plotlyOutput('t_test_uni_boxplot'),
+               uiOutput('t_test_uni_outliers'), align = 'center'
+          ),
+        column(12,
+               h3(strong('Resultados', align = 'center')),
+               DTOutput('t_test_uni_dt'),
+               uiOutput('t_test_uni_effect_size')
+        )
+      ))
+      #Testes de Normalidade
+      output$t_test_uni_normality <- renderPlotly(ggplotly(ggqqplot(df[,1], color = '#F8766D')))
+      t_test_shapiro_uni <- signif(shapiro.test(df[,1])$p.value, 4)
+      output$t_test_uni_normality_results <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_uni), ifelse(t_test_shapiro_uni > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
+      #Testes de Outlier
+      output$t_test_uni_boxplot <- renderPlotly(plot_ly(data.frame(), y = df[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(df)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
+      output$t_test_uni_outliers <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
 
-  #-------------------Comparando duas médias-------------------#
-  observe(if(!is.null(values$bidimensional_data)){
-      if (values$bidimensional_data_type == 'two_col'){
+      #Resultados da computação do Teste T
+      output$t_test_uni_dt <- renderDT(test_t_uni(df[1], input$test_t_mu))
+      output$t_test_uni_effect_size <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,1]) - input$test_t_mu) / sd(df[,1]), 4))))
+    }
+      #-------------------Wilcoxon Test-------------------#
+    {output$wilcoxon_test_predict <- renderUI(tagList(
+      column(6,
+             h3(strong('Testando Simetria ao redor da mediana')),
+             plotlyOutput('wilcoxon_test_uni_symmetry'),align = 'center'
+      ),
+      column(6,
+             h3(strong('Verificando Outliers')),
+             plotlyOutput('wilcoxon_test_uni_boxplot'),
+             uiOutput('wilcoxon_test_uni_outliers'),align = 'center'
+        ),
+      column(12,
+             h3(strong('Resultados', align = 'center')),
+             h4(strong('Teste de Wilcoxon - ',names(values$bidimensional_data)[1]), align = 'center'),
+             DTOutput('wilcoxon_test_uni_dt'),
+             uiOutput('wilcoxon_test_uni_effect_size')
+      )
+    ))
+      output$wilcoxon_test_uni_symmetry <- renderPlotly(ggplotly(gghistogram(df, x = names(df)[1], y = "..density..", fill = "#FEE4E2",bins = 4, add_density = TRUE)))
+      output$wilcoxon_test_uni_boxplot <- renderPlotly(plot_ly(data.frame(), y = df[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(df)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
+      output$wilcoxon_test_uni_outliers <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
+
+      w_test1 <- rstatix::wilcox_test(data = data.frame(data = df[[1]]),data ~ 1, mu = input$wilcoxon_t_mu)
+      w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], 4))
+      rownames(w_test_df1) <- paste0('Test de Wilcoxon - ', names(df)[1])
+      output$wilcoxon_test_uni_dt <- renderDT(w_test_df1)
+      w_effectsize1 <- wilcox_effsize(data.frame(data = df[[1]]), data ~ 1, mu = input$wilcoxon_t_mu)
+      output$wilcoxon_test_uni_effect_size <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], 4))))
+    }
+      #Teste do Sinal não tem One Way
+      output$sign_test_results <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+    }
+    #-------Comparando duas médias - Two way---------#
+    else if (values$bidimensional_data_type == 'two_col'){
         #-------------------T Test-------------------#
         {
           if(input$test_t_options == 'one') {
@@ -544,23 +629,23 @@ server <- function (input, output, session){
               )
             ))
             output$t_test_normality_1 <- renderPlotly(ggplotly(ggqqplot(df[,1], color = '#F8766D')))
-            output$t_test_normality_results_1 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(df[,1])$p.value, 4)))
+            t_test_shapiro_1 <- signif(shapiro.test(df[,1])$p.value, 4)
+            output$t_test_normality_results_1 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_1), ifelse(t_test_shapiro_1 > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
             output$t_test_normality_2 <- renderPlotly(ggplotly(ggqqplot(df[,2], color = '#28B3B6')))
-            output$t_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', signif(shapiro.test(df[,2])$p.value, 4)))
+            t_test_shapiro_2 <- signif(shapiro.test(df[,2])$p.value, 4)
+            output$t_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_2), ifelse(t_test_shapiro_2 > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
             output$t_test_boxplot_1 <- renderPlotly(plot_ly(data.frame(), y = df[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(df)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
             output$t_test_outliers_1 <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
             output$t_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = df[,2], type = 'box', boxpoints = "all", fillcolor = '#D4F0F0', name = names(df)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
             output$t_test_outliers_2 <- renderUI(if(nrow(identify_outliers(df[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[2])), ' outliers.'))
 
-            mu <- input$test_t_mu
+            output$t_test_dt_1 <- renderDT(test_t_uni(df[1], input$test_t_mu))
+            output$t_test_dt_2 <- renderDT(test_t_uni(df[2], input$test_t_mu))
 
-            output$t_test_dt_1 <- renderDT(test_t_uni(df[1], mu))
-            output$t_test_dt_2 <- renderDT(test_t_uni(df[2], mu))
-
-            output$t_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(mu), ' é de: ', strong(signif(abs(mean(df[,1]) - mu) / sd(df[,1]), 4))))
-            output$t_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', strong(mu), ' é de: ', strong(signif(abs(mean(df[,2]) - mu) / sd(df[,2]), 4))))
+            output$t_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,1]) - input$test_t_mu) / sd(df[,1]), 4))))
+            output$t_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,2]) - input$test_t_mu) / sd(df[,2]), 4))))
           }
-          if(input$test_t_options == 'two' | input$test_t_options == 'paired'){
+          if(input$test_t_options == 'two' | (input$test_t_options == 'paired'  & !(any(is.na(contingency_data(values$bidimensional_data)))) )){
             output$t_test_predict <- renderUI(tagList(
               column(6, h3(strong('Testando Normalidade', align = 'center'))),
               column(6, h3(strong('Verificando Outliers', align = 'center'))),
@@ -585,9 +670,12 @@ server <- function (input, output, session){
             shap <- dt %>% group_by(Classificação) %>% shapiro_test(Dados) %>% as.data.frame()
             shap <- shap[-c(2,3)]
 
-            output$t_test_normality_results <- renderUI(p('Os valores de p utilizando o teste de Shapiro Wilk de',
-                                                          strong(shap[1,1],' é de: ', signif(shap[1,2], 4)), ifelse(signif(shap[1,2], 4) > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)'), ' e ',
-                                                          strong(shap[2,1],' é de: ', signif(shap[2,2], 4)), ifelse(signif(shap[2,2], 4) > 0.05, '(Estatísticamente Normal).', '(Estatísticamente não normal).'))
+            output$t_test_normality_results <- renderUI(tagList(p('Os valores de p utilizando o teste de Shapiro Wilk de',
+                                                          strong(shap[1,1]),' é de: ', strong(shap[1,2]), ifelse(signif(shap[1,2], 4) > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)'), ' e ',
+                                                          strong(shap[2,1]),' é de: ', strong(shap[2,2]), ifelse(signif(shap[2,2], 4) > 0.05, '(Estatísticamente normal).', '(Estatísticamente não normal).')),
+                                                                if(signif(shap[1,2], 4) <= 0.05 | signif(shap[2,2], 4) <= 0.05) p('Recomenda-se utilizar o teste de Wilcoxon ou o teste do Sinal.')
+            )
+
             )
             # output$t_test_boxplot <- renderPlotly(plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box'))
             fig2 <- plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box')
@@ -664,36 +752,43 @@ server <- function (input, output, session){
         output$wilcoxon_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = df[,2], type = 'box', boxpoints = "all", fillcolor = '#D4F0F0', name = names(df)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
         output$wilcoxon_test_outliers_2 <- renderUI(if(nrow(identify_outliers(df[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[2])), ' outliers.'))
 
-        mu <- input$wilcoxon_t_mu
-
-        w_test1 <- rstatix::wilcox_test(data = data.frame(data = df[[1]]),data ~ 1, mu = mu)
+        w_test1 <- rstatix::wilcox_test(data = data.frame(data = df[[1]]),data ~ 1, mu = input$wilcoxon_t_mu)
         w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], 4))
         rownames(w_test_df1) <- paste0('Test de Wilcoxon - ', names(df)[1])
         output$wilcoxon_test_dt_1 <- renderDT(w_test_df1)
-        w_effectsize1 <- wilcox_effsize(data.frame(data = df[[1]]), data ~ 1, mu = mu)
-        output$wilcoxon_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], 4))))
+        w_effectsize1 <- wilcox_effsize(data.frame(data = df[[1]]), data ~ 1, mu = input$wilcoxon_t_mu)
+        output$wilcoxon_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], 4))))
 
-        w_test2 <- rstatix::wilcox_test(data = data.frame(data = df[[2]]),data ~ 1, mu = mu)
+        w_test2 <- rstatix::wilcox_test(data = data.frame(data = df[[2]]),data ~ 1, mu = input$wilcoxon_t_mu)
         w_test_df2 <- data.frame(p = signif(w_test2$p[[1]], 4), estatística = signif(w_test2$statistic[[1]], 4))
         rownames(w_test_df2) <- paste0('Test de Wilcoxon - ', names(df)[2])
         output$wilcoxon_test_dt_2 <- renderDT(w_test_df2)
-        w_effectsize2 <- wilcox_effsize(data.frame(data = df[[2]]), data ~ 1, mu = mu)
-        output$wilcoxon_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', mu, ' é de: ', strong(signif(w_effectsize2$effsize[[1]], 4))))
+        w_effectsize2 <- wilcox_effsize(data.frame(data = df[[2]]), data ~ 1, mu = input$wilcoxon_t_mu)
+        output$wilcoxon_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize2$effsize[[1]], 4))))
       }
-      else if(input$wilcoxon_test_options == 'rank_sum' | input$wilcoxon_test_options == 'paired'){
-        output$wilcoxon_test_predict <- renderUI(tagList(
-          column(12, h3(strong('Verificando Outliers', align = 'center'))),
-          column(12, plotlyOutput('wilcoxon_test_plotly')),
-          column(12, DTOutput('wilcoxon_test_outliers')),
-
+      else if(input$wilcoxon_test_options == 'rank_sum' | (input$wilcoxon_test_options == 'paired' & !(any(is.na(contingency_data(values$bidimensional_data)))) )){
+        output$wilcoxon_test_predict <- renderUI(
           column(12,
+                 uiOutput('more_assumptions'),
+                 h3(strong('Verificando Outliers')),
+                 plotlyOutput('wilcoxon_test_plotly'),
+                 DTOutput('wilcoxon_test_outliers'),
                  h3(strong('Resultados: ')),
                  DTOutput('wilcoxon_test_dt'),
                  uiOutput('wilcoxon_test_effect_size'),
-                 align = 'center'
+                 align = 'center',
           )
-        ))
+        )
         dt <- contingency_data(values$bidimensional_data)
+
+        if(input$wilcoxon_test_options == 'paired'){
+          output$more_assumptions <- renderUI(tagList(
+            h3(strong('Testando Simetria ao redor da mediana')),
+            plotOutput('wilcoxon_test_symmetry')
+          ))
+          dt2 <- add_column(values$bidimensional_data, differences = values$bidimensional_data[[2]] - values$bidimensional_data[[1]], .before = 3)
+          output$wilcoxon_test_symmetry <- renderPlot(gghistogram(dt2, x = "differences", y = "..density..", fill = "steelblue",bins = 5, add_density = TRUE))
+        }
 
         outliers_dt <- dt %>% group_by(Classificação) %>% identify_outliers(Dados) %>% data.frame()
         output$wilcoxon_test_outliers <- if(nrow(outliers_dt) != 0) renderDT(outliers_dt)
@@ -735,206 +830,314 @@ server <- function (input, output, session){
           )
         }
       }
-      else{
-        output$t_test_predict <- renderUI(h3(frase_erro, align = 'center'))
-        output$wilcoxon_test_predict <- renderUI(h3(frase_erro, align = 'center'))
-        output$sign_test_results <- renderUI(h3(frase_erro, align = 'center'))
-      }
-    })
-
-  #-------------------ANOVA's-------------------#
-  observe(if (!is.null(values$bidimensional_data) ) {
-     if(values$bidimensional_data_type == 'anova' | values$bidimensional_data_type == 'anova_2groups'){
-       #-------------------ANOVA-------------------#
-       if(values$bidimensional_data_type == 'anova')
-       {
-         output$anova_statistics <- renderUI(
-           tagList(
-           column(6,
-                  h3(strong('Testando Normalidade', align = 'center')),
-                  plotlyOutput('anova_qq_plot'),
-                  uiOutput('anova_shapiro')
-
-           ),
-          column(6,
-                 h3(strong('Verificando Outliers', align = 'center')),
-                 plotlyOutput('anova_box_plot'),
-                 DTOutput('anova_outliers')
-          ),br(),
-           column(12,
-                  h3(strong('Verificando da Homogeneidade de Variância', align = 'center')),
-                  DTOutput('anova_levene_dt'),
-                  uiOutput('anova_levene_results'),br(),
-                  h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                  DTOutput('anova_dt'),
-                  uiOutput('anova_p'),
-                  h3(strong('Tabela Post Hoc', align = 'center')),
-                  DTOutput('anova_posthoc')
-           ))
-         )
-       df <- values$bidimensional_data
-       names <- names(df)
-       names(df) <- c('vd', 'vi')
-       model <- lm(df$vd ~ df$vi)
-
-       #Normalidade
-       output$anova_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-       shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
-       output$anova_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
-
-       #Outliers
-       output$anova_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
-       if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
-         output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
-
-       #Teste de Levene
-       levene <- signif((df %>% rstatix::levene_test(vd ~ vi))$p, 4)
-       output$anova_levene_dt <- renderDT(signif(data.frame(df %>% rstatix::levene_test(vd ~ vi)), 4))
-       output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', levene, align = 'center'))
-
-       #ANOVA
-       anova_dt <- df %>% anova_test(vd ~ vi)
-       output$anova_dt <- renderDT(anova_dt[,4:7])
-       output$anova_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
-       posthoc <- df %>% tukey_hsd(vd ~ vi)
-       posthoc$conf.high <- signif(posthoc$conf.high, 4)
-       posthoc$conf.low <- signif(posthoc$conf.low, 4)
-       posthoc$estimate <- signif(posthoc$estimate, 4)
-       posthoc$p.adj <- signif(posthoc$p.adj, 4)
-       output$anova_posthoc <- renderDT(posthoc[-c(1, 9)])
-     }
-       else
-         output$anova_statistics <- renderUI(h3(frase_erro))
-
-       if(values$bidimensional_data_type == 'anova_2groups'){
-         #-------------------ANOVA - Repeted Measures-------------------#
-          {
-       output$anova_rep_statistics <- renderUI(tagList(
-         column(6,
-                  h3(strong('Testando Normalidade', align = 'center')),
-                  plotlyOutput('anova_rep_qq_plot'),
-                  uiOutput('anova_rep_shapiro')
-
-           ),
-          column(6,
-                 h3(strong('Verificando Outliers', align = 'center')),
-                 plotlyOutput('anova_rep_box_plot'),
-                 DTOutput('anova_rep_outliers')
-          ),br(),
-           column(12,
-                  h3(strong('', align = 'center')),
-                  h3(strong('Esfericidade de Mauchly', align = 'center')),
-                  DTOutput('anova_rep_mauchly_dt'),
-                  uiOutput('anova_rep_mauchly_results'),br(),
-                  h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                  DTOutput('anova_rep_dt'),
-                  uiOutput('anova_rep_p'),
-                  h3(strong('Tabela Post Hoc', align = 'center')),
-                  DTOutput('anova_rep_posthoc')
-           )))
-       df <- values$bidimensional_data
-       names <- names(df)
-       names(df) <- c('vd', 'vi', 'wid')
-       model <- lm(df$vd ~ df$vi)
-
-       #Normalidade
-       output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-       shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
-       output$anova_rep_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
-
-       #Outliers
-       output$anova_rep_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
-       if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
-         output$anova_rep_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
-
-       #Teste de Esfericidade de Mauchly
-       anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
-       mauchly <- anova_dt$`Mauchly's Test for Sphericity`
-       output$anova_rep_mauchly_dt <- renderDT(mauchly[-4])
-       output$anova_rep_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
-
-       #ANOVA
-       output$anova_rep_dt <- renderDT(get_anova_table(anova_dt))
-       output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
-       posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
-       output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
-     }
-         #-------------------ANOVA - Mixed Measures-------------------#
-          {
-       output$anova_mix_statistics <- renderUI(tagList(
-         column(12,
-         column(6,
-                  h3(strong('Testando Normalidade', align = 'center')),
-                  plotlyOutput('anova_mix_qq_plot'),
-                  uiOutput('anova_mix_shapiro')
-
-           ),
-          column(6,
-                 h3(strong('Verificando Outliers', align = 'center')),
-                 plotlyOutput('anova_mix_box_plot'),
-                 DTOutput('anova_mix_outliers')
-          ))
-         ,br(),
-           column(12,
-                  h3(strong('Esfericidade de Mauchly', align = 'center')),
-                  DTOutput('anova_mix_mauchly_dt'),
-                  uiOutput('anova_mix_mauchly_results'),br(),
-
-                  h3(strong('Verificando Homogeniedade de Covariância', align = 'center')),
-                  DTOutput('anova_mix_boxm'),
-
-                  h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                  DTOutput('anova_mix_dt'),
-                  uiOutput('anova_mix_statistics'),
-                  h3(strong('Tabela Post Hoc', align = 'center')),
-                  DTOutput('anova_mix_posthoc')
-           )))
-       df <- values$bidimensional_data
-       names <- names(df)
-       names(df) <- c('vd', 'vi', 'wid')
-       model <- lm(df$vd ~ df$vi)
-
-       #Normalidade
-       output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-       shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
-       output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
-
-       #Outliers
-       output$anova_mix_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
-       if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
-         output$anova_mix_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
-
-       #Teste de Esfericidade de Mauchly
-       anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
-       mauchly <- anova_dt$`Mauchly's Test for Sphericity`
-       output$anova_mix_mauchly_dt <- renderDT(mauchly[-4])
-       output$anova_mix_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
-
-        #Teste de Homogeniedade das Covariâncias
-        box_m <- box_m(df[, "vd", drop = FALSE], df$vi)
-        output$anova_mix_boxm <- renderDT(box_m)
-
-       #ANOVA
-       output$anova_mix_dt <- renderDT(get_anova_table(anova_dt))
-       output$anova_mix_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
-       posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
-       output$anova_rep_posthoc <- renderDT(posthoc[-c(1:5, 10)])
-     }
-       }
-       else{
-         output$anova_rep_statistics <- renderUI(h3(frase_erro))
-         output$anova_mix_statistics <- renderUI(h3(frase_erro))
-       }
-     }
     else{
-       output$anova_statistics <- renderUI(h3(frase_erro))
-       output$anova_rep_statistics <- renderUI(h3(frase_erro))
-       output$anova_mix_statistics <- renderUI(h3(frase_erro))
-     }
-  })
+        output$t_test_predict <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+        output$wilcoxon_test_predict <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+        output$sign_test_results <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+      }
+  }
+    #--------------------ANOVA's---------------------#
+  { if (values$bidimensional_data_type == 'anova') {
+    #-------------------ANOVA-------------------#
+  {
+    output$anova_statistics <- renderUI(
+      tagList(
+        column(6,
+               h3(strong('Testando Normalidade', align = 'center')),
+               plotlyOutput('anova_qq_plot'),
+               uiOutput('anova_shapiro')
 
-  #-------------------ANCOVA-------------------#
-  observe({ if(!is.null(values$bidimensional_data)){
+        ),
+        column(6,
+               h3(strong('Verificando Outliers', align = 'center')),
+               plotlyOutput('anova_box_plot'),
+               DTOutput('anova_outliers')
+        ), br(),
+        column(12,
+               h3(strong('Verificando da Homogeneidade de Variância', align = 'center')),
+               DTOutput('anova_levene_dt'),
+               uiOutput('anova_levene_results'), br(),
+               h3(strong('Resultado do teste de ANOVA', align = 'center')),
+               DTOutput('anova_dt'),
+               uiOutput('anova_p'),
+               h3(strong('Tabela Post Hoc', align = 'center')),
+               DTOutput('anova_posthoc')
+        ))
+    )
+    df <- values$bidimensional_data
+    names <- names(df)
+    names(df) <- c('vd', 'vi')
+    model <- lm(df$vd ~ df$vi)
+
+    #Normalidade
+    output$anova_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
+    shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
+    output$anova_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+
+    #Outliers
+    output$anova_box_plot <- renderPlotly(plot_ly(df, x = df[, 2], y = df[, 1], type = 'box', color = df[, 2]))
+    if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
+      output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
+
+    #Teste de Levene
+    levene <- signif((df %>% rstatix::levene_test(vd ~ vi))$p, 4)
+    output$anova_levene_dt <- renderDT(signif(data.frame(df %>% rstatix::levene_test(vd ~ vi)), 4))
+    output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', levene, align = 'center'))
+
+    #ANOVA
+    anova_dt <- df %>% anova_test(vd ~ vi)
+    output$anova_dt <- renderDT(anova_dt[, 4:7])
+    output$anova_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
+    posthoc <- df %>% tukey_hsd(vd ~ vi)
+    posthoc$conf.high <- signif(posthoc$conf.high, 4)
+    posthoc$conf.low <- signif(posthoc$conf.low, 4)
+    posthoc$estimate <- signif(posthoc$estimate, 4)
+    posthoc$p.adj <- signif(posthoc$p.adj, 4)
+    output$anova_posthoc <- renderDT(posthoc[-c(1, 9)])
+  }
+    #-------------------Kruskal-Wallis-------------------#
+  {
+    output$kruskal_test_statistics <- renderUI(tagList(
+      column(
+        12,
+        h3(strong('Detectando Outliers')),
+        plotlyOutput('kruskal_boxplot'),
+        br(),
+        h3(strong('Calculo do Teste de Kruskal Wallis')),
+        DTOutput('kruskal_dt'),
+        uiOutput('kruskal_interpretation'),
+        h3(strong('Área de Efeito')),
+        DTOutput('kruskal_effectArea'),
+        uiOutput('kruskal_effectArea_interpretation'),
+        br(),
+        h3(strong('Múltiplas comparações entre pares')),
+        column(6,
+               h3(strong('Teste de Dunn')),
+               DTOutput('kruskal_dunn_test')
+        ),
+        column(6,
+               h3(strong('Teste de Wilcoxon')),
+               DTOutput('kruskal_wilcoxon_test')
+        )
+        , align = 'center'
+      )
+    ))
+    df <- values$bidimensional_data
+    #Boxplot
+    output$kruskal_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
+    #Cálculo do Teste
+    dfkruskal_dt <- df %>% rstatix::kruskal_test(df[[1]] ~ df[[2]])
+    dfkruskal_dt <- dfkruskal_dt[3:6]
+    dfkruskal_dt[1] <- signif(dfkruskal_dt[1], 4)
+    dfkruskal_dt[3] <- signif(dfkruskal_dt[3], 4)
+    output$kruskal_dt <- renderDT(dfkruskal_dt)
+
+    #Area de Efeito
+    dfkruskal_effectArea <- df %>% rstatix::kruskal_effsize(df[[1]] ~ df[[2]])
+    dfkruskal_effectArea <- dfkruskal_effectArea[3:5]
+    dfkruskal_effectArea[1] <- signif(dfkruskal_effectArea[1], 4)
+    output$kruskal_effectArea <- renderDT(dfkruskal_effectArea)
+    names(df) <- c('Dados', 'Grupos')
+
+    #Dumm's test
+    df_dumm_test <- df %>% rstatix::dunn_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
+    df_dumm_test <- df_dumm_test[c(2, 3, 6, 7)]
+    df_dumm_test[3] <- signif(df_dumm_test[3], 4)
+    df_dumm_test[4] <- signif(df_dumm_test[4], 4)
+    output$kruskal_dunn_test <- renderDT(df_dumm_test)
+
+    #Wilcoxon's test
+    df_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
+    df_wilcoxon_test <- df_wilcoxon_test[c(2, 3, 6, 7)]
+    df_wilcoxon_test[3] <- signif(df_wilcoxon_test[3], 4)
+    df_wilcoxon_test[4] <- signif(df_wilcoxon_test[4], 4)
+    output$kruskal_wilcoxon_test <- renderDT(df_wilcoxon_test)
+  }
+  }
+  else {
+    output$anova_statistics <- renderUI(tagList(br(), br(), h3(frase_erro, align = 'center')))
+    output$kruskal_test_statistics <- renderUI(tagList(br(), br(), h3(frase_erro, align = 'center')))
+  } }
+     #---------------ANOVA two groups----------------#
+  {
+    if(values$bidimensional_data_type == 'anova_2groups'){
+      #--------------ANOVA - Repeted Measures-------------#
+    {
+           output$anova_rep_statistics <- renderUI(tagList(
+             column(6,
+                      h3(strong('Testando Normalidade', align = 'center')),
+                      plotlyOutput('anova_rep_qq_plot'),
+                      uiOutput('anova_rep_shapiro')
+
+               ),
+              column(6,
+                     h3(strong('Verificando Outliers', align = 'center')),
+                     plotlyOutput('anova_rep_box_plot'),
+                     DTOutput('anova_rep_outliers')
+              ),br(),
+               column(12,
+                      h3(strong('', align = 'center')),
+                      h3(strong('Esfericidade de Mauchly', align = 'center')),
+                      DTOutput('anova_rep_mauchly_dt'),
+                      uiOutput('anova_rep_mauchly_results'),br(),
+                      h3(strong('Resultado do teste de ANOVA', align = 'center')),
+                      DTOutput('anova_rep_dt'),
+                      uiOutput('anova_rep_p'),
+                      h3(strong('Tabela Post Hoc', align = 'center')),
+                      DTOutput('anova_rep_posthoc')
+               )))
+           df <- values$bidimensional_data
+           names <- names(df)
+           names(df) <- c('vd', 'vi', 'wid')
+           model <- lm(df$vd ~ df$vi)
+
+           #Normalidade
+           output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
+           shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
+           output$anova_rep_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+
+           #Outliers
+           output$anova_rep_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
+           if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
+             output$anova_rep_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
+
+           #Teste de Esfericidade de Mauchly
+           anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
+           mauchly <- anova_dt$`Mauchly's Test for Sphericity`
+           output$anova_rep_mauchly_dt <- renderDT(mauchly[-4])
+           output$anova_rep_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
+
+           #ANOVA
+           output$anova_rep_dt <- renderDT(get_anova_table(anova_dt))
+           output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
+           posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
+           output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
+          }
+      #----------------ANOVA - Mixed Measures-------------#
+    {
+             output$anova_mix_statistics <- renderUI(tagList(
+               column(12,
+               column(6,
+                        h3(strong('Testando Normalidade', align = 'center')),
+                        plotlyOutput('anova_mix_qq_plot'),
+                        uiOutput('anova_mix_shapiro')
+
+                 ),
+                column(6,
+                       h3(strong('Verificando Outliers', align = 'center')),
+                       plotlyOutput('anova_mix_box_plot'),
+                       DTOutput('anova_mix_outliers')
+                ))
+               ,br(),
+                 column(12,
+                        h3(strong('Esfericidade de Mauchly', align = 'center')),
+                        DTOutput('anova_mix_mauchly_dt'),
+                        uiOutput('anova_mix_mauchly_results'),br(),
+
+                        h3(strong('Verificando Homogeniedade de Covariância', align = 'center')),
+                        DTOutput('anova_mix_boxm'),
+
+                        h3(strong('Resultado do teste de ANOVA', align = 'center')),
+                        DTOutput('anova_mix_dt'),
+                        uiOutput('anova_mix_statistics'),
+                        h3(strong('Tabela Post Hoc', align = 'center')),
+                        DTOutput('anova_mix_posthoc')
+                 )))
+             df <- values$bidimensional_data
+             names <- names(df)
+             names(df) <- c('vd', 'vi', 'wid')
+             model <- lm(df$vd ~ df$vi)
+
+             #Normalidade
+             output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
+             shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
+             output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+
+             #Outliers
+             output$anova_mix_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
+             if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
+               output$anova_mix_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
+
+             #Teste de Esfericidade de Mauchly
+             anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
+             mauchly <- anova_dt$`Mauchly's Test for Sphericity`
+             output$anova_mix_mauchly_dt <- renderDT(mauchly[-4])
+             output$anova_mix_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
+
+              #Teste de Homogeniedade das Covariâncias
+              box_m <- box_m(df[, "vd", drop = FALSE], df$vi)
+              output$anova_mix_boxm <- renderDT(box_m)
+
+             #ANOVA
+             output$anova_mix_dt <- renderDT(get_anova_table(anova_dt))
+             output$anova_mix_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
+             posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
+             output$anova_rep_posthoc <- renderDT(posthoc[-c(1:5, 10)])
+          }
+      #-------------------Friedman Test-------------------#
+    {
+      output$friedman_test_statistics <- renderUI(tagList(
+        column(
+          12,
+          h3(strong('Detectando Outliers')),
+          plotlyOutput('friedman_boxplot'),
+          br(),
+          h3(strong('Calculo do Teste de friedman Wallis')),
+          DTOutput('friedman_dt'),
+          uiOutput('friedman_interpretation'),
+          h3(strong('Área de Efeito')),
+          DTOutput('friedman_effectArea'),
+          uiOutput('friedman_effectArea_interpretation'),
+          br(),
+          h3(strong('Múltiplas comparações entre pares')),
+          column(6,
+                 h3(strong('Teste de Wilcoxon')),
+                 DTOutput('friedman_wilcoxon_test')
+          ),
+          column(6,
+                 h3(strong('Teste do Sinal')),
+                 DTOutput('friedman_sign_test')
+          )
+          , align = 'center'
+        )
+      ))
+      df <- values$bidimensional_data
+      #Boxplot
+      output$friedman_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
+      #Cálculo do Teste
+      names(df) <- c('Dados', 'Grupo', 'id')
+      df_friedman_dt <- (df %>% rstatix::friedman_test(Dados ~ Grupo | id) %>% data.frame())[3:6]
+      df_friedman_dt[3] <- signif(df_friedman_dt[3], 4)
+      output$friedman_dt <- renderDT(df_friedman_dt)
+
+      #Area de Efeito
+      df_friedman_effectArea <- (df %>% rstatix::friedman_effsize(Dados ~ Grupo | id) %>% data.frame())[-(1:2)]
+      df_friedman_effectArea[1] <- signif(df_friedman_effectArea[1], 4)
+      output$friedman_effectArea <- renderDT(df_friedman_effectArea)
+
+      #Sign's test
+      df_friedman_sign_test <- df %>% rstatix::sign_test(Dados ~ Grupo, p.adjust.method = "bonferroni")
+      df_friedman_sign_test <- df_friedman_sign_test[c(2, 3, 6, 7, 8)]
+      df_friedman_sign_test[3] <- signif(df_friedman_sign_test[3], 5)
+      df_friedman_sign_test[5] <- signif(df_friedman_sign_test[5], 5)
+      output$friedman_sign_test <- renderDT(df_friedman_sign_test)
+
+      #Wilcoxon's test
+      df_friedman_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupo, p.adjust.method = "bonferroni", paired = TRUE)
+      df_friedman_wilcoxon_test <- df_friedman_wilcoxon_test[c(2, 3, 6, 7)]
+      df_friedman_wilcoxon_test[3] <- signif(df_friedman_wilcoxon_test[3], 4)
+      df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], 4)
+      output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
+    }
+    }
+    else{
+      output$anova_rep_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+      output$anova_mix_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+      output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
+    }
+  }
+    #--------------------ANCOVA----------------------#
+  {
     if(values$bidimensional_data_type == 'ancova'){
       output$ancova_statistics <- renderUI(tagList(
         h3(strong('ANCOVA'), align = 'center'),
@@ -1005,12 +1208,8 @@ server <- function (input, output, session){
       else
       output$ancova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     }
-    else
-      output$ancova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-  })
-
-  #-------------------MANOVA-------------------#
-  observe({if(!is.null(values$bidimensional_data)) {
+    #--------------------MANOVA----------------------#
+  {
     if (values$bidimensional_data_type == 'manova'){
         output$manova_statistics <- renderUI(
                tagList(
@@ -1096,136 +1295,8 @@ server <- function (input, output, session){
     else
         output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
   }
-  else
-    output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
   })
 
-  #-------------------ANOVA testes não parametricos-------------------#
-  observe({if(!is.null(values$bidimensional_data)){
-    #-------------------Kruskal-Wallis-------------------#
-    if(values$bidimensional_data_type == 'anova'){
-      output$kruskal_test_statistics <- renderUI(tagList(
-        column(
-          12,
-          h3(strong('Detectando Outliers')),
-          plotlyOutput('kruskal_boxplot'),
-          br(),
-          h3(strong('Calculo do Teste de Kruskal Wallis')),
-          DTOutput('kruskal_dt'),
-          uiOutput('kruskal_interpretation'),
-          h3(strong('Área de Efeito')),
-          DTOutput('kruskal_effectArea'),
-          uiOutput('kruskal_effectArea_interpretation'),
-          br(),
-          h3(strong('Múltiplas comparações entre pares')),
-          column(6,
-                 h3(strong('Teste de Dunn')),
-                 DTOutput('kruskal_dunn_test')
-          ),
-          column(6,
-                 h3(strong('Teste de Wilcoxon')),
-                 DTOutput('kruskal_wilcoxon_test')
-          )
-          , align = 'center'
-        )
-      ))
-      df <- values$bidimensional_data
-      #Boxplot
-      output$kruskal_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
-      #Cálculo do Teste
-      dfkruskal_dt <- df %>% rstatix::kruskal_test(df[[1]] ~ df[[2]])
-      dfkruskal_dt <- dfkruskal_dt[3:6]
-      dfkruskal_dt[1] <- signif(dfkruskal_dt[1], 4)
-      dfkruskal_dt[3] <- signif(dfkruskal_dt[3], 4)
-      output$kruskal_dt <- renderDT(dfkruskal_dt)
-
-      #Area de Efeito
-      dfkruskal_effectArea <- df %>% rstatix::kruskal_effsize(df[[1]] ~ df[[2]])
-      dfkruskal_effectArea <- dfkruskal_effectArea[3:5]
-      dfkruskal_effectArea[1] <- signif(dfkruskal_effectArea[1], 4)
-      output$kruskal_effectArea <- renderDT(dfkruskal_effectArea)
-      names(df) <- c('Dados', 'Grupos')
-
-      #Dumm's test
-      df_dumm_test <- df %>% rstatix::dunn_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
-      df_dumm_test <- df_dumm_test[c(2, 3, 6, 7)]
-      df_dumm_test[3] <- signif(df_dumm_test[3], 4)
-      df_dumm_test[4] <- signif(df_dumm_test[4], 4)
-      output$kruskal_dunn_test <- renderDT(df_dumm_test)
-
-      #Wilcoxon's test
-      df_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
-      df_wilcoxon_test <- df_wilcoxon_test[c(2, 3, 6, 7)]
-      df_wilcoxon_test[3] <- signif(df_wilcoxon_test[3], 4)
-      df_wilcoxon_test[4] <- signif(df_wilcoxon_test[4], 4)
-      output$kruskal_wilcoxon_test <- renderDT(df_wilcoxon_test)
-    }
-    else
-      output$kruskal_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-
-    #-------------------Friedman Test-------------------#
-    if(values$bidimensional_data_type == 'anova_2groups') {
-      output$friedman_test_statistics <- renderUI(tagList(
-        column(
-          12,
-          h3(strong('Detectando Outliers')),
-          plotlyOutput('friedman_boxplot'),
-          br(),
-          h3(strong('Calculo do Teste de friedman Wallis')),
-          DTOutput('friedman_dt'),
-          uiOutput('friedman_interpretation'),
-          h3(strong('Área de Efeito')),
-          DTOutput('friedman_effectArea'),
-          uiOutput('friedman_effectArea_interpretation'),
-          br(),
-          h3(strong('Múltiplas comparações entre pares')),
-          column(6,
-                 h3(strong('Teste de Wilcoxon')),
-                 DTOutput('friedman_wilcoxon_test')
-          ),
-          column(6,
-                 h3(strong('Teste do Sinal')),
-                 DTOutput('friedman_sign_test')
-          )
-          , align = 'center'
-        )
-      ))
-      df <- values$bidimensional_data
-      #Boxplot
-      output$friedman_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
-      #Cálculo do Teste
-      names(df) <- c('Dados', 'Grupo', 'id')
-      df_friedman_dt <- (df %>% rstatix::friedman_test(Dados ~ Grupo | id) %>% data.frame())[3:6]
-      df_friedman_dt[3] <- signif(df_friedman_dt[3], 4)
-      output$friedman_dt <- renderDT(df_friedman_dt)
-
-      #Area de Efeito
-      df_friedman_effectArea <- (df %>% rstatix::friedman_effsize(Dados ~ Grupo | id) %>% data.frame())[-(1:2)]
-      df_friedman_effectArea[1] <- signif(df_friedman_effectArea[1], 4)
-      output$friedman_effectArea <- renderDT(df_friedman_effectArea)
-
-      #Sign's test
-      df_friedman_sign_test <- df %>% rstatix::sign_test(Dados ~ Grupo, p.adjust.method = "bonferroni")
-      df_friedman_sign_test <- df_friedman_sign_test[c(2, 3, 6, 7, 8)]
-      df_friedman_sign_test[3] <- signif(df_friedman_sign_test[3], 5)
-      df_friedman_sign_test[5] <- signif(df_friedman_sign_test[5], 5)
-      output$friedman_sign_test <- renderDT(df_friedman_sign_test)
-
-      #Wilcoxon's test
-      df_friedman_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupo, p.adjust.method = "bonferroni", paired = TRUE)
-      df_friedman_wilcoxon_test <- df_friedman_wilcoxon_test[c(2, 3, 6, 7)]
-      df_friedman_wilcoxon_test[3] <- signif(df_friedman_wilcoxon_test[3], 4)
-      df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], 4)
-      output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
-    }
-    else
-      output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-  }
-    else{
-    output$kruskal_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-    output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-  }
-  })
   #-------------------Load Tridimensional Data-------------------#
   observeEvent(input$load_tridimensional, {
     showTab(inputId = "tabs", target = "Gráfico em Mesh")

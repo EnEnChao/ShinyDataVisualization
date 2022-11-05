@@ -25,6 +25,10 @@ import_bidimensional_page <- function (){
                pickerInput('examp_select_bi',
                            'Escolha os dados de exemplo',
                            choices = list(
+                             `Uma Variável` = c(
+                               'Comprimento da Sépala' = 'Sepal.Lenght',
+                               'Quantidade de Resíduos' = 'waste'
+                             ),
                              `Duas Médias` = c(
                                'Ratos' = 'mice',
                                'Peso entre gêneros' = 'genderweight'

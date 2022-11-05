@@ -1,4 +1,5 @@
 if (!(require(shiny))){install.packages("shiny"); require(shiny, quietly=TRUE)}
+if (!(require(shinyjs))){install.packages("shinyjs"); require(shinyjs, quietly=TRUE)}
 if (!(require(shinythemes))){install.packages("shinythemes"); require(shinythemes, quietly=TRUE)}
 if (!(require(DT))){install.packages("DT"); require(DT, quietly=TRUE)}
 if (!(require(shinydashboardPlus))){install.packages("shinydashboardPlus"); require(shinydashboardPlus, quietly=TRUE)}
