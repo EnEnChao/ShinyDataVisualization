@@ -8,7 +8,10 @@ sign_test_page <- function (){
            column(9,
                   h3('Teste do Sinal', style="text-align:center; font-size:50px;"),
                   br(),
-                  uiOutput('sign_test_results'),
+                  plotlyOutput('sign_test_outliers'),
+                  h3(strong('Estatísticas'), align = 'center'),
+                  DTOutput('sign_test_dt'),
+                  uiOutput('sign_test_p'),
                   align = 'center'
            ),
            column(12, hr())

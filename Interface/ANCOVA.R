@@ -29,7 +29,35 @@ ancova_page <- function (){
            fluidPage(fluidRow(column(
              h3("ANCOVA - Análise de Covariância", style="text-align:center; font-size:50px;"),
              tabPanel(title = 'Gráfico',
-                      uiOutput('ancova_statistics')
+                      h3(strong('ANCOVA'), align = 'center'),
+        column(6,
+               h3(strong('Teste de Linearidade'), align = 'center'),
+               plotOutput('ancova_linearity')
+        ),
+        column(6,
+               h3(strong('Regressão de Homogeniedade'), align = 'center'),
+               DTOutput('ancova_regression'),
+               uiOutput('ancova_regression_results')
+
+        ),
+        column(12,), br(),
+        column(12,
+          column(6,
+                 h3(strong('Homogeniedade das Variâncias'), align = 'center'),
+                 DTOutput('ancova_levene_test')
+          ),
+          column(6,
+                 h3(strong('Teste de Normalidade'), align = 'center'),
+                 DTOutput('ancova_shapiro_test')
+          )
+        ),
+        column(12,
+          h3(strong('Tabela Posthoc:'), align = 'center'),
+          DTOutput('ancova_posthoc'),
+          h3(strong('Resultados:'), align = 'center'),
+          br(),
+          uiOutput('ancova_results')
+        )
         ),
         width = 9
       )))

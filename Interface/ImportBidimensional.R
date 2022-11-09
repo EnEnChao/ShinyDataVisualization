@@ -17,8 +17,8 @@ import_bidimensional_page <- function (){
                #Arquivo a ser carregado
                fileInput(inputId = "file_imported_bi", "Insira o arquivo", accept = '.xlsx'),
                 awesomeRadio(inputId = 'imported_bi_type', label = "Escolha o tipo de teste",
-                             choices = c("Comparando duas Médias", "ANOVA", "ANOVA dois grupos", 'ANCOVA', 'MANOVA'),
-                             inline = TRUE, status = "success"),
+                             choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
+                             inline = FALSE, status = "success"),
                # switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
              ),
              conditionalPanel(condition = "input.file_selector_bi == 'example'", {
@@ -38,7 +38,8 @@ import_bidimensional_page <- function (){
                                'Crescimento de Plantas' = 'PlantGrowth'
                              ),
                              `ANOVA medidas repetidas ou misturadas` = c(
-                               'Auto estima' = 'selfesteem'
+                               'Auto estima' = 'selfesteem',
+                               'Atuação' = 'performance'
                              ),
                              `ANCOVA` = c(
                                'Combustível' = 'gas3',

@@ -188,6 +188,10 @@ server <- function (input, output, session){
         dt <- data.frame(score = s2[3], time = s2[2], id = as.character(s2[[1]]))
         type <- 'anova_2groups'
       }
+      if(input$examp_select_bi == 'performance'){
+        dt <- data.frame(performance[c(4, 2, 3)])
+        type <- 'anova_2groups'
+      }
       if(input$examp_select_bi == 'gas3') {
         dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
         type <- 'ancova'
@@ -210,9 +214,75 @@ server <- function (input, output, session){
       type <- input$imported_bi_type
     }
     if ((type %in% c('uni_data', 'two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
-      showTab(inputId = "tabs", target = "Comparando duas médias")
-      showTab(inputId = "tabs", target = "Avaliando os dados")
-      showTab(inputId = "tabs", target = "Comparando multiplas médias")
+      if(type %in% c('uni_data', 'two_col')){
+        showTab(inputId = "tabs", target = "Comparando duas médias")
+        showTab(inputId = "tabs", target = "Avaliando os dados")
+        hideTab(inputId = "tabs", target = "Comparando multiplas médias")
+      }
+      else{
+        hideTab(inputId = "tabs", target = "Comparando duas médias")
+        showTab(inputId = "tabs", target = "Avaliando os dados")
+        showTab(inputId = "tabs", target = "Comparando multiplas médias")
+      }
+      switch(
+        type,
+        'uni_data' = {
+          showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
+          showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
+          hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
+        },
+        'two_col' = {
+          showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
+          showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
+          showTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
+        },
+        'anova' = {
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA')
+        },
+        'anova_2groups' = {
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA - medidas repetidas')
+        },
+        'ancova' = {
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANCOVA')
+        },
+        'manova' = {
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'MANOVA')
+        }
+      )
        output$table_import_bi_data_output <- renderUI(
          shinycssloaders::withSpinner(
            DTOutput("table_import_bi_data_output2"),
@@ -311,18 +381,18 @@ server <- function (input, output, session){
           names(data) <- c('Dados', 'Classificacao')
 
           res <- var.test(Dados ~ Classificacao, data = data, conf.level = ci)
-          dt <- signif(data.frame(F = res$statistic, Num_df = res$parameter[1], Denom_df = res$parameter[2], p = res$p.value), 4)
+          dt <- signif(data.frame(F = res$statistic, Num_df = res$parameter[1], Denom_df = res$parameter[2], p = res$p.value), significancia_de_aproximacao)
 
           output$homogenity_table <- renderDT(dt)
           output$homogenity_method_results <- renderUI(
             tagList(
               h4('Com um intervalo de confiança de ', ci * 100, '%:'),
-              h4(signif(res$conf.int[1], 4), signif(res$conf.int[2], 4)), br(),
-              if (signif(res$p.value, 4) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              h4(signif(res$conf.int[1], significancia_de_aproximacao), signif(res$conf.int[2], significancia_de_aproximacao)), br(),
+              if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                                                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre as duas variâncias')
-              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
                                                 '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as duas variâncias')
-              else h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                       '. Assim sugere que ', strong('há diferênças significantes'), ' entre as duas variâncias')
             )
           )
@@ -330,14 +400,14 @@ server <- function (input, output, session){
         else if (choosen == 'bartlett_test') {
           res <- bartlett.test(Dados ~ Classificação, data = data)
           output$homogenity_method_name <- renderUI(h3('Teste de Bartlett para comparação múltiplas variáveis'))
-          output$homogenity_table <- renderDT(signif(data.frame(F = res$statistic, df = res$parameter, p = res$p.value)), 4)
+          output$homogenity_table <- renderDT(signif(data.frame(F = res$statistic, df = res$parameter, p = res$p.value), significancia_de_aproximacao))
           output$homogenity_method_results <- renderUI(
             tagList(
-              if (signif(res$p.value, 4) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                                                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
                                                 '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
-              else h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                       '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
             )
           )
@@ -346,14 +416,14 @@ server <- function (input, output, session){
         else if (choosen == 'levene_test') {
           output$homogenity_method_name <- renderUI(h3('Teste de Levene para comparação múltiplas variáveis'))
           res <- leveneTest(Dados ~ Classificação, data = data)
-          output$homogenity_table <- renderDT(signif(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), 4))
+          output$homogenity_table <- renderDT(signif(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), significancia_de_aproximacao))
           output$homogenity_method_results <- renderUI(
             tagList(
-              if (signif(res$`Pr(>F)`[1], 4) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              if (signif(res$`Pr(>F)`[1], significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                                                       '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-              else if (1 - ci < res$`Pr(>F)`[1]) h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], 4)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+              else if (1 - ci < res$`Pr(>F)`[1]) h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
                                                     '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
-              else h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], 4)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              else h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                       '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
             )
           )
@@ -361,14 +431,14 @@ server <- function (input, output, session){
         else if (choosen == 'fk_test') {
           res <- fligner.test(Dados ~ Classificação, data = data)
           output$homogenity_method_name <- renderUI(h3('Teste de Fligner-Killeen para comparação múltiplas variáveis'))
-          output$homogenity_table <- renderDT(signif(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), 4))
+          output$homogenity_table <- renderDT(signif(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), significancia_de_aproximacao))
           output$homogenity_method_results <- renderUI(
             tagList(
-              if (signif(res$p.value, 4) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                                                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
                                                 '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
-              else h4('O valor de p = ', strong(signif(res$p.value, 4)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+              else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
                       '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
             )
           )
@@ -411,7 +481,7 @@ server <- function (input, output, session){
         uiOutput('transform_norm_download')
       ))
       output$transform_norm_results_original <- renderPlotly(ggplotly(ggdensity(data = contingency_data(values$bidimensional_data), x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7)))
-      output$transform_norm_results_method_statistics <- renderUI(h4('O coeficiente de distorção é : ', signif(skewness(contingency_data(values$bidimensional_data)$Dados, na.rm = TRUE), 4)))
+      output$transform_norm_results_method_statistics <- renderUI(h4('O coeficiente de distorção é : ', signif(skewness(contingency_data(values$bidimensional_data)$Dados, na.rm = TRUE), significancia_de_aproximacao)))
       observeEvent(input$load_transform_norm, {
 
       data <- contingency_data(values$bidimensional_data)
@@ -441,8 +511,8 @@ server <- function (input, output, session){
         output$transform_norm_results_new_name <- renderUI(h3('Com a transformação: ',transformation))
         output$transform_norm_results_new_plot <- renderPlotly(fig)
         output$transform_norm_results_method_statistics <- renderUI(tagList(
-           h4('O coeficiente de distorção é : ', signif(skewness(data$Dados, na.rm = TRUE), 4)),
-           h4('O novo coeficiente de distorção é : ', signif(skewness(df$Dados, na.rm = TRUE), 4))
+           h4('O coeficiente de distorção é : ', signif(skewness(data$Dados, na.rm = TRUE), significancia_de_aproximacao)),
+           h4('O novo coeficiente de distorção é : ', signif(skewness(df$Dados, na.rm = TRUE), significancia_de_aproximacao))
         ))
 
         # Download the new df
@@ -454,7 +524,7 @@ server <- function (input, output, session){
         )
       }
       else{
-        output$transform_norm_results_method_statistics <- renderUI(tagList(h4('O coeficiente de distorção é : ', signif(skewness(data$Dados, na.rm = TRUE), 4))))
+        output$transform_norm_results_method_statistics <- renderUI(tagList(h4('O coeficiente de distorção é : ', signif(skewness(data$Dados, na.rm = TRUE), significancia_de_aproximacao))))
         output$transform_norm_results_new <- renderUI(p(''))
         output$transform_norm_download <- renderUI(p(''))
       }
@@ -542,15 +612,24 @@ server <- function (input, output, session){
       ))
       #Testes de Normalidade
       output$t_test_uni_normality <- renderPlotly(ggplotly(ggqqplot(df[,1], color = '#F8766D')))
-      t_test_shapiro_uni <- signif(shapiro.test(df[,1])$p.value, 4)
-      output$t_test_uni_normality_results <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_uni), ifelse(t_test_shapiro_uni > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
+      t_test_shapiro_uni <- signif(shapiro.test(df[,1])$p.value, significancia_de_aproximacao)
+      output$t_test_uni_normality_results <- renderUI(tagList(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_uni), ifelse(t_test_shapiro_uni > intervalo_global_de_confianca, '(Estatísticamente normal)', '(Estatísticamente não normal)')),
+                                                      if(t_test_shapiro_uni <= intervalo_global_de_confianca) p('Recomenda-se utilizar o teste de Wilcoxon.')
+      ))
       #Testes de Outlier
       output$t_test_uni_boxplot <- renderPlotly(plot_ly(data.frame(), y = df[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(df)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
       output$t_test_uni_outliers <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
 
       #Resultados da computação do Teste T
-      output$t_test_uni_dt <- renderDT(test_t_uni(df[1], input$test_t_mu))
-      output$t_test_uni_effect_size <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,1]) - input$test_t_mu) / sd(df[,1]), 4))))
+      df_test_t_uni <- test_t_uni(df[1], input$test_t_mu)
+      output$t_test_uni_dt <- renderDT(df_test_t_uni)
+      output$t_test_uni_effect_size <- renderUI(tagList(
+        p('O valor de p para o teste T é: ', strong(df_test_t_uni$p),
+          if(df_test_t_uni$p > intervalo_global_de_confianca) p('Ou seja, a média dos dados é estatisticamente igual a ',input$test_t_mu)
+          else p('Ou seja, a média dos dados é estatisticamente diferente de ',input$test_t_mu)
+        ),
+        p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,1]) - input$test_t_mu) / sd(df[,1]), significancia_de_aproximacao)))
+      ))
     }
       #-------------------Wilcoxon Test-------------------#
     {output$wilcoxon_test_predict <- renderUI(tagList(
@@ -575,14 +654,18 @@ server <- function (input, output, session){
       output$wilcoxon_test_uni_outliers <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
 
       w_test1 <- rstatix::wilcox_test(data = data.frame(data = df[[1]]),data ~ 1, mu = input$wilcoxon_t_mu)
-      w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], 4))
+      w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], significancia_de_aproximacao))
       rownames(w_test_df1) <- paste0('Test de Wilcoxon - ', names(df)[1])
       output$wilcoxon_test_uni_dt <- renderDT(w_test_df1)
       w_effectsize1 <- wilcox_effsize(data.frame(data = df[[1]]), data ~ 1, mu = input$wilcoxon_t_mu)
-      output$wilcoxon_test_uni_effect_size <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], 4))))
+      output$wilcoxon_test_uni_effect_size <- renderUI(tagList(
+        p('O valor de p para o teste de Wilcoxon é: ', strong(w_test_df1$p),
+          if(w_test_df1$p > intervalo_global_de_confianca) p('Ou seja, a média dos dados é estatisticamente igual a ',input$wilcoxon_t_mu)
+          else p('Ou seja, a média dos dados é estatisticamente diferente de ',input$wilcoxon_t_mu)
+        ),
+        p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], significancia_de_aproximacao)))
+      ))
     }
-      #Teste do Sinal não tem One Way
-      output$sign_test_results <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     }
     #-------Comparando duas médias - Two way---------#
     else if (values$bidimensional_data_type == 'two_col'){
@@ -629,21 +712,36 @@ server <- function (input, output, session){
               )
             ))
             output$t_test_normality_1 <- renderPlotly(ggplotly(ggqqplot(df[,1], color = '#F8766D')))
-            t_test_shapiro_1 <- signif(shapiro.test(df[,1])$p.value, 4)
-            output$t_test_normality_results_1 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_1), ifelse(t_test_shapiro_1 > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
+            t_test_shapiro_1 <- signif(shapiro.test(df[,1])$p.value, significancia_de_aproximacao)
+            output$t_test_normality_results_1 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_1), ifelse(t_test_shapiro_1 > intervalo_global_de_confianca, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
             output$t_test_normality_2 <- renderPlotly(ggplotly(ggqqplot(df[,2], color = '#28B3B6')))
-            t_test_shapiro_2 <- signif(shapiro.test(df[,2])$p.value, 4)
-            output$t_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_2), ifelse(t_test_shapiro_2 > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
+            t_test_shapiro_2 <- signif(shapiro.test(df[,2])$p.value, significancia_de_aproximacao)
+            output$t_test_normality_results_2 <- renderUI(p('O valor de p utilizando o teste de Shapiro Wilk é de: ', strong(t_test_shapiro_2), ifelse(t_test_shapiro_2 > intervalo_global_de_confianca, '(Estatísticamente normal)', '(Estatísticamente não normal)')))
             output$t_test_boxplot_1 <- renderPlotly(plot_ly(data.frame(), y = df[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(df)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
             output$t_test_outliers_1 <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
             output$t_test_boxplot_2 <- renderPlotly(plot_ly(data.frame(), y = df[,2], type = 'box', boxpoints = "all", fillcolor = '#D4F0F0', name = names(df)[2], marker = list(color = '#28B3B6', outliercolor = 'gray'), line = list(color = '#28B3B6')))
             output$t_test_outliers_2 <- renderUI(if(nrow(identify_outliers(df[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[2])), ' outliers.'))
 
-            output$t_test_dt_1 <- renderDT(test_t_uni(df[1], input$test_t_mu))
-            output$t_test_dt_2 <- renderDT(test_t_uni(df[2], input$test_t_mu))
+            test_t_uni_1 <- test_t_uni(df[1], input$test_t_mu)
+            test_t_uni_2 <- test_t_uni(df[2], input$test_t_mu)
 
-            output$t_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,1]) - input$test_t_mu) / sd(df[,1]), 4))))
-            output$t_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,2]) - input$test_t_mu) / sd(df[,2]), 4))))
+            output$t_test_dt_1 <- renderDT(test_t_uni_1)
+            output$t_test_dt_2 <- renderDT(test_t_uni_2)
+
+            output$t_test_effect_size1 <- renderUI(tagList(
+              p('O valor de p para o teste T é: ', strong(test_t_uni_1$p),
+                if(test_t_uni_1$p > intervalo_global_de_confianca) p('Ou seja, a média dos dados é estatisticamente igual a ',input$test_t_mu)
+                else p('Ou seja, a média dos dados é estatisticamente diferente de ',input$test_t_mu)
+              ),
+              p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,1]) - input$test_t_mu) / sd(df[,1]), significancia_de_aproximacao)))
+            ))
+            output$t_test_effect_size2 <- renderUI(tagList(
+              p('O valor de p para o teste T é: ', strong(test_t_uni_2$p),
+                if(test_t_uni_2$p > intervalo_global_de_confianca) p('Ou seja, a média dos dados é estatisticamente igual a ',input$test_t_mu)
+                else p('Ou seja, a média dos dados é estatisticamente diferente de ',input$test_t_mu)
+              ),
+              p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', strong(input$test_t_mu), ' é de: ', strong(signif(abs(mean(df[,2]) - input$test_t_mu) / sd(df[,2]), significancia_de_aproximacao)))
+            ))
           }
           if(input$test_t_options == 'two' | (input$test_t_options == 'paired'  & !(any(is.na(contingency_data(values$bidimensional_data)))) )){
             output$t_test_predict <- renderUI(tagList(
@@ -671,9 +769,9 @@ server <- function (input, output, session){
             shap <- shap[-c(2,3)]
 
             output$t_test_normality_results <- renderUI(tagList(p('Os valores de p utilizando o teste de Shapiro Wilk de',
-                                                          strong(shap[1,1]),' é de: ', strong(shap[1,2]), ifelse(signif(shap[1,2], 4) > 0.05, '(Estatísticamente normal)', '(Estatísticamente não normal)'), ' e ',
-                                                          strong(shap[2,1]),' é de: ', strong(shap[2,2]), ifelse(signif(shap[2,2], 4) > 0.05, '(Estatísticamente normal).', '(Estatísticamente não normal).')),
-                                                                if(signif(shap[1,2], 4) <= 0.05 | signif(shap[2,2], 4) <= 0.05) p('Recomenda-se utilizar o teste de Wilcoxon ou o teste do Sinal.')
+                                                          strong(shap[1,1]),' é de: ', strong(shap[1,2]), ifelse(signif(shap[1,2], significancia_de_aproximacao) > intervalo_global_de_confianca, '(Estatísticamente normal)', '(Estatísticamente não normal)'), ' e ',
+                                                          strong(shap[2,1]),' é de: ', strong(shap[2,2]), ifelse(signif(shap[2,2], significancia_de_aproximacao) > intervalo_global_de_confianca, '(Estatísticamente normal).', '(Estatísticamente não normal).')),
+                                                                if(signif(shap[1,2], significancia_de_aproximacao) <= intervalo_global_de_confianca | signif(shap[2,2], significancia_de_aproximacao) <= intervalo_global_de_confianca) p('Recomenda-se utilizar o teste de Wilcoxon ou o teste do Sinal.')
             )
 
             )
@@ -684,24 +782,24 @@ server <- function (input, output, session){
 
             output$t_test_plotly <- renderPlotly(subplot(fig1, fig2, margin = 0.1))
             ftest <- var.test(Dados ~ Classificação, dt)
-            ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate), 'p' = signif(ftest$p.value), 'Estatística' = signif(ftest$statistic))
+            ftest_dt <- data.frame('Estimativa' = signif(ftest$estimate, significancia_de_aproximacao), 'p' = signif(ftest$p.value, significancia_de_aproximacao), 'Estatística' = signif(ftest$statistic, significancia_de_aproximacao))
             output$t_test_homostacity <- renderDT(ftest_dt)
-            output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',strong(signif(ftest_dt$p, 4)), 'ou seja,', ifelse(ftest_dt$p > 0.05, 'a variância entre os grupos é estatísticamente igual.', 'a variância entre os grupos é estatísticamente diferente.')))
+            output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',strong(signif(ftest_dt$p, significancia_de_aproximacao)), 'ou seja,', ifelse(ftest_dt$p > intervalo_global_de_confianca, 'a variância entre os grupos é estatísticamente igual.', 'a variância entre os grupos é estatísticamente diferente.')))
 
             #Remove outliers
             # if(input$test_t_options != 'paired')
             #   dt <- removeOutliers(dt)
 
-            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ftest_dt$p > 0.05 | input$test_t_options == 'paired')
+            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ftest_dt$p > intervalo_global_de_confianca | input$test_t_options == 'paired')
             # test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = F)
-            test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic, 4), df = signif(test_w$df, 4))
+            test_w_df <- data.frame(p = signif(test_w$p, significancia_de_aproximacao), estatística = signif(test_w$statistic, significancia_de_aproximacao), df = signif(test_w$df, significancia_de_aproximacao))
             rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
             output$t_test_dt <- renderDT(test_w_df)
             cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
-            output$t_test_effect_size <-renderUI(tagList(p('O valor p do teste T é: ',strong(test_w_df$p) , ' ou seja, ', ifelse(test_w_df$p > 0.05, 'as variâncias de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes'),
+            output$t_test_effect_size <-renderUI(tagList(p('O valor p do teste T é: ',strong(test_w_df$p) , ' ou seja, ', ifelse(test_w_df$p > intervalo_global_de_confianca, 'as variâncias de ambos os grupos são estatísticamente iguais.', 'os dados médios de ambos os grupos são estatísticamente diferentes.'),
                                                    br(),
-                                                   'A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, 4)),br()),
-                                                   if(ftest_dt$p <= 0.05 & input$test_t_options != 'paired') p('O algoritmo para calcular a área de efeito foi o ', strong('o algoritmo de Welch,'), ' como as variâncias foram diferentes.')
+                                                   'A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, significancia_de_aproximacao)),br()),
+                                                   if(ftest_dt$p <= intervalo_global_de_confianca & input$test_t_options != 'paired') p('O algoritmo para calcular a área de efeito foi o ', strong('o algoritmo de Welch,'), ' como as variâncias foram diferentes.')
             ))
           }
         }
@@ -753,18 +851,31 @@ server <- function (input, output, session){
         output$wilcoxon_test_outliers_2 <- renderUI(if(nrow(identify_outliers(df[2])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[2])), ' outliers.'))
 
         w_test1 <- rstatix::wilcox_test(data = data.frame(data = df[[1]]),data ~ 1, mu = input$wilcoxon_t_mu)
-        w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], 4))
+        w_test_df1 <- data.frame(p = signif(w_test1$p[[1]], 4), estatística = signif(w_test1$statistic[[1]], significancia_de_aproximacao))
         rownames(w_test_df1) <- paste0('Test de Wilcoxon - ', names(df)[1])
         output$wilcoxon_test_dt_1 <- renderDT(w_test_df1)
         w_effectsize1 <- wilcox_effsize(data.frame(data = df[[1]]), data ~ 1, mu = input$wilcoxon_t_mu)
-        output$wilcoxon_test_effect_size1 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], 4))))
-
+        output$wilcoxon_test_effect_size1 <- renderUI(
+          tagList(
+            p('O valor de p para o teste de Wilcoxon é: ', strong(w_test_df1$p),
+              if(w_test_df1$p > intervalo_global_de_confianca) p('Ou seja, a média dos dados é estatisticamente igual a ',input$wilcoxon_t_mu)
+              else p('Ou seja, a média dos dados é estatisticamente diferente de ',input$wilcoxon_t_mu)
+            ),
+            p('A área de efeito da variável ', (strong(names(df)[1])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize1$effsize[[1]], significancia_de_aproximacao)))
+          )
+        )
         w_test2 <- rstatix::wilcox_test(data = data.frame(data = df[[2]]),data ~ 1, mu = input$wilcoxon_t_mu)
-        w_test_df2 <- data.frame(p = signif(w_test2$p[[1]], 4), estatística = signif(w_test2$statistic[[1]], 4))
+        w_test_df2 <- data.frame(p = signif(w_test2$p[[1]], significancia_de_aproximacao), estatística = signif(w_test2$statistic[[1]], significancia_de_aproximacao))
         rownames(w_test_df2) <- paste0('Test de Wilcoxon - ', names(df)[2])
         output$wilcoxon_test_dt_2 <- renderDT(w_test_df2)
         w_effectsize2 <- wilcox_effsize(data.frame(data = df[[2]]), data ~ 1, mu = input$wilcoxon_t_mu)
-        output$wilcoxon_test_effect_size2 <- renderUI(p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize2$effsize[[1]], 4))))
+        output$wilcoxon_test_effect_size2 <- renderUI(tagList(
+          p('O valor de p para o teste de Wilcoxon é: ', strong(w_test_df2$p),
+            if(w_test_df2$p > intervalo_global_de_confianca) p('Ou seja, a média dos dados é estatisticamente igual a ',input$wilcoxon_t_mu)
+            else p('Ou seja, a média dos dados é estatisticamente diferente de ',input$wilcoxon_t_mu)
+          ),
+          p('A área de efeito da variável ', (strong(names(df)[2])), ', com mu = ', input$wilcoxon_t_mu, ' é de: ', strong(signif(w_effectsize2$effsize[[1]], significancia_de_aproximacao)))
+        ))
       }
       else if(input$wilcoxon_test_options == 'rank_sum' | (input$wilcoxon_test_options == 'paired' & !(any(is.na(contingency_data(values$bidimensional_data)))) )){
         output$wilcoxon_test_predict <- renderUI(
@@ -800,164 +911,109 @@ server <- function (input, output, session){
         #   dt <- removeOutliers(dt)
 
         test_w <- rstatix::wilcox_test(dt, Dados ~ Classificação, paired = input$wilcoxon_test_options == 'paired')
-        test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic[[1]], 4))
+        test_w_df <- data.frame(p = signif(test_w$p, 4), estatística = signif(test_w$statistic[[1]], significancia_de_aproximacao))
         rownames(test_w_df) <- if(input$wilcoxon_test_options == 'two') paste0('Teste de Wilcoxon') else if(input$wilcoxon_test_options == 'paired') paste0('Teste de Wilcoxon - Pareado')
         output$wilcoxon_test_dt <- renderDT(test_w_df)
         w_effectsize <- rstatix::wilcox_effsize(dt, Dados ~ Classificação, paired = input$wilcoxon_test_options == 'paired')$effsize[[1]]
-        output$wilcoxon_test_effect_size <- renderUI(p('O valor p do teste de Wilxoxon é: ', test_w_df$p, ' ou seja, ', ifelse(test_w_df$p > 0.05, 'os dados médios de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes'),
+        output$wilcoxon_test_effect_size <- renderUI(p('O valor p do teste de Wilxoxon é: ', test_w_df$p, ' ou seja, ', ifelse(test_w_df$p > intervalo_global_de_confianca, 'os dados médios de ambos os grupos são estatísticamente iguais.', 'os dados médios de ambos os grupos são estatísticamente diferentes.'),
                                                    br(),
-          'A área de efeito entre as variáveis ', (strong(names(values$bidimensional_data)[1])),', e ',(strong(names(values$bidimensional_data)[2])),  ', é de: ', strong(signif(w_effectsize, 4))))
+          'A área de efeito entre as variáveis ', (strong(names(values$bidimensional_data)[1])),', e ',(strong(names(values$bidimensional_data)[2])),  ', é de: ', strong(signif(w_effectsize, significancia_de_aproximacao))))
       }
     }
         #-------------------Sign Test-------------------#
         {
-          output$sign_test_results <- renderUI(tagList(
-            plotlyOutput('sign_test_outliers'),
-            h3(strong('Estatísticas'), align = 'center'),
-            DTOutput('sign_test_dt'),
-            uiOutput('sign_test_p')
-          ))
           dt <- values$bidimensional_data
           colnames(dt) <- c('var1', 'var2')
           dt <- contingency_data(dt)
           output$sign_test_outliers <- renderPlotly(plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box'))
 
           sign_test <- dt %>% rstatix::sign_test(Dados ~ Classificação)
-          sign_test_df <- data.frame(p = signif(sign_test$p[[1]], 4), estatística = signif(sign_test$statistic[[1]], 4), df = signif(sign_test$df[[1]], 4))
+          sign_test_df <- data.frame(p = signif(sign_test$p[[1]], significancia_de_aproximacao), estatística = signif(sign_test$statistic[[1]], significancia_de_aproximacao), df = signif(sign_test$df[[1]], significancia_de_aproximacao))
           rownames(sign_test_df) <- paste0('Test do Sinal')
           output$sign_test_dt <- renderDT(sign_test_df)
-          output$sign_test_p <- renderUI(p('O valor p do teste do Sinal é é: ', sign_test_df$p, ' ou seja, ', ifelse(sign_test_df$p > 0.05, 'os dados médios de ambos os grupos são estatísticamente iguais', 'os dados médios de ambos os grupos são estatísticamente diferentes')),
+          output$sign_test_p <- renderUI(p('O valor p do teste do Sinal é é: ', sign_test_df$p, ' ou seja, ', ifelse(sign_test_df$p > intervalo_global_de_confianca, 'os dados médios de ambos os grupos são estatísticamente iguais.', 'os dados médios de ambos os grupos são estatísticamente diferentes.')),
           )
         }
       }
     else{
         output$t_test_predict <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
         output$wilcoxon_test_predict <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-        output$sign_test_results <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
       }
   }
     #--------------------ANOVA's---------------------#
   { if (values$bidimensional_data_type == 'anova') {
     #-------------------ANOVA-------------------#
   {
-    output$anova_statistics <- renderUI(
-      tagList(
-        column(6,
-               h3(strong('Testando Normalidade', align = 'center')),
-               plotlyOutput('anova_qq_plot'),
-               uiOutput('anova_shapiro')
-
-        ),
-        column(6,
-               h3(strong('Verificando Outliers', align = 'center')),
-               plotlyOutput('anova_box_plot'),
-               DTOutput('anova_outliers')
-        ), br(),
-        column(12,
-               h3(strong('Verificando da Homogeneidade de Variância', align = 'center')),
-               DTOutput('anova_levene_dt'),
-               uiOutput('anova_levene_results'), br(),
-               h3(strong('Resultado do teste de ANOVA', align = 'center')),
-               DTOutput('anova_dt'),
-               uiOutput('anova_p'),
-               h3(strong('Tabela Post Hoc', align = 'center')),
-               DTOutput('anova_posthoc')
-        ))
-    )
     df <- values$bidimensional_data
     names <- names(df)
-    names(df) <- c('vd', 'vi')
-    model <- lm(df$vd ~ df$vi)
+    names(df) <- c('Dados', 'Grupos')
+    model <- lm(df$Dados ~ df$Grupos)
 
     #Normalidade
     output$anova_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-    shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
-    output$anova_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
-
+    shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
+    output$anova_shapiro <- renderUI(tagList(p('O valor p para o teste de Shapiro-Wilk é: ', strong(shap), ifelse(shap > intervalo_global_de_confianca, ' (Estatísticamente normal)', ' (Estatísticamente não normal)')),
+                                     if(shap <= intervalo_global_de_confianca) p('Recomenda-se utilizar o teste de Kruskal-Wallis.')
+    ))
     #Outliers
     output$anova_box_plot <- renderPlotly(plot_ly(df, x = df[, 2], y = df[, 1], type = 'box', color = df[, 2]))
-    if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
-      output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
+    if (nrow(df %>% group_by(Grupos) %>% identify_outliers(Dados)) > 0)
+      output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(Grupos) %>% identify_outliers(Dados)))
 
     #Teste de Levene
-    levene <- signif((df %>% rstatix::levene_test(vd ~ vi))$p, 4)
-    output$anova_levene_dt <- renderDT(signif(data.frame(df %>% rstatix::levene_test(vd ~ vi)), 4))
-    output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', levene, align = 'center'))
+    levene <- signif((df %>% rstatix::levene_test(Dados ~ Grupos))$p, significancia_de_aproximacao)
+    output$anova_levene_dt <- renderDT(signif(data.frame(df %>% rstatix::levene_test(Dados ~ Grupos)), significancia_de_aproximacao))
+    output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', strong(levene), '. Ou seja, ',
+                                              ifelse(levene > intervalo_global_de_confianca, 'não existe difereça entre as variâncias entre os grupos.', 'existe difereça entre as variâncias entre os grupos.')))
 
     #ANOVA
-    anova_dt <- df %>% anova_test(vd ~ vi)
+    anova_dt <- df %>% anova_test(Dados ~ Grupos)
     output$anova_dt <- renderDT(anova_dt[, 4:7])
-    output$anova_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
-    posthoc <- df %>% tukey_hsd(vd ~ vi)
-    posthoc$conf.high <- signif(posthoc$conf.high, 4)
-    posthoc$conf.low <- signif(posthoc$conf.low, 4)
-    posthoc$estimate <- signif(posthoc$estimate, 4)
-    posthoc$p.adj <- signif(posthoc$p.adj, 4)
+    output$anova_p <- renderUI(p('O valor de p do anova é: ', strong(anova_dt$p), '. Ou seja, ',
+                                 ifelse(anova_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')))
+    posthoc <- df %>% tukey_hsd(Dados ~ Grupos)
+    posthoc$conf.high <- signif(posthoc$conf.high, significancia_de_aproximacao)
+    posthoc$conf.low <- signif(posthoc$conf.low, significancia_de_aproximacao)
+    posthoc$estimate <- signif(posthoc$estimate, significancia_de_aproximacao)
+    posthoc$p.adj <- signif(posthoc$p.adj, significancia_de_aproximacao)
     output$anova_posthoc <- renderDT(posthoc[-c(1, 9)])
   }
     #-------------------Kruskal-Wallis-------------------#
   {
-    output$kruskal_test_statistics <- renderUI(tagList(
-      column(
-        12,
-        h3(strong('Detectando Outliers')),
-        plotlyOutput('kruskal_boxplot'),
-        br(),
-        h3(strong('Calculo do Teste de Kruskal Wallis')),
-        DTOutput('kruskal_dt'),
-        uiOutput('kruskal_interpretation'),
-        h3(strong('Área de Efeito')),
-        DTOutput('kruskal_effectArea'),
-        uiOutput('kruskal_effectArea_interpretation'),
-        br(),
-        h3(strong('Múltiplas comparações entre pares')),
-        column(6,
-               h3(strong('Teste de Dunn')),
-               DTOutput('kruskal_dunn_test')
-        ),
-        column(6,
-               h3(strong('Teste de Wilcoxon')),
-               DTOutput('kruskal_wilcoxon_test')
-        )
-        , align = 'center'
-      )
-    ))
     df <- values$bidimensional_data
     #Boxplot
     output$kruskal_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
     #Cálculo do Teste
     dfkruskal_dt <- df %>% rstatix::kruskal_test(df[[1]] ~ df[[2]])
     dfkruskal_dt <- dfkruskal_dt[3:6]
-    dfkruskal_dt[1] <- signif(dfkruskal_dt[1], 4)
-    dfkruskal_dt[3] <- signif(dfkruskal_dt[3], 4)
+    dfkruskal_dt[1] <- signif(dfkruskal_dt[1], significancia_de_aproximacao)
+    dfkruskal_dt[3] <- signif(dfkruskal_dt[3], significancia_de_aproximacao)
     output$kruskal_dt <- renderDT(dfkruskal_dt)
 
     #Area de Efeito
     dfkruskal_effectArea <- df %>% rstatix::kruskal_effsize(df[[1]] ~ df[[2]])
-    dfkruskal_effectArea <- dfkruskal_effectArea[3:5]
-    dfkruskal_effectArea[1] <- signif(dfkruskal_effectArea[1], 4)
-    output$kruskal_effectArea <- renderDT(dfkruskal_effectArea)
+    dfkruskal_effectArea <- signif(dfkruskal_effectArea$effsize, significancia_de_aproximacao)
+    output$kruskal_interpretation <- renderUI(tagList(p('O valor de p do teste de Kruskal Wallis é: ', strong(dfkruskal_dt$p), '. Ou seja, ',
+                                                ifelse(dfkruskal_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')),
+                                              p('O valor da área de efeito do teste é: ', strong(dfkruskal_effectArea))))
     names(df) <- c('Dados', 'Grupos')
 
     #Dumm's test
     df_dumm_test <- df %>% rstatix::dunn_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
     df_dumm_test <- df_dumm_test[c(2, 3, 6, 7)]
-    df_dumm_test[3] <- signif(df_dumm_test[3], 4)
-    df_dumm_test[4] <- signif(df_dumm_test[4], 4)
+    df_dumm_test[3] <- signif(df_dumm_test[3], significancia_de_aproximacao)
+    df_dumm_test[4] <- signif(df_dumm_test[4], significancia_de_aproximacao)
     output$kruskal_dunn_test <- renderDT(df_dumm_test)
 
     #Wilcoxon's test
     df_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupos, p.adjust.method = "bonferroni")
     df_wilcoxon_test <- df_wilcoxon_test[c(2, 3, 6, 7)]
-    df_wilcoxon_test[3] <- signif(df_wilcoxon_test[3], 4)
-    df_wilcoxon_test[4] <- signif(df_wilcoxon_test[4], 4)
+    df_wilcoxon_test[3] <- signif(df_wilcoxon_test[3], significancia_de_aproximacao)
+    df_wilcoxon_test[4] <- signif(df_wilcoxon_test[4], significancia_de_aproximacao)
     output$kruskal_wilcoxon_test <- renderDT(df_wilcoxon_test)
   }
   }
-  else {
-    output$anova_statistics <- renderUI(tagList(br(), br(), h3(frase_erro, align = 'center')))
-    output$kruskal_test_statistics <- renderUI(tagList(br(), br(), h3(frase_erro, align = 'center')))
-  } }
+   }
      #---------------ANOVA two groups----------------#
   {
     if(values$bidimensional_data_type == 'anova_2groups'){
@@ -993,7 +1049,7 @@ server <- function (input, output, session){
 
            #Normalidade
            output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-           shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
+           shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
            output$anova_rep_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
 
            #Outliers
@@ -1050,7 +1106,7 @@ server <- function (input, output, session){
 
              #Normalidade
              output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-             shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, 4)
+             shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
              output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
 
              #Outliers
@@ -1107,26 +1163,26 @@ server <- function (input, output, session){
       #Cálculo do Teste
       names(df) <- c('Dados', 'Grupo', 'id')
       df_friedman_dt <- (df %>% rstatix::friedman_test(Dados ~ Grupo | id) %>% data.frame())[3:6]
-      df_friedman_dt[3] <- signif(df_friedman_dt[3], 4)
+      df_friedman_dt[3] <- signif(df_friedman_dt[3], significancia_de_aproximacao)
       output$friedman_dt <- renderDT(df_friedman_dt)
 
       #Area de Efeito
       df_friedman_effectArea <- (df %>% rstatix::friedman_effsize(Dados ~ Grupo | id) %>% data.frame())[-(1:2)]
-      df_friedman_effectArea[1] <- signif(df_friedman_effectArea[1], 4)
+      df_friedman_effectArea[1] <- signif(df_friedman_effectArea[1], significancia_de_aproximacao)
       output$friedman_effectArea <- renderDT(df_friedman_effectArea)
 
       #Sign's test
       df_friedman_sign_test <- df %>% rstatix::sign_test(Dados ~ Grupo, p.adjust.method = "bonferroni")
       df_friedman_sign_test <- df_friedman_sign_test[c(2, 3, 6, 7, 8)]
-      df_friedman_sign_test[3] <- signif(df_friedman_sign_test[3], 5)
-      df_friedman_sign_test[5] <- signif(df_friedman_sign_test[5], 5)
+      df_friedman_sign_test[3] <- signif(df_friedman_sign_test[3], significancia_de_aproximacao)
+      df_friedman_sign_test[5] <- signif(df_friedman_sign_test[5], significancia_de_aproximacao)
       output$friedman_sign_test <- renderDT(df_friedman_sign_test)
 
       #Wilcoxon's test
       df_friedman_wilcoxon_test <- df %>% rstatix::wilcox_test(Dados ~ Grupo, p.adjust.method = "bonferroni", paired = TRUE)
       df_friedman_wilcoxon_test <- df_friedman_wilcoxon_test[c(2, 3, 6, 7)]
-      df_friedman_wilcoxon_test[3] <- signif(df_friedman_wilcoxon_test[3], 4)
-      df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], 4)
+      df_friedman_wilcoxon_test[3] <- signif(df_friedman_wilcoxon_test[3], significancia_de_aproximacao)
+      df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], significancia_de_aproximacao)
       output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
     }
     }
@@ -1139,39 +1195,6 @@ server <- function (input, output, session){
     #--------------------ANCOVA----------------------#
   {
     if(values$bidimensional_data_type == 'ancova'){
-      output$ancova_statistics <- renderUI(tagList(
-        h3(strong('ANCOVA'), align = 'center'),
-        column(6,
-               h3(strong('Teste de Linearidade'), align = 'center'),
-               plotOutput('ancova_linearity')
-        ),
-        column(6,
-               h3(strong('Regressão de Homogeniedade'), align = 'center'),
-               DTOutput('ancova_regression'),
-               uiOutput('ancova_regression_results')
-
-        ),
-        column(12,), br(),
-        column(12,
-          column(6,
-                 h3(strong('Homogeniedade das Variâncias'), align = 'center'),
-                 DTOutput('ancova_levene_test')
-          ),
-          column(6,
-                 h3(strong('Teste de Normalidade'), align = 'center'),
-                 DTOutput('ancova_shapiro_test')
-          )
-        ),
-        column(12,
-          h3(strong('Tabela Posthoc:'), align = 'center'),
-          DTOutput('ancova_posthoc'),
-          h3(strong('Resultados:'), align = 'center'),
-          br(),
-          uiOutput('ancova_results')
-        )
-
-      ))
-
       df <- values$bidimensional_data
       names(df) <- c('vd', 'cov', 'vi')
       # output$ancova_linearity <- renderPlotly(renderANCOVA(values, options))
@@ -1205,95 +1228,104 @@ server <- function (input, output, session){
       #Posthoc
       output$ancova_posthoc <- renderDT(posthoc_ancova_table(df))
     }
-      else
-      output$ancova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     }
     #--------------------MANOVA----------------------#
   {
     if (values$bidimensional_data_type == 'manova'){
-        output$manova_statistics <- renderUI(
-               tagList(
-                 column(12,
-                        h3(strong('Dados')),
-                        plotlyOutput('manova_boxplot'),
-                        h3(strong('Detectando Outliers Multivariados')),
-                        DTOutput('manova_outliers_multi'),
-                        h3(strong('Checando Normalidade Multivariada')),
-                        DTOutput('manova_normality_multi'),
-                        align = 'center'
-                 ),
-                 br(),
-                 column(6,
-                        h3(strong('Checando Tamanho da Amostra')),
-                        h3(strong('Checando Homogeniedade das Covariâncias')),
-                        DTOutput('manova_covariancia'),
-                        align = 'center'
-                 ),
-                 column(6,
-                        h3(strong('Identificando Multicollinearidade')),
-                        DTOutput('manova_multicollinearity'),
-                        h3(strong('Checando Homogeniedade das Variâncias')),
-                        DTOutput('manova_variance'),
-                        align = 'center'
-                 ),br(),
-               column(12,
-                      h3(strong('Resultado do teste de MANOVA')),
-                      DTOutput('manova_dt'),
-                      uiOutput('manova_res'),
-                      h3(strong('Tabela Post Hoc')),
-                      DTOutput('manova_posthoc'),
-                      align = 'center'
-               ))
-        )
       df <- values$bidimensional_data
       df_ncol <- ncol(df)
+
+      #Adicionando uma coluna na posição ncol(df), contendo um identificador para cada linha
       df <- df %>% df_select(vars = names(df)[seq_len(ncol(df))]) %>% add_column(id = seq_len(nrow(df)), .before = 1)
-      output$manova_boxplot <- renderPlotly(ggboxplot(df, x = names(df)[df_ncol], y = names(df)[2:(df_ncol - 1)], merge = TRUE, palette = "jco") %>% ggplotly())
-      output$manova_outliers_multi <- df %>% group_by(var = names(df)[df_ncol]) %>% mahalanobis_distance(-id) %>% filter(is.outlier == TRUE) %>% as.data.frame() %>% renderDT()
-      output$manova_normality_multi <- df %>% df_select(vars = names(df)[2:(df_ncol - 1)]) %>% mshapiro_test() %>% as.data.frame() %>% renderDT()
-      dt_multicollinearity <- df %>% cor_test(vars = names(df)[2:(df_ncol - 1)]) %>% as.data.frame()
+
+      #Boxplot
+      output$manova_boxplot <- renderPlotly(ggboxplot(df, x = names(df)[df_ncol + 1], y = names(df)[2:df_ncol], merge = TRUE, palette = "jco") %>% ggplotly())
+
+      #Tabela con o tesde de Mahalanobis, verificando os outliers multiplos
+      output$manova_outliers_multi <- df %>% group_by(var = names(df)[df_ncol + 1]) %>% mahalanobis_distance(-id) %>% filter(is.outlier == TRUE) %>% as.data.frame() %>% renderDT()
+
+      #Teste de Normalidade
+      manova_normality_multi_df <- df %>% df_select(vars = names(df)[2:df_ncol]) %>% mshapiro_test() %>% as.data.frame()
+      names(manova_normality_multi_df) <- c('Estatística', 'p')
+      manova_normality_multi_df <- signif(manova_normality_multi_df, significancia_de_aproximacao)
+      output$manova_normality_multi <-  renderDT(manova_normality_multi_df)
+      output$manova_interpret_normality_multi <-  renderUI(
+        p('O valor de p utilizando o teste múltiplo de Shapiro Wilk é de: ', strong(manova_normality_multi_df$p),
+          ifelse(manova_normality_multi_df$p > intervalo_global_de_confianca, '(Estatísticamente normal)', '(Estatísticamente não normal)'))
+      )
+
+      #Verificação da Multicolinearidade
+      dt_multicollinearity <- df %>% cor_test(vars = names(df)[2:df_ncol]) %>% as.data.frame()
       dt_multicollinearity <- dt_multicollinearity[-c(3, 6, 7, 8)]
-      dt_multicollinearity[3:4] <- signif(dt_multicollinearity[3:4], 4)
+      dt_multicollinearity[3:4] <- signif(dt_multicollinearity[3:4], significancia_de_aproximacao)
       output$manova_multicollinearity <- dt_multicollinearity %>% renderDT()
-      dt_cov <- box_m(df[, names(df)[2:(df_ncol - 1)]], df[,df_ncol]) %>% as.data.frame()
-      dt_cov2 <- data.frame(`Estatística` = dt_cov$statistic, p = dt_cov$p.value, df = dt_cov$parameter, `Método` = 'Box\'s M-test')
-      dt_cov2[c(1, 2)] <- signif(dt_cov2[c(1, 2)], 4)
-      output$manova_covariancia <- dt_cov2 %>% renderDT()
-      output$manova_variance <- df %>% gather(key = "variable", value = "value", names(df)[2:(df_ncol - 1)]) %>% group_by(variable) %>% levene_test(value ~ df[,df_ncol]) %>% as.data.frame() %>% renderDT()
-      # model <- lm(cbind(Sepal.Length, Petal.Length) ~ Species, df)
-      # output$manova_dt <- Manova(model, test.statistic = "Pillai") %>% as.data.frame() %>% renderDT()
 
-
-      output$manova_unidimensional_assumptions <- renderUI(tagList(
-        column(12,
-               h3(strong('Checando Normalidade')),
-               plotlyOutput('manova_normality_uni'),
-               DTOutput('manova_shapiro_uni'),
-               h3(strong('Checando Linearidade')),
-               plotOutput('manova_linearity_plot1'),
-               plotOutput('manova_linearity_plot2'),
-               plotOutput('manova_linearity_plot3'),
-               align = 'center'
-        )
+      #Verificação do tamanho da amostra
+      sample_size <- data.frame(table(df[ncol(df)]))
+      output$manova_sample_size_dt <- renderDT(sample_size)
+      output$manova_sample_size_assumpt <- renderUI(tagList(
+         if(min(sample_size$Freq) > df_ncol - 1)
+           p('A suposição de tamanho da amostra adequada é satisfeita, como ', strong(min(sample_size$Freq)), strong(' > '), strong(df_ncol - 1), '.')
+         else
+           p('A suposição de tamanho da amostra adequada não é satisfeita, como ', strong(min(sample_size$Freq)), strong(' <= '), strong(df_ncol - 1), '.')
       ))
+      #Verificação da covariância
+      dt_cov <- box_m(df[, names(df)[2:df_ncol]], df[,df_ncol + 1]) %>% as.data.frame()
+      dt_cov <- data.frame(`Estatística` = dt_cov$statistic, p = dt_cov$p.value, df = dt_cov$parameter, `Método` = 'Box\'s M-test')
+      dt_cov[c(1, 2)] <- signif(dt_cov[c(1, 2)], significancia_de_aproximacao)
+      output$manova_covariancia_dt <-  renderDT(dt_cov)
+      output$manova_covariancia_assumpt <- renderUI(tagList(
+        p('O valor de p de acordo com o teste M de Box é: ', strong(dt_cov$p),
+          ifelse(dt_cov$p > intervalo_global_de_confianca_Mbox, '. Ou seja, as covariâncias são estatísticamente iguais entre os grupos.',
+                 '. Ou seja, as covariâncias são estatísticamente diferentes entre, pelo menos dois grupos.'))
+      ))
+
+      #Computação do teste de MANOVA
+      df_gather <- df %>% gather(key = "variable", value = "value", names(df)[2:df_ncol]) %>% group_by(variable)
+      names(df_gather) <- c('id', 'group', 'variable', 'value')
+      df_gather <- df_gather %>% levene_test(value ~ group) %>% data.frame()
+      df_gather[4:5] <- signif(df_gather[4:5], significancia_de_aproximacao)
+      names(df_gather) <- c('Variáveis', 'df1', 'df2', 'Estatística', 'p')
+      output$manova_variance <- renderDT(df_gather)
+      vars_dependentes <- switch(
+        as.character(df_ncol),
+        '3' = { cbind(df[[2]], df[[3]]) },
+        '4' = { cbind(df[[2]], df[[3]], df[[4]]) },
+        '5' = { cbind(df[[2]], df[[3]], df[[4]], df[[5]]) }
+      )
+      var_independente <- df[[ncol(df)]]
+      manova_model <- manova(vars_dependentes ~ var_independente, data = df)
+      output$manova_dt <- renderPrint(summary(manova_model))
+
+      #Verificações Unidimensionais
       #Testes de Normalidade
-      fig1 <- ggplotly(ggqqplot(df, names(df)[2], color = names(df)[df_ncol], ggtheme = theme_bw()))
-      fig2 <- ggplotly(ggqqplot(df, names(df)[3], color = names(df)[df_ncol], ggtheme = theme_bw()))
-      output$manova_normality_uni <- renderPlotly(subplot(fig1, fig2, margin = 0.1))
+      fig1 <- ggplotly(ggqqplot(df, names(df)[2], color = names(df)[df_ncol + 1], ggtheme = theme_bw()))
+      fig2 <- ggplotly(ggqqplot(df, names(df)[3], color = names(df)[df_ncol + 1], ggtheme = theme_bw()) + theme(legend.position='none'))
+      output$manova_normality_uni <- switch(
+        as.character(df_ncol),
+        '3' = renderPlotly(subplot(fig1, fig2, margin = 0.01)),
+        '4' = {
+          fig3 <- ggplotly(ggqqplot(df, names(df)[4], color = names(df)[df_ncol + 1], ggtheme = theme_bw()))
+          renderPlotly(subplot(fig1, fig2, fig3, margin = 0.01, nrows = 2))
+        },
+        '5' = {
+          fig3 <- ggplotly(ggqqplot(df, names(df)[4], color = names(df)[df_ncol + 1], ggtheme = theme_bw()))
+          fig4 <- ggplotly(ggqqplot(df, names(df)[5], color = names(df)[df_ncol + 1], ggtheme = theme_bw()))
+          renderPlotly(subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 2))
+        }
+      )
       #Shapiro Wilk
-      dt_shapiro_uni <- df %>% group_by(var = names(df)[df_ncol]) %>% shapiro_test(vars = names(df)[2:(df_ncol - 1)]) %>% arrange(variable) %>% as.data.frame()
-      dt_shapiro_uni[3:4] <- signif(dt_shapiro_uni[3:4], 4)
+      dt_shapiro_uni <- df %>% group_by(var = names(df)[df_ncol + 1]) %>% shapiro_test(vars = names(df)[2:df_ncol]) %>% arrange(variable) %>% as.data.frame()
+      dt_shapiro_uni[3:4] <- signif(dt_shapiro_uni[3:4], significancia_de_aproximacao)
+      dt_shapiro_uni <- dt_shapiro_uni[2:4]
+      names(dt_shapiro_uni) <- c('Variável', 'Estatística', 'p')
       output$manova_shapiro_uni <- dt_shapiro_uni %>% renderDT()
 
       #Testes de Linearidade
-      results <- df %>% df_select(vars = names(df)[2:(df_ncol - 1)]) %>% group_by(var = names(df)[df_ncol]) %>% doo(~ggpairs(.) + theme_bw(), result = "plots")
-      output$manova_linearity_plot1 <- renderPlot(results$plots[[1]])
-      output$manova_linearity_plot2 <- renderPlot(results$plots[[2]])
-      output$manova_linearity_plot3 <- renderPlot(results$plots[[3]])
+      results <- df %>% df_select(vars = names(df)[2:df_ncol]) %>% group_by(var = names(df)[df_ncol + 1]) %>% doo(~ggpairs(.) + theme_bw(), result = "plots")
+      output$manova_linearity_plot <- renderPlot(results$plots[[1]])
 
       }
-    else
-        output$manova_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
   }
   })
 

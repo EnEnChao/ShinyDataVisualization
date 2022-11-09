@@ -138,6 +138,7 @@ tags$style(HTML("
                ),
                tabPanel('Comparando duas médias',
                         tabsetPanel(
+                          id = 'tabsetid_two_means',
                           test_t_page(),
                           wilcoxon_test_page(),
                           sign_test_page()
@@ -145,11 +146,13 @@ tags$style(HTML("
                ),
                tabPanel('Comparando multiplas médias',
                         tabsetPanel(
+                          id = 'tabsetid_multiple_means',
                           anova_page(),
                           anova_rep_page(),
                           anova_mix_page(),
                           ancova_page(),
                           manova_page(),
+                          manova_unidimensional_assumptions_page(),
                           kruskal_wallis_test_page(),
                           friedman_test_page()
                         )
