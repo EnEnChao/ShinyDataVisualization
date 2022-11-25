@@ -130,6 +130,7 @@ tags$style(HTML("
                ),
                tabPanel('Avaliando os dados',
                         tabsetPanel(
+                          id = 'tabsetid_checking_data',
                           check_norm_page(),
                           homogenity_var_page(),
                           transform_norm_page(),

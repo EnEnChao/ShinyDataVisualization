@@ -1,3 +1,4 @@
+
 #Dado uma tabela com diversas colunas, junta em uma só
 contingency_data <- function (data_info){
   data_aux <- data.frame(Dados = data_info[[1]], Classificação = names(data_info)[1])
@@ -120,7 +121,7 @@ renderCheckNormTable <- function (values, options){
     sapply(names, function (x) signif(ks.test(data$Dados[which(data$`Classificação` == x)], 'pnorm')$p.value, 4)),
     sapply(names, function (x){
       p <- ks.test(data$Dados[which(data$`Classificação` == x)], 'pnorm')$p.value
-            if(p > ci)
+      if(p > ci)
         'Normal'
       else
         'Não normal'

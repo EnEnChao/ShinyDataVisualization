@@ -451,19 +451,45 @@ renderErrorBar <- function(values, options) {
 
 #----------- Checking Normality -----------
 renderAssessingNormDensity <- function (values, options){
-  data <- contingency_data(values$bidimensional_data)
-  fig <- ggplotly(
-    ggdensity(data = data, x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7, ggtheme = theme_minimal())
-  )
-
+  data <- values$bidimensional_data
+  if(values$bidimensional_data_type == 'uni_data')
+    fig <- ggplotly(ggdensity(data = data, x = names(data), fill = 'lightgray', alpha = 0.7, ggtheme = theme_minimal()))
+  else if(values$bidimensional_data_type == 'two_col') {
+    data <- contingency_data(data)
+    fig <- ggplotly(ggdensity(data = data, x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7, ggtheme = theme_minimal()))
+  }
+  else if(values$bidimensional_data_type == 'anova')
+    fig <- ggplotly(ggdensity(data = data, x = names(data)[1], color = names(data)[2],fill = names(data)[2], alpha = 0.7, ggtheme = theme_minimal()))
+  else if(values$bidimensional_data_type == 'ancova') {
+    fig1 <- ggdensity(data = data, x = names(data)[1], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+    fig2 <- ggdensity(data = data, x = names(data)[2], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+    fig <- subplot(fig1, fig2, margin = 0.01, nrows = 2)
+  }
+  else if(values$bidimensional_data_type == 'manova'){
+    fig1 <- ggdensity(data = data, x = names(data)[1], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+    fig2 <- ggdensity(data = data, x = names(data)[2], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+    fig <- switch(
+      as.character(ncol(data)),
+      '3' = subplot(fig1, fig2, nrows = 2, margin = 0.01),
+      '4' = {
+        fig3 <- ggdensity(data = data, x = names(data)[3], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+        subplot(fig1, fig2, fig3, margin = 0.01, nrows = 3)
+      },
+      '5' = {
+        fig3 <- ggdensity(data = data, x = names(data)[3], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+        fig4 <- ggdensity(data = data, x = names(data)[4], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+        subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 4)
+      }
+    )
+  }
   layoutConfig <- list(
     bgcolor = if(is.null(options$colors_check_norm_d)) options$bgColorPlotly else{
          if(options$colors_check_norm_d) options$bgColorPlotly else{
            if(options$bgcolor_check_norm_d == 'personal') options$personal_bgcolor_check_norm_d
            else options$bgcolor_check_norm_d
     }},
-    xTitle = if(!is.null(options$axis_x_check_norm_d)) options$axis_x_check_norm_d else 'Dados',
-    yTitle = if(!is.null(options$axis_y_check_norm_d)) options$axis_y_check_norm_d else 'Frequência',
+    xTitle = if(!is.null(options$axis_x_check_norm_d)) options$axis_x_check_norm_d else '',
+    yTitle = if(!is.null(options$axis_y_check_norm_d)) options$axis_y_check_norm_d else '',
 
     legend = if(is.null(options$legend_check_norm_d)) TRUE else options$legend_check_norm_d,
     legend_title = if(is.null(options$legend_check_norm_d) | if(is.null(options$legend_check_norm_d)) TRUE else !options$legend_check_norm_d) '' else options$title_legend_check_norm_d,
@@ -477,10 +503,38 @@ renderAssessingNormDensity <- function (values, options){
   return(fig)
 }
 renderAssessingNormQQ <- function (values, options = NULL){
-  data <- contingency_data(values$bidimensional_data)
-  fig <- ggplotly(
-    ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal())
-  )
+  data <- values$bidimensional_data
+  if(values$bidimensional_data_type == 'uni_data')
+    fig <- ggplotly(ggqqplot(data = data, x = names(data), ggtheme = theme_minimal()))
+  else if(values$bidimensional_data_type == 'two_col') {
+    data <- contingency_data(data)
+    fig <- ggplotly(ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal()))
+  }
+  else if(values$bidimensional_data_type == 'anova')
+    fig <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[2], ggtheme = theme_minimal()))
+  else if(values$bidimensional_data_type == 'ancova') {
+    fig1 <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[3], ggtheme = theme_minimal()))
+    fig2 <- ggplotly(ggqqplot(data = data, x = names(data)[2], color = names(data)[3], ggtheme = theme_minimal()))
+    fig <- subplot(fig1, fig2, margin = 0.01, nrows = 2)
+  }
+  else if(values$bidimensional_data_type == 'manova'){
+    fig1 <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
+    fig2 <- ggplotly(ggqqplot(data = data, x = names(data)[2], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
+    fig <- switch(
+      as.character(ncol(data)),
+      '3' = subplot(fig1, fig2, margin = 0.01, nrows = 2),
+      '4' = {
+        fig3 <- ggplotly(ggqqplot(data = data, x = names(data)[3], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
+        subplot(fig1, fig2, fig3, margin = 0.01, nrows = 3)
+      },
+      '5' = {
+        fig3 <- ggplotly(ggqqplot(data = data, x = names(data)[3], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
+        fig4 <- ggplotly(ggqqplot(data = data, x = names(data)[4], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
+        subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 4)
+      }
+    )
+  }
+
   if(is.null(options))return(fig)
 
     layoutConfig <- list(
@@ -489,8 +543,8 @@ renderAssessingNormQQ <- function (values, options = NULL){
            if(options$bgcolor_check_norm_qq == 'personal') options$personal_bgcolor_check_norm_qq
            else options$bgcolor_check_norm_qq
     }},
-    xTitle = if(!is.null(options$axis_x_check_norm_qq)) options$axis_x_check_norm_qq else 'Dados',
-    yTitle = if(!is.null(options$axis_y_check_norm_qq)) options$axis_y_check_norm_qq else 'Frequência',
+    xTitle = if(!is.null(options$axis_x_check_norm_qq)) options$axis_x_check_norm_qq else '',
+    yTitle = if(!is.null(options$axis_y_check_norm_qq)) options$axis_y_check_norm_qq else '',
 
     legend = if(is.null(options$legend_check_norm_qq)) TRUE else options$legend_check_norm_qq,
     legend_title = if(is.null(options$legend_check_norm_qq) | if(is.null(options$legend_check_norm_qq)) TRUE else !options$legend_check_norm_qq) '' else options$title_legend_check_norm_qq,

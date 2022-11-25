@@ -24,7 +24,7 @@ homogenity_var_page <- function (){
                                 uiOutput('var_f_test')
                ),
                numericInput('homogenity_ci', 'Escolha o intervalo de confiança: ',
-                            min = 0, max = 1, value = 0.95, step = 0.01
+                            min = 0, max = 1, value = intervalo_global_de_confianca, step = 0.01
                )
              )
            )}

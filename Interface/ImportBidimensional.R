@@ -18,7 +18,7 @@ import_bidimensional_page <- function (){
                fileInput(inputId = "file_imported_bi", "Insira o arquivo", accept = '.xlsx'),
                 awesomeRadio(inputId = 'imported_bi_type', label = "Escolha o tipo de teste",
                              choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
-                             inline = FALSE, status = "success"),
+                             inline = TRUE, status = "success"),
                # switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
              ),
              conditionalPanel(condition = "input.file_selector_bi == 'example'", {
@@ -79,7 +79,8 @@ insert_bidimensional <- function (){
              #Selecione se deseja utilizar um arquivo existente ou um exemplar
              h3(strong('Digite ou cole na planilha a esquerda:')),
              awesomeRadio(inputId = 'inserted_bi_type', label = "Escolha o tipo de teste",
-                             choices = c("Comparando duas Médias", "ANOVA", "ANOVA dois grupos", 'ANCOVA', 'MANOVA'),
+                             choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
+                             selected = 'uni_data',
                              inline = TRUE, status = "success"),
              #Caso tenha escolhido alguma das opções, aparece o botão grande " Carregue! "
              textInput('title_id_insert_bi', 'Digíte o título', 'Título'),

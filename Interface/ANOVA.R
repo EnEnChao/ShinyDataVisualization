@@ -1,12 +1,7 @@
 anova_page <- function (){
   tabPanel(
     'ANOVA',
-    column(3,
-           column(12,
-             h3(strong("Controle de opções:"), align = 'center'),
-           )
-    ),
-    column(9,
+    column(12,
            h3('ANOVA', style="text-align:center; font-size:50px;"),
            column(6,
                h3(strong('Testando Normalidade', align = 'center')),

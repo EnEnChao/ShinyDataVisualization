@@ -16,7 +16,7 @@ transform_norm_page <- function (){
                    'Nenhuma' = 'none',
                    'sqrt(x)' = 'sqrt',
                    'log10(x)' = 'log10',
-                   'Numeric' = 'logy',
+                   # 'Numeric' = 'logy',
                    '1/x' = '1/x'
                  ),
                  selected = 'none'
@@ -51,7 +51,11 @@ transform_norm_page <- function (){
            fluidPage(fluidRow(column(9,
                                      h3("Transformando em Normalidade", style="text-align:center; font-size:50px;"),
                                      br(),
-                                     uiOutput('transform_norm_results'),
+                                     h3('Sem nenhuma transformação'),
+                                     plotlyOutput('transform_norm_results_original'),
+                                     uiOutput('transform_norm_results_new'),
+                                     uiOutput('transform_norm_results_method_statistics'),
+                                     uiOutput('transform_norm_download'),
                                      align = 'center'
            )))
     ),
