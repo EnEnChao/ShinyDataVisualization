@@ -257,7 +257,6 @@ check_norm_page <- function (){
                        ),
                        tabPanel(title = 'Tabela de verificação de normalidade',
                                 h3("Tabela de verificação de normalidade", style="text-align:center; font-size:50px;"),
-                                tags$head(tags$style(HTML(".cell-border-right{border-right: 1px solid #000}"))),
                                 uiOutput('check_norm_table')
                        )
            )

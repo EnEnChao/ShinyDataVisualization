@@ -151,9 +151,10 @@ tags$style(HTML("
                           anova_page(),
                           anova_rep_page(),
                           anova_mix_page(),
+                          anova_mix_pairwise_page(),
                           ancova_page(),
                           manova_page(),
-                          manova_unidimensional_assumptions_page(),
+                          manova_univariable_assumptions_page(),
                           kruskal_wallis_test_page(),
                           friedman_test_page()
                         )

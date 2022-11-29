@@ -12,7 +12,7 @@ anova_page <- function (){
         column(6,
                h3(strong('Verificando Outliers', align = 'center')),
                plotlyOutput('anova_box_plot'),
-               DTOutput('anova_outliers')
+               # DTOutput('anova_outliers')
         ), br(),
         column(12,
                h3(strong('Verificando da Homogeneidade de Variância', align = 'center')),

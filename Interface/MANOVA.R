@@ -40,9 +40,9 @@ manova_page <- function (){
   )
 }
 
-manova_unidimensional_assumptions_page <- function (){
+manova_univariable_assumptions_page <- function (){
   tabPanel(
-    'MANOVA Verificações Unidimensionais',
+    'MANOVA Verificações Univariadas',
     h3("MANOVA - Verificações Unidimensionais", style="text-align:center; font-size:50px;"),
     column(12,
            h3(strong('Checando Normalidade')),

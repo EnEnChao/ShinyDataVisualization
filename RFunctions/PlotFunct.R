@@ -452,36 +452,37 @@ renderErrorBar <- function(values, options) {
 #----------- Checking Normality -----------
 renderAssessingNormDensity <- function (values, options){
   data <- values$bidimensional_data
-  if(values$bidimensional_data_type == 'uni_data')
-    fig <- ggplotly(ggdensity(data = data, x = names(data), fill = 'lightgray', alpha = 0.7, ggtheme = theme_minimal()))
-  else if(values$bidimensional_data_type == 'two_col') {
-    data <- contingency_data(data)
-    fig <- ggplotly(ggdensity(data = data, x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7, ggtheme = theme_minimal()))
-  }
-  else if(values$bidimensional_data_type == 'anova')
-    fig <- ggplotly(ggdensity(data = data, x = names(data)[1], color = names(data)[2],fill = names(data)[2], alpha = 0.7, ggtheme = theme_minimal()))
-  else if(values$bidimensional_data_type == 'ancova') {
-    fig1 <- ggdensity(data = data, x = names(data)[1], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-    fig2 <- ggdensity(data = data, x = names(data)[2], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-    fig <- subplot(fig1, fig2, margin = 0.01, nrows = 2)
-  }
-  else if(values$bidimensional_data_type == 'manova'){
-    fig1 <- ggdensity(data = data, x = names(data)[1], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-    fig2 <- ggdensity(data = data, x = names(data)[2], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-    fig <- switch(
-      as.character(ncol(data)),
-      '3' = subplot(fig1, fig2, nrows = 2, margin = 0.01),
-      '4' = {
-        fig3 <- ggdensity(data = data, x = names(data)[3], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-        subplot(fig1, fig2, fig3, margin = 0.01, nrows = 3)
-      },
-      '5' = {
-        fig3 <- ggdensity(data = data, x = names(data)[3], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-        fig4 <- ggdensity(data = data, x = names(data)[4], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
-        subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 4)
-      }
-    )
-  }
+  fig <- switch(
+    values$bidimensional_data_type,
+    'uni_data' = ggplotly(ggdensity(data = data, x = names(data), fill = 'lightgray', alpha = 0.7, ggtheme = theme_minimal())),
+    'two_col' = ggplotly(ggdensity(data = contingency_data(data), x = "Dados", color = 'Classificação', fill = 'Classificação', alpha = 0.7, ggtheme = theme_minimal())),
+    'anova' = ggplotly(ggdensity(data = data, x = names(data)[1], color = names(data)[2],fill = names(data)[2], alpha = 0.7, ggtheme = theme_minimal())),
+    'anova_rep' = ggplotly(ggdensity(data = data, x = names(data)[1], color = names(data)[2],fill = names(data)[2], alpha = 0.7, ggtheme = theme_minimal())),
+    'anova_mix' = ggplotly(ggdensity(data = data, x = names(data)[1], facet.by = names(data)[2], color = names(data)[3], fill = names(data)[3], alpha = 0.7, ggtheme = theme_minimal())),
+    'ancova' = {
+      fig1 <- ggdensity(data = data, x = names(data)[1], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+      fig2 <- ggdensity(data = data, x = names(data)[2], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+      subplot(fig1, fig2, margin = 0.01, nrows = 2)
+    },
+    'manova' = {
+      fig1 <- ggdensity(data = data, x = names(data)[1], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+      fig2 <- ggdensity(data = data, x = names(data)[2], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+      switch(
+        as.character(ncol(data)),
+        '3' = subplot(fig1, fig2, nrows = 2, margin = 0.01),
+        '4' = {
+          fig3 <- ggdensity(data = data, x = names(data)[3], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+          subplot(fig1, fig2, fig3, margin = 0.01, nrows = 3)
+        },
+        '5' = {
+          fig3 <- ggdensity(data = data, x = names(data)[3], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+          fig4 <- ggdensity(data = data, x = names(data)[4], color = names(data)[ncol(data)], fill = names(data)[ncol(data)], alpha = 0.7, ggtheme = theme_minimal())
+          subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 4)
+        }
+      )
+    }
+    # ,plot_ly(),
+  )
   layoutConfig <- list(
     bgcolor = if(is.null(options$colors_check_norm_d)) options$bgColorPlotly else{
          if(options$colors_check_norm_d) options$bgColorPlotly else{
@@ -504,23 +505,31 @@ renderAssessingNormDensity <- function (values, options){
 }
 renderAssessingNormQQ <- function (values, options = NULL){
   data <- values$bidimensional_data
-  if(values$bidimensional_data_type == 'uni_data')
-    fig <- ggplotly(ggqqplot(data = data, x = names(data), ggtheme = theme_minimal()))
-  else if(values$bidimensional_data_type == 'two_col') {
-    data <- contingency_data(data)
-    fig <- ggplotly(ggqqplot(data = data, x = "Dados", color = 'Classificação', ggtheme = theme_minimal()))
-  }
-  else if(values$bidimensional_data_type == 'anova')
-    fig <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[2], ggtheme = theme_minimal()))
-  else if(values$bidimensional_data_type == 'ancova') {
-    fig1 <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[3], ggtheme = theme_minimal()))
-    fig2 <- ggplotly(ggqqplot(data = data, x = names(data)[2], color = names(data)[3], ggtheme = theme_minimal()))
-    fig <- subplot(fig1, fig2, margin = 0.01, nrows = 2)
-  }
-  else if(values$bidimensional_data_type == 'manova'){
+  fig <- switch(
+    values$bidimensional_data_type,
+    'uni_data' = ggplotly(ggqqplot(data = data, x = names(data), ggtheme = theme_minimal())),
+    'two_col' = ggplotly(ggqqplot(data = contingency_data(data), x = "Dados", color = 'Classificação', ggtheme = theme_minimal())),
+    'anova' = ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[2], ggtheme = theme_minimal())),
+    'anova_rep' = ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[2], ggtheme = theme_minimal())),
+    'anova_mix' = {
+      figs <- list()
+      names <- names(table(data[[2]]))
+      k <- 1
+      for(i in names){
+        figs[[k]] <- ggplotly(ggqqplot(data = data[which(data[[2]] == i),], x = names(data)[1], color = names(data)[3]))
+        k <- k + 1
+      }
+      subplot(figs, nrows = round(length(figs)/3))
+    },
+    'ancova' = {
+      fig1 <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[3], ggtheme = theme_minimal()))
+      fig2 <- ggplotly(ggqqplot(data = data, x = names(data)[2], color = names(data)[3], ggtheme = theme_minimal()))
+      subplot(fig1, fig2, margin = 0.01, nrows = 2)
+    },
+    'manova' = {
     fig1 <- ggplotly(ggqqplot(data = data, x = names(data)[1], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
     fig2 <- ggplotly(ggqqplot(data = data, x = names(data)[2], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
-    fig <- switch(
+    switch(
       as.character(ncol(data)),
       '3' = subplot(fig1, fig2, margin = 0.01, nrows = 2),
       '4' = {
@@ -530,11 +539,12 @@ renderAssessingNormQQ <- function (values, options = NULL){
       '5' = {
         fig3 <- ggplotly(ggqqplot(data = data, x = names(data)[3], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
         fig4 <- ggplotly(ggqqplot(data = data, x = names(data)[4], color = names(data)[ncol(data)], ggtheme = theme_minimal()))
-        subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 4)
+        subplot(fig1, fig2, fig3, fig4, margin = 0.01, nrows = 2)
       }
     )
   }
-
+    # ,plot_ly(),
+  )
   if(is.null(options))return(fig)
 
     layoutConfig <- list(

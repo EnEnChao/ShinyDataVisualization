@@ -45,6 +45,8 @@ server <- function (input, output, session){
 
   hideTab(inputId = "tabs", target = 'Gráfico em Mesh')
 
+  observeEvent(input$change_global_ci, intervalo_global_de_confianca <<- input$change_global_ci)
+  observeEvent(input$change_global_signif, significancia_de_aproximacao <<- input$change_global_signif)
   #-------------------Load Tutorial-------------------#
   observeEvent(input$tutorial_button,{
       showModal(modalDialog(
@@ -185,27 +187,29 @@ server <- function (input, output, session){
         s2 <- datarium::selfesteem %>%
           gather(key = "time", value = "score", t1, t2, t3) %>%
             convert_as_factor(id, time)
-        dt <- data.frame(score = s2[3], time = s2[2], id = as.character(s2[[1]]))
-        type <- 'anova_2groups'
+        dt <- data.frame(score = s2[3], time = s2[2], id = as.numeric(s2[[1]]))
+        type <- 'anova_rep'
       }
-      if(input$examp_select_bi == 'performance'){
-        dt <- data.frame(performance[c(4, 2, 3)])
-        type <- 'anova_2groups'
+      if(input$examp_select_bi == 'anxiety'){
+        s2 <- anxiety %>% gather(key = "time", value = "score", t1, t2, t3) %>% convert_as_factor(id, time)
+        dt <- data.frame(score = s2[4], group = s2[2], time = s2[3], id = as.numeric(s2[[1]]))
+        type <- 'anova_mix'
       }
       if(input$examp_select_bi == 'gas3') {
         dt <- data.frame(read.xlsx('Data/exemplo1ANCOVA.xlsx'))
         type <- 'ancova'
       }
-      if(input$examp_select_bi == 'anxiety') {
-        data("anxiety", package = "datarium")
-        dt <- as.data.frame(anxiety[, 2:4])
-        dt$Group <- dt$group
-        dt <- dt[,-1]
-        names(dt) <- c('T1', 'T2', 'Group')
+      if(input$examp_select_bi == 'stress') {
+        data("stress", package = "datarium")
+        dt <- data.frame(score = stress$score, age = stress$age,exercise = stress$exercise)
         type <- 'ancova'
       }
       if(input$examp_select_bi == 'iris_manova'){
         dt <- iris
+        type <- 'manova'
+      }
+      if(input$examp_select_bi == 'plant_variation'){
+        dt <- data.frame(read.xlsx('Data/manova_data.xlsx'))
         type <- 'manova'
       }
     }
@@ -213,7 +217,7 @@ server <- function (input, output, session){
       dt <- data.frame(read.xlsx(input$file_imported_bi$datapath))
       type <- input$imported_bi_type
     }
-    if ((type %in% c('uni_data', 'two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
+    if ((type %in% c('uni_data', 'two_col', 'anova','anova_rep', 'anova_mix', 'ancova', 'manova')) & checandoDados(dt, type)){
       if(type %in% c('uni_data', 'two_col')){
         showTab(inputId = "tabs", target = "Comparando duas médias")
         showTab(inputId = "tabs", target = "Avaliando os dados")
@@ -230,7 +234,7 @@ server <- function (input, output, session){
         type,
         'uni_data' = {
           showTab(inputId = 'tabsetid_checking_data', target = 'Transformando os dados para normalidade')
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
           hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
@@ -239,7 +243,7 @@ server <- function (input, output, session){
         },
         'two_col' = {
           hideTab(inputId = 'tabsetid_checking_data', target = 'Transformando os dados para normalidade')
-          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
@@ -247,56 +251,75 @@ server <- function (input, output, session){
           updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
         },
         'anova' = {
-          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA')
         },
-        'anova_2groups' = {
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+        'anova_rep' = {
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA - medidas repetidas')
         },
-        'ancova' = {
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+        'anova_mix' = {
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA - medidas misturadas')
+        },
+        'ancova' = {
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANCOVA')
         },
         'manova' = {
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
@@ -363,16 +386,17 @@ server <- function (input, output, session){
           dt[[2]] <- strtoi(dt[[2]])
       },
       'anova' = dt[[1]] <- strtoi(dt[[1]]),
-      'anova_2groups' = dt[[1]] <- strtoi(dt[[1]]),
+      'anova_rep' = {
+          dt[[1]] <- strtoi(dt[[1]])
+          dt[[3]] <- strtoi(dt[[3]])
+      },
+      'anova_mix' = dt[[1]] <- strtoi(dt[[1]]),
       'ancova' = {
           dt[[1]] <- strtoi(dt[[1]])
           dt[[2]] <- strtoi(dt[[2]])
-      },
-      'manova' = {
-        if()
       }
     )
-    if ((type %in% c('uni_data', 'two_col', 'anova','anova_2groups', 'ancova', 'manova')) & checandoDados(dt, type)){
+    if ((type %in% c('uni_data', 'two_col', 'anova','anova_rep', 'anova_mix', 'ancova', 'manova')) & checandoDados(dt, type)){
       if(type %in% c('uni_data', 'two_col')){
         showTab(inputId = "tabs", target = "Comparando duas médias")
         showTab(inputId = "tabs", target = "Avaliando os dados")
@@ -389,7 +413,7 @@ server <- function (input, output, session){
         type,
         'uni_data' = {
           showTab(inputId = 'tabsetid_checking_data', target = 'Transformando os dados para normalidade')
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
           hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
@@ -398,7 +422,7 @@ server <- function (input, output, session){
         },
         'two_col' = {
           hideTab(inputId = 'tabsetid_checking_data', target = 'Transformando os dados para normalidade')
-          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
@@ -406,56 +430,75 @@ server <- function (input, output, session){
           updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
         },
         'anova' = {
-          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          showTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA')
         },
-        'anova_2groups' = {
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+        'anova_rep' = {
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA - medidas repetidas')
         },
-        'ancova' = {
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+        'anova_mix' = {
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
+          updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANOVA - medidas misturadas')
+        },
+        'ancova' = {
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANCOVA')
         },
         'manova' = {
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeniedade das variâncias')
+          hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
+          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
-          showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Unidimensionais')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
@@ -539,142 +582,266 @@ server <- function (input, output, session){
   }
 
     #-------------------Assessing Normality-------------------#
-  #   if(values$bidimensional_data_type != 'anova_2groups') {
-  #     output$plotly_norm_density <- renderPlotly(renderAssessingNormDensity(values, options))
-  #     output$plotly_norm_qq <- renderPlotly(renderAssessingNormQQ(values, options))
-  #
-  #     df <- values$bidimensional_data
-  #     if(values$bidimensional_data_type %in% c('uni_data', 'two_col', 'anova')){
-  #       output$check_norm_table <- renderUI(tagList(
-  #         column(6,
-  #                h4('Teste de Shapiro Wilk', align = 'center'),
-  #                DTOutput('check_norm_table_shapiro')
-  #         ),
-  #         column(6,
-  #                h4('Teste de Kolmogorov-Smirnov', align = 'center'),
-  #                DTOutput('check_norm_table_kolmogorov')
-  #         ),
-  #       ))
-  #       check_norm_table_shapiro_dt <- data.frame(rstatix::shapiro_test(df[1]))
-  #       output$check_norm_table_shapiro <- renderDT(check_norm_table_shapiro_dt)
-  #       check_norm_table_kolmogorov_dt <- ks.test(df[1], 'pnorm')
-  #       check_norm_table_kolmogorov_dt <- data.frame(`Estatística` = check_norm_table_kolmogorov_dt$statistic, p = check_norm_table_kolmogorov_dt$p.value)
-  #       output$check_norm_table_kolmogorov <- renderDT(check_norm_table_kolmogorov_dt)
-  #     }
-  #     output$check_norm_table2 <- renderDT(
-  #     datatable(
-  #       renderCheckNormTable(values, options),rownames = FALSE,
-  #       container = withTags(table(
-  #         class = 'display',
-  #         thead(tr(
-  #           th(colspan = 3, 'Shapiro-Wilk'),
-  #           th(colspan = 3, 'Kolmogorov-Smirnov')
-  #         ), tr(
-  #           lapply(rep(c('Dados', 'p', 'Decisão'), 2), th)
-  #         ))
-  #       )),
-  #       options = list(initComplete = JS(
-  #         "function(settings, json) {",
-  #         "var headerBorder = [0,1];",
-  #         "var header = $(this.api().table().header()).find('tr:first > th').filter(function(index) {return $.inArray(index,headerBorder) > -1 ;}).addClass('cell-border-right');",
-  #         "}"),columnDefs=list(list(className="dt-right cell-border-right",targets=2))
-  #       ))
-  #     )
-  # }
-      #-------------------Homogenity of Variance-------------------#
-    # if(values$bidimensional_data_type %in% c('two_col', 'anova')) {
-    # {
-    #     output$homogenity_results <- renderUI(tagList(
-    #       uiOutput('homogenity_method_name'),
-    #       DTOutput('homogenity_table'),
-    #       uiOutput('homogenity_method_results')
-    #     ))
-    #     choosen <- input$homogenity_tests
-    #     ci <- input$homogenity_ci
-    #     if(values$bidimensional_data_type == 'two_col')
-    #       data <- contingency_data(values$bidimensional_data)
-    #     else if(values$bidimensional_data_type == 'anova') {
-    #       data <- values$bidimensional_data
-    #       names(data) <- c('Dados', 'Classificação')
-    #     }
-    #
-    #     if (choosen == 'f_test') {
-    #       if(nrow(data.frame(table(data$`Classificação`))) == 2){
-    #         dois_grupos <- names(table(data$`Classificação`))
-    #         first <- dois_grupos[1]
-    #         sec <- dois_grupos[2]
-    #         output$homogenity_method_name <- renderUI(h3('Teste F para comparação de duas variáveis'))
-    #
-    #         data <- data.frame(data[which(data$`Classificação` == first | data$`Classificação` == sec),]$Dados, data[which(data$Classificação == first | data$Classificação == sec),]$`Classificação`)
-    #         names(data) <- c('Dados', 'Classificacao')
-    #
-    #         res <- var.test(Dados ~ Classificacao, data = data, conf.level = ci)
-    #         dt <- signif(data.frame(F = res$statistic, Num_df = res$parameter[1], Denom_df = res$parameter[2], p = res$p.value), significancia_de_aproximacao)
-    #
-    #         output$homogenity_table <- renderDT(dt)
-    #         output$homogenity_method_results <- renderUI(
-    #           tagList(
-    #             h4('Com um intervalo de confiança de ', ci * 100, '%:'),
-    #             h4(signif(res$conf.int[1], significancia_de_aproximacao), signif(res$conf.int[2], significancia_de_aproximacao)), br(),
-    #             if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                                                 '. Assim sugere que ', strong('há diferênças significantes'), ' entre as duas variâncias')
-    #             else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
-    #                                               '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as duas variâncias')
-    #             else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                     '. Assim sugere que ', strong('há diferênças significantes'), ' entre as duas variâncias')
-    #           )
-    #         )
-    #     }
-    #       else
-    #         output$homogenity_results <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-    #     }
-    #     else if (choosen == 'bartlett_test') {
-    #       res <- bartlett.test(Dados ~ Classificação, data = data)
-    #       output$homogenity_method_name <- renderUI(h3('Teste de Bartlett para comparação múltiplas variáveis'))
-    #       output$homogenity_table <- renderDT(signif(data.frame(F = res$statistic, df = res$parameter, p = res$p.value), significancia_de_aproximacao))
-    #       output$homogenity_method_results <- renderUI(
-    #         tagList(
-    #           if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                                               '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-    #           else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
-    #                                             '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
-    #           else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-    #         )
-    #       )
-    #
-    #     }
-    #     else if (choosen == 'levene_test') {
-    #       output$homogenity_method_name <- renderUI(h3('Teste de Levene para comparação múltiplas variáveis'))
-    #       res <- leveneTest(Dados ~ Classificação, data = data)
-    #       output$homogenity_table <- renderDT(signif(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), significancia_de_aproximacao))
-    #       output$homogenity_method_results <- renderUI(
-    #         tagList(
-    #           if (signif(res$`Pr(>F)`[1], significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                                                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-    #           else if (1 - ci < res$`Pr(>F)`[1]) h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
-    #                                                 '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
-    #           else h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-    #         )
-    #       )
-    #     }
-    #     else if (choosen == 'fk_test') {
-    #       res <- fligner.test(Dados ~ Classificação, data = data)
-    #       output$homogenity_method_name <- renderUI(h3('Teste de Fligner-Killeen para comparação múltiplas variáveis'))
-    #       output$homogenity_table <- renderDT(signif(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), significancia_de_aproximacao))
-    #       output$homogenity_method_results <- renderUI(
-    #         tagList(
-    #           if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                                               '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-    #           else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
-    #                                             '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
-    #           else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
-    #                   '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
-    #         )
-    #       )
-    #     } }
-    # }
+    if(values$bidimensional_data_type != 'anova_2groups') {
+      output$plotly_norm_density <- renderPlotly(renderAssessingNormDensity(values, options))
+      output$plotly_norm_qq <- renderPlotly(renderAssessingNormQQ(values, options))
+
+      df <- values$bidimensional_data
+      output$check_norm_table <- renderUI(tagList(
+            column(6,
+                   h4('Teste de Shapiro Wilk', align = 'center'),
+                   DTOutput('check_norm_table_shapiro')
+            ),
+            column(6,
+                   h4('Teste de Kolmogorov-Smirnov', align = 'center'),
+                   DTOutput('check_norm_table_kolmogorov')
+            ),
+          ))
+      switch(
+        values$bidimensional_data_type,
+        'uni_data' = {
+          shap <- shapiro.test(values$bidimensional_data[[1]])
+          shap_assumption_norality <- data.frame(
+            `Estatística` = signif(shap$statistic, significancia_de_aproximacao),
+            p = signif(shap$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(shap$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- ks.test(values$bidimensional_data[[1]], 'pnorm')
+          output$check_norm_table_kolmogorov <- renderDT(data.frame(
+            `Estatística` = signif(kolmogorov$statistic, significancia_de_aproximacao),
+            p = signif(kolmogorov$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(kolmogorov$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          ))
+        },
+        'two_col' = {
+          shap <- list(shapiro.test(values$bidimensional_data[[1]]), shapiro.test(values$bidimensional_data[[2]]))
+          shap_assumption_norality <- data.frame(
+            `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic), significancia_de_aproximacao),
+            p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value), significancia_de_aproximacao),
+            Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- list(ks.test(values$bidimensional_data[[1]], 'pnorm'), ks.test(values$bidimensional_data[[2]], 'pnorm'))
+          output$check_norm_table_kolmogorov <- renderDT(data.frame(
+            `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic), significancia_de_aproximacao),
+            p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value), significancia_de_aproximacao),
+            Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          ))
+        },
+        'anova' = {
+          residuos <- residuals(lm(values$bidimensional_data[[1]] ~ values$bidimensional_data[[2]]))
+          shap <- shapiro.test(as.numeric(residuos))
+          shap_assumption_norality <- data.frame(
+            `Estatística` = signif(shap$statistic, significancia_de_aproximacao),
+            p = signif(shap$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(shap$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- ks.test(residuos, 'pnorm')
+          output$check_norm_table_kolmogorov <- renderDT(data.frame(
+            `Estatística` = signif(kolmogorov$statistic, significancia_de_aproximacao),
+            p = signif(kolmogorov$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(kolmogorov$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          ))
+        },
+        'anova_rep' = {
+          residuos <- residuals(lm(values$bidimensional_data[[1]] ~ values$bidimensional_data[[2]]))
+          shap <- shapiro.test(as.numeric(residuos))
+          shap_assumption_norality <- data.frame(
+            `Estatística` = signif(shap$statistic, significancia_de_aproximacao),
+            p = signif(shap$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(shap$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- ks.test(residuos, 'pnorm')
+          output$check_norm_table_kolmogorov <- renderDT(data.frame(
+            `Estatística` = signif(kolmogorov$statistic, significancia_de_aproximacao),
+            p = signif(kolmogorov$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(kolmogorov$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          ))
+        },
+        'anova_mix' = {
+          residuos <- residuals(lm(values$bidimensional_data[[1]] ~ values$bidimensional_data[[2]] * values$bidimensional_data[[3]]))
+          shap <- shapiro.test(as.numeric(residuos))
+          shap_assumption_norality <- data.frame(
+            `Estatística` = signif(shap$statistic, significancia_de_aproximacao),
+            p = signif(shap$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(shap$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- ks.test(residuos, 'pnorm')
+          output$check_norm_table_kolmogorov <- renderDT(data.frame(
+            `Estatística` = signif(kolmogorov$statistic, significancia_de_aproximacao),
+            p = signif(kolmogorov$p.value, significancia_de_aproximacao),
+            Normalidade = ifelse(kolmogorov$p.value > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          ))
+        },
+        'ancova' = {
+          residuos1 <- residuals(lm(values$bidimensional_data[[1]] ~ values$bidimensional_data[[3]]))
+          residuos2 <- residuals(lm(values$bidimensional_data[[2]] ~ values$bidimensional_data[[3]]))
+          shap <- list(shapiro.test(residuos1), shapiro.test(residuos2))
+          shap_assumption_norality <- data.frame(
+            `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic), significancia_de_aproximacao),
+            p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value), significancia_de_aproximacao),
+            Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          colnames(shap_assumption_norality) <- c(names(values$bidimensional_data)[1], names(values$bidimensional_data)[2])
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- list(ks.test(residuos1, 'pnorm'), ks.test(residuos2, 'pnorm'))
+          kolmogorov <- data.frame(
+            `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic), significancia_de_aproximacao),
+            p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value), significancia_de_aproximacao),
+            Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+          )
+          colnames(kolmogorov) <- c(names(values$bidimensional_data)[1], names(values$bidimensional_data)[2])
+          output$check_norm_table_kolmogorov <- renderDT(kolmogorov)
+        },
+        'manova' = {
+          residuos <- lapply(
+            names(values$bidimensional_data)[seq_len(ncol(values$bidimensional_data) - 1)],
+            function (x){
+              residuals(lm(values$bidimensional_data[[x]] ~ values$bidimensional_data[[ncol(values$bidimensional_data)]]))
+            })
+          shap <- lapply(residuos, function (x) shapiro.test(x))
+          shap_assumption_norality <- switch(
+            ncol(values$bidimensional_data) - 2,
+            data.frame(
+              `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic), significancia_de_aproximacao),
+              p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value), significancia_de_aproximacao),
+              Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+            ),
+            data.frame(
+              `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic, shap[[3]]$statistic), significancia_de_aproximacao),
+              p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value), significancia_de_aproximacao),
+              Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+            ),
+            data.frame(
+              `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic, shap[[3]]$statistic, shap[[4]]$statistic), significancia_de_aproximacao),
+              p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value, shap[[4]]$p.value), significancia_de_aproximacao),
+              Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value, shap[[4]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+            ),
+          )
+          output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
+          kolmogorov <- lapply(residuos, function (x) ks.test(x, 'pnorm'))
+          kolmogorov <- switch(
+            ncol(values$bidimensional_data) - 2,
+            data.frame(
+              `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic), significancia_de_aproximacao),
+              p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value), significancia_de_aproximacao),
+              Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+            ),
+            data.frame(
+              `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic, kolmogorov[[3]]$statistic), significancia_de_aproximacao),
+              p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value), significancia_de_aproximacao),
+              Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+            ),
+            data.frame(
+              `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic, kolmogorov[[3]]$statistic, kolmogorov[[4]]$statistic), significancia_de_aproximacao),
+              p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value, kolmogorov[[4]]$p.value), significancia_de_aproximacao),
+              Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value, kolmogorov[[4]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
+            ),
+          )
+          output$check_norm_table_kolmogorov <- renderDT(kolmogorov)
+        }
+      )
+  }
+      # -------------------Homogenity of Variance-------------------#
+    if(values$bidimensional_data_type %in% c('two_col', 'anova', 'ancovaa')) {
+    {
+      output$homogenity_results <- renderUI(tagList(
+        uiOutput('homogenity_method_name'),
+        DTOutput('homogenity_table'),
+        uiOutput('homogenity_method_results')
+      ))
+      choosen <- input$homogenity_tests
+      ci <- intervalo_global_de_confianca
+      data <- switch(
+        values$bidimensional_data_type,
+        'two_col' = contingency_data(values$bidimensional_data),
+        'anova' = values$bidimensional_data,
+        'ancova' = values$bidimensional_data[1:2]
+      )
+      names(data) <- c('Dados', 'Classificação')
+
+      if (choosen == 'f_test') {
+        if(nrow(data.frame(table(data$`Classificação`))) == 2){
+          dois_grupos <- names(table(data$`Classificação`))
+          first <- dois_grupos[1]
+          sec <- dois_grupos[2]
+          output$homogenity_method_name <- renderUI(h3('Teste F para comparação de duas variáveis'))
+
+          data <- data.frame(data[which(data$`Classificação` == first | data$`Classificação` == sec),]$Dados, data[which(data$Classificação == first | data$Classificação == sec),]$`Classificação`)
+          names(data) <- c('Dados', 'Classificacao')
+
+          res <- var.test(Dados ~ Classificacao, data = data, conf.level = ci)
+          dt <- signif(data.frame(F = res$statistic, Num_df = res$parameter[1], Denom_df = res$parameter[2], p = res$p.value), significancia_de_aproximacao)
+
+          output$homogenity_table <- renderDT(dt)
+          output$homogenity_method_results <- renderUI(
+            tagList(
+              h4('Com um intervalo de confiança de ', ci * 100, '%:'),
+              h4(signif(res$conf.int[1], significancia_de_aproximacao), signif(res$conf.int[2], significancia_de_aproximacao)), br(),
+              if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                                                  '. Assim sugere que ', strong('há diferênças significantes'), ' entre as duas variâncias')
+              else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+                                                '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as duas variâncias')
+              else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                      '. Assim sugere que ', strong('há diferênças significantes'), ' entre as duas variâncias')
+            )
+          )
+      }
+        else
+          output$homogenity_results <- renderUI(tagList(br(),br(),h3('Os dados inseridos devem conter apenas dois grupos.', align = 'center')))
+      }
+      else if (choosen == 'bartlett_test') {
+        res <- bartlett.test(Dados ~ Classificação, data = data)
+        output$homogenity_method_name <- renderUI(h3('Teste de Bartlett para comparação múltiplas variáveis'))
+        output$homogenity_table <- renderDT(signif(data.frame(F = res$statistic, df = res$parameter, p = res$p.value), significancia_de_aproximacao))
+        output$homogenity_method_results <- renderUI(
+          tagList(
+            if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                                                '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
+            else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+                                              '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
+            else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                    '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
+          )
+        )
+
+      }
+      else if (choosen == 'levene_test') {
+        output$homogenity_method_name <- renderUI(h3('Teste de Levene para comparação múltiplas variáveis'))
+        res <- leveneTest(Dados ~ Classificação, data = data)
+        output$homogenity_table <- renderDT(signif(data.frame(df1 = res$Df[1], df2 = res$Df[2], F = res$`F value`, Sig = res$`Pr(>F)`), significancia_de_aproximacao))
+        output$homogenity_method_results <- renderUI(
+          tagList(
+            if (signif(res$`Pr(>F)`[1], significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                                                    '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
+            else if (1 - ci < res$`Pr(>F)`[1]) h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+                                                  '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
+            else h4('O valor de p = ', strong(signif(res$`Pr(>F)`[1], significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                    '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
+          )
+        )
+      }
+      else if (choosen == 'fk_test') {
+        res <- fligner.test(Dados ~ Classificação, data = data)
+        output$homogenity_method_name <- renderUI(h3('Teste de Fligner-Killeen para comparação múltiplas variáveis'))
+        output$homogenity_table <- renderDT(signif(data.frame(Chi_Quadrado = res$statistic, df = res$parameter, p = res$p.value), significancia_de_aproximacao))
+        output$homogenity_method_results <- renderUI(
+          tagList(
+            if (signif(res$p.value, significancia_de_aproximacao) == 0) h4('O valor de p é ', strong('aproximadadente 0'), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                                                '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
+            else if (1 - ci < res$p.value) h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('maior do que o nivel de significância', 1 - ci),
+                                              '. Assim sugere que ', strong('não há diferênças significantes'), ' entre as variâncias das variáveis')
+            else h4('O valor de p = ', strong(signif(res$p.value, significancia_de_aproximacao)), ', o que é ', strong('menor ou igual ao nivel de significância', 1 - ci),
+                    '. Assim sugere que ', strong('há diferênças significantes'), ' entre, pelo menos 2 variâncias das variáveis')
+          )
+        )
+      }
+    }
+    }
     #-------------------Assumption of Sphericity-------------------#
     else if (values$bidimensional_data_type == 'three_col') {
       output$sphericity_results <- renderUI(
@@ -1095,8 +1262,8 @@ server <- function (input, output, session){
     ))
     #Outliers
     output$anova_box_plot <- renderPlotly(plot_ly(df, x = df[, 2], y = df[, 1], type = 'box', color = df[, 2]))
-    if (nrow(df %>% group_by(Grupos) %>% identify_outliers(Dados)) > 0)
-      output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(Grupos) %>% identify_outliers(Dados)))
+    # if (nrow(df %>% group_by(Grupos) %>% identify_outliers(Dados)) > 0)
+    #   output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(Grupos) %>% identify_outliers(Dados)))
 
     #Teste de Levene
     levene <- signif((df %>% rstatix::levene_test(Dados ~ Grupos))$p, significancia_de_aproximacao)
@@ -1155,10 +1322,10 @@ server <- function (input, output, session){
   }
   }
    }
-     #---------------ANOVA two groups----------------#
+     #---------------ANOVA repeated measures----------------#
   {
-    if(values$bidimensional_data_type == 'anova_2groups'){
-      #--------------ANOVA - Repeted Measures-------------#
+    if(values$bidimensional_data_type == 'anova_rep'){
+      #--------------ANOVA - repeated measures-------------#
     {
            output$anova_rep_statistics <- renderUI(tagList(
              column(6,
@@ -1169,8 +1336,7 @@ server <- function (input, output, session){
                ),
               column(6,
                      h3(strong('Verificando Outliers', align = 'center')),
-                     plotlyOutput('anova_rep_box_plot'),
-                     DTOutput('anova_rep_outliers')
+                     plotlyOutput('anova_rep_box_plot')
               ),br(),
                column(12,
                       h3(strong('', align = 'center')),
@@ -1195,8 +1361,7 @@ server <- function (input, output, session){
 
            #Outliers
            output$anova_rep_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
-           if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
-             output$anova_rep_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
+
 
            #Teste de Esfericidade de Mauchly
            anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
@@ -1209,67 +1374,6 @@ server <- function (input, output, session){
            output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
            posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
            output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
-          }
-      #----------------ANOVA - Mixed Measures-------------#
-    {
-             output$anova_mix_statistics <- renderUI(tagList(
-               column(12,
-               column(6,
-                        h3(strong('Testando Normalidade', align = 'center')),
-                        plotlyOutput('anova_mix_qq_plot'),
-                        uiOutput('anova_mix_shapiro')
-
-                 ),
-                column(6,
-                       h3(strong('Verificando Outliers', align = 'center')),
-                       plotlyOutput('anova_mix_box_plot'),
-                       DTOutput('anova_mix_outliers')
-                ))
-               ,br(),
-                 column(12,
-                        h3(strong('Esfericidade de Mauchly', align = 'center')),
-                        DTOutput('anova_mix_mauchly_dt'),
-                        uiOutput('anova_mix_mauchly_results'),br(),
-
-                        h3(strong('Verificando Homogeniedade de Covariância', align = 'center')),
-                        DTOutput('anova_mix_boxm'),
-
-                        h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                        DTOutput('anova_mix_dt'),
-                        uiOutput('anova_mix_statistics'),
-                        h3(strong('Tabela Post Hoc', align = 'center')),
-                        DTOutput('anova_mix_posthoc')
-                 )))
-             df <- values$bidimensional_data
-             names <- names(df)
-             names(df) <- c('vd', 'vi', 'wid')
-             model <- lm(df$vd ~ df$vi)
-
-             #Normalidade
-             output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-             shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
-             output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
-
-             #Outliers
-             output$anova_mix_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
-             if (nrow(df %>% group_by(vi) %>% identify_outliers(vd)) > 0)
-               output$anova_mix_outliers <- renderDT(as.data.frame(df %>% group_by(vi) %>% identify_outliers(vd)))
-
-             #Teste de Esfericidade de Mauchly
-             anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
-             mauchly <- anova_dt$`Mauchly's Test for Sphericity`
-             output$anova_mix_mauchly_dt <- renderDT(mauchly[-4])
-             output$anova_mix_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
-
-              #Teste de Homogeniedade das Covariâncias
-              box_m <- box_m(df[, "vd", drop = FALSE], df$vi)
-              output$anova_mix_boxm <- renderDT(box_m)
-
-             #ANOVA
-             output$anova_mix_dt <- renderDT(get_anova_table(anova_dt))
-             output$anova_mix_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
-             posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
-             output$anova_rep_posthoc <- renderDT(posthoc[-c(1:5, 10)])
           }
       #-------------------Friedman Test-------------------#
     {
@@ -1329,10 +1433,100 @@ server <- function (input, output, session){
     }
     else{
       output$anova_rep_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-      output$anova_mix_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
       output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     }
   }
+    #----------------ANOVA - Mixed Measures-------------#
+    if(values$bidimensional_data_type == 'anova_mix'){
+      {
+        output$anova_mix_statistics <- renderUI(tagList(
+          column(12,
+                 column(6,
+                        h3(strong('Testando Normalidade', align = 'center')),
+                        plotlyOutput('anova_mix_qq_plot'),
+                        uiOutput('anova_mix_shapiro')
+
+                 ),
+                 column(6,
+                        h3(strong('Verificando Outliers', align = 'center')),
+                        plotlyOutput('anova_mix_box_plot')
+                 )),
+
+          column(12,
+                 column(6,
+                        h3(strong('Verificando Homogeneidade de Variância', align = 'center')),
+                        DTOutput('anova_mix_levene'),
+                 ),
+                 column(6,
+                        h3(strong('Verificando Homogeneidade de Covariância', align = 'center')),
+                        DTOutput('anova_mix_boxm'),
+                 )
+          ),
+          br(),
+          column(12,
+                 h3(strong('Esfericidade de Mauchly', align = 'center')),
+                 DTOutput('anova_mix_mauchly_dt'),
+                 uiOutput('anova_mix_mauchly_results'),
+                 br(),
+                 h3(strong('Resultado do teste de ANOVA', align = 'center')),
+                 DTOutput('anova_mix_dt')
+          )
+        ))
+        df <- values$bidimensional_data
+        names <- names(df)
+        names(df) <- c('vd', 'vi1', 'vi2', 'id')
+        model <- lm(df$vd ~ df$vi1 * df$vi2)
+
+        #Normalidade
+        output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
+        shap <- (df %>% group_by(vi1, vi2) %>% shapiro_test(vd))$p %>% mean() %>% signif(significancia_de_aproximacao)
+        output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+
+        #Outliers
+        output$anova_mix_box_plot <- renderPlotly(plot_ly(df, y =~ vd, x =~ vi1, color =~ vi2, type = 'box') %>%
+                                                     layout(boxmode = 'group', xaxis = list(title = names[2]), yaxis = list(title = names[1])))
+
+        #Teste de Esfericidade de Mauchly
+        anova_dt <- anova_test(data = df, dv = vd, wid = id,between = vi1, within = vi2)
+        mauchly <- anova_dt$`Mauchly's Test for Sphericity`
+        mauchly[[1]] <- c(names[2], paste0(names[2], ' - ', names[3]))
+        output$anova_mix_mauchly_dt <- renderDT(mauchly[-4])
+        output$anova_mix_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', signif(mauchly$p[2], significancia_de_aproximacao), align = 'center'))
+
+        #Teste de Homogeneidade das Variâncias
+        homogenity_var <- df %>% group_by(vi1) %>% levene_test(vd ~ vi2) %>% data.frame()
+        names(homogenity_var) <- c(names[2], 'df1', 'df2', 'Estatística', 'p')
+        homogenity_var$Estatística <- signif(homogenity_var$Estatística, significancia_de_aproximacao)
+        homogenity_var$p <- signif(homogenity_var$p, significancia_de_aproximacao)
+        output$anova_mix_levene <- renderDT(homogenity_var)
+
+        #Teste de Homogeneidade das Covariâncias
+        box_m <- box_m(df[, "vd", drop = FALSE], df$vi2)
+        box_m <- box_m[-3:-4]
+        box_m <- signif(box_m, significancia_de_aproximacao)
+        names(box_m) <- c('Estatística', 'p')
+        output$anova_mix_boxm <- renderDT(box_m)
+
+        #ANOVA
+        anova_table <-get_anova_table(anova_dt)
+        anova_table[[1]] <- c(names[2], names[3], paste0(names[2], ' - ', names[3]))
+        anova_table <- anova_table[-6]
+        output$anova_mix_dt <- renderDT(anova_table)
+        output$anova_mix_p <- renderUI(p('O valor de p do anova é: ', signif(anova_dt$p[3], significancia_de_aproximacao), align = 'center'))
+
+        pwc1 <- df %>% group_by(vi1) %>% pairwise_t_test(vd ~ vi2, p.adjust.method = "bonferroni") %>% data.frame()
+        pwc1 <- pwc1[-c(2, 5, 6, 8, 9, 10)]
+        names(pwc1) <- c(names[2], 'Grupo 1', 'Grupo 2', 'p')
+        output$anova_mix_pairwise_1 <- renderDT(pwc1)
+
+        pwc2 <- df %>% group_by(vi2) %>% pairwise_t_test(vd ~ vi1, p.adjust.method = "bonferroni") %>% data.frame()
+        pwc2 <- pwc2[-c(2, 5, 6, 8, 9, 10)]
+        names(pwc2) <- c(names[3], 'Grupo 1', 'Grupo 2', 'p')
+        output$anova_mix_pairwise_2 <- renderDT(pwc2)
+      }
+    }
+    else
+      output$anova_mix_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     #--------------------ANCOVA----------------------#
   {
     if(values$bidimensional_data_type == 'ancova'){
@@ -1344,8 +1538,8 @@ server <- function (input, output, session){
           stat_regline_equation(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~"), color = vi))
       )
       regression <- as.data.frame(anova_test(df, vd ~ vi*cov))
-      output$ancova_test <- renderDT(regression)
-      output$ancova_regression_results <- renderUI(p('O valor de F(',regression$DFn[3], ', ',regression$DFd[3],') = ', regression$F[3], ' e o valor de P é: ', regression$p[3]))
+      output$ancova_regression <- renderDT(regression)
+      output$ancova_regression_results <- renderUI(h4('O valor de', strong(' F (',regression$DFn[3], ', ',regression$DFd[3],')',' = ', regression$F[3]), ' e o valor de P é: ', strong(regression$p[3])))
 
       #Teste de levene
       levene <- ancova_levene_test(df)
@@ -1356,14 +1550,14 @@ server <- function (input, output, session){
 
       #Resultados/interpretações
       output$ancova_results <- renderUI(tagList(
-        if(as.double(shapiro$p) > options$ancova_ci) h4('O teste de Shapiro-Wilk não foi significante (p > ',options$ancova_ci,'), assim podemos
+        if(as.double(shapiro$p) > intervalo_global_de_confianca) h4('O teste de Shapiro-Wilk não foi significante (p > ',intervalo_global_de_confianca,'), assim podemos
         assumir a normalidade dos residuos')
-        else h4('O teste de Shapiro-Wilk foi significante (p <= ',options$ancova_ci,'), não podemos
+        else h4('O teste de Shapiro-Wilk foi significante (p <= ',intervalo_global_de_confianca,'), não podemos
         assumir a normalidade dos resíduos.'),
 
-        if(as.double(levene$p) > options$ancova_ci) h4('O teste de Levene não foi significante (p > ',options$ancova_ci,'), assim podemos
+        if(as.double(levene$p) > intervalo_global_de_confianca) h4('O teste de Levene não foi significante (p > ',intervalo_global_de_confianca,'), assim podemos
         assumir a igualdade da variância dos resíduos para todos os grupos.')
-        else h4('O teste de Levene foi significante (p <= ',options$ancova_ci,'), não podemos
+        else h4('O teste de Levene foi significante (p <= ',intervalo_global_de_confianca,'), não podemos
         assumir a igualdade da variância dos resíduos.')
       ))
       #Posthoc
@@ -1694,12 +1888,7 @@ server <- function (input, output, session){
   { options$ancova_line_width <- input$ancova_line_width
     options$ancova_marker_opacity <- input$ancova_marker_opacity
     options$ancova_marker_size <- input$ancova_marker_size
-    options$ancova_ci <- input$ancova_ci
-    options$ancova_sumsq <- input$ancova_sumsq
   }
-
-    #Homogenity
-    # options$homogenity_ci <- input$homogenity_ci
 
     #Gráfico em Mesh
     {

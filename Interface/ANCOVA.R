@@ -1,47 +1,19 @@
 ancova_page <- function (){
   tabPanel(
     'ANCOVA',
-    column(3,
-           column(12,
-             h3(strong("Controle de opções:"), align = 'center'),
-           { accordion(
-             id = 'accordion_ancova',
-             accordionItem(
-               title = 'Configurações do gráfico',
-               status = accordionStatus,
-               collapsed = TRUE,
-               numericInput(
-                 inputId = 'ancova_ci',
-                 label = 'Intervalo de confiança',
-                 min = 0, max = 1, value = 0.05
-               ),
-               selectInput(
-                 inputId = 'ancova_sumsq',
-                 label = 'Algoritmo para soma dos quadrados',
-                 choices = c(2, 3),
-                 selected = 2
-               )
-             )
-           )}
-           )
+    h3("ANCOVA - Análise de Covariância", style="text-align:center; font-size:50px;"),
+    column(6,
+          h3(strong('Teste de Linearidade'), align = 'center'),
+          plotOutput('ancova_linearity')
     ),
-    column(9,
-           fluidPage(fluidRow(column(
-             h3("ANCOVA - Análise de Covariância", style="text-align:center; font-size:50px;"),
-             tabPanel(title = 'Gráfico',
-                      h3(strong('ANCOVA'), align = 'center'),
-        column(6,
-               h3(strong('Teste de Linearidade'), align = 'center'),
-               plotOutput('ancova_linearity')
-        ),
-        column(6,
-               h3(strong('Regressão de Homogeniedade'), align = 'center'),
-               DTOutput('ancova_regression'),
-               uiOutput('ancova_regression_results')
-
-        ),
-        column(12,), br(),
-        column(12,
+    column(6,
+           h3(strong('Regressão de Homogeniedade'), align = 'center'),
+           DTOutput('ancova_regression'),
+           uiOutput('ancova_regression_results'),
+           align = 'center'
+    ),
+    column(12,), br(),
+    column(12,
           column(6,
                  h3(strong('Homogeniedade das Variâncias'), align = 'center'),
                  DTOutput('ancova_levene_test')
@@ -50,17 +22,14 @@ ancova_page <- function (){
                  h3(strong('Teste de Normalidade'), align = 'center'),
                  DTOutput('ancova_shapiro_test')
           )
-        ),
-        column(12,
-          h3(strong('Tabela Posthoc:'), align = 'center'),
-          DTOutput('ancova_posthoc'),
-          h3(strong('Resultados:'), align = 'center'),
-          br(),
-          uiOutput('ancova_results')
-        )
-        ),
-        width = 9
-      )))
+    ),
+    column(12,
+           h3(strong('Tabela Posthoc:'), align = 'center'),
+           DTOutput('ancova_posthoc'),
+           h3(strong('Resultados:'), align = 'center'),
+           br(),
+           uiOutput('ancova_results'),
+           align = 'center'
     ),
     column(12, hr())
   )

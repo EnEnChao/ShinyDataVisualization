@@ -1,6 +1,6 @@
 homogenity_var_page <- function (){
   tabPanel(
-    title = 'Homogeniedade das variâncias',
+    title = 'Homogeneidade das variâncias',
     column(3,
            h3(strong("Controle de opções:"), align = 'center'),
            { accordion(
@@ -31,7 +31,7 @@ homogenity_var_page <- function (){
     ),
     column(9,
            fluidPage(fluidRow(column(9,
-                                     h3("Homogeniedade das Variâncias", style="text-align:center; font-size:50px;"),
+                                     h3("Homogeneidade das Variâncias", style="text-align:center; font-size:50px;"),
                                      br(),
                                      uiOutput('homogenity_results'),
                                      align = 'center'

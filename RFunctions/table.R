@@ -16,8 +16,10 @@ checandoDados <- function (data, type){
     return(ncol(data) == 2 & is.numeric(data[,1]) & is.numeric(data[,2]))
   if(type == 'anova')
     return(ncol(data) == 2 & is.numeric(data[,1]) & min(table(data[,2])) > 1)
-  if(type == 'anova_2groups')
-    return(ncol(data) == 3 & is.numeric(data[,1]) & min(table(data[,2])) > 1  & min(table(data[,3])) > 1)
+  if(type == 'anova_rep')
+    return(ncol(data) == 3 & is.numeric(data[,1]) & min(table(data[,2])) > 1  & is.numeric(data[,3]) & length(which((table(data[[3]]) == table(data[[3]])[1]) == FALSE)) == 0)
+  if(type == 'anova_mix')
+    return(ncol(data) == 4 & is.numeric(data[,1]) & min(table(data[,2])) > 1  & min(table(data[,3])) > 1 & is.numeric(data[,4]) & length(which((table(data[[4]]) == table(data[[4]])[1]) == FALSE)) == 0)
   if(type == 'ancova')
     return(ncol(data) == 3 & is.numeric(data[,1]) & is.numeric(data[,2]) & min(table(data[,3])) > 1)
   if(type == 'manova'){

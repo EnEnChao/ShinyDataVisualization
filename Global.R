@@ -2,9 +2,9 @@
 version <- '0.7.2'
 
 #Constantes
-intervalo_global_de_confianca <- 0.05
-intervalo_global_de_confianca_Mbox <- 0.001
-significancia_de_aproximacao <- 4
+intervalo_global_de_confianca <<- 0.05
+intervalo_global_de_confianca_Mbox <<- 0.001
+significancia_de_aproximacao <<- 4
 
 options(encoding = 'UTF-8')
 options(warn = -1)

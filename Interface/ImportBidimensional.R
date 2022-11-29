@@ -39,14 +39,15 @@ import_bidimensional_page <- function (){
                              ),
                              `ANOVA medidas repetidas ou misturadas` = c(
                                'Auto estima' = 'selfesteem',
-                               'Atuação' = 'performance'
+                               'Ansiedade' = 'anxiety'
                              ),
                              `ANCOVA` = c(
                                'Combustível' = 'gas3',
-                               'Ansiedade' = 'anxiety'
+                               'Estresse' = 'stress'
                              ),
                              `MANOVA` = c(
-                               'Iris' = 'iris_manova'
+                               'Iris' = 'iris_manova',
+                               'Variação de plantas' = 'plant_variation'
                              )
                            ),
                            selected = 'gas'
@@ -79,8 +80,8 @@ insert_bidimensional <- function (){
              #Selecione se deseja utilizar um arquivo existente ou um exemplar
              h3(strong('Digite ou cole na planilha a esquerda:')),
              awesomeRadio(inputId = 'inserted_bi_type', label = "Escolha o tipo de teste",
-                             choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
-                             selected = 'uni_data',
+                             choices = c('Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
+                             selected = 'two_col',
                              inline = TRUE, status = "success"),
              #Caso tenha escolhido alguma das opções, aparece o botão grande " Carregue! "
              textInput('title_id_insert_bi', 'Digíte o título', 'Título'),
