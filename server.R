@@ -282,7 +282,7 @@ server <- function (input, output, session){
         },
         'anova_mix' = {
           hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
+          showTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
@@ -461,7 +461,7 @@ server <- function (input, output, session){
         },
         'anova_mix' = {
           hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
-          hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
+          showTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
@@ -747,7 +747,7 @@ server <- function (input, output, session){
       )
   }
       # -------------------Homogenity of Variance-------------------#
-    if(values$bidimensional_data_type %in% c('two_col', 'anova', 'ancovaa')) {
+    if(values$bidimensional_data_type %in% c('two_col', 'anova')) {
     {
       output$homogenity_results <- renderUI(tagList(
         uiOutput('homogenity_method_name'),
@@ -843,46 +843,63 @@ server <- function (input, output, session){
     }
     }
     #-------------------Assumption of Sphericity-------------------#
-    else if (values$bidimensional_data_type == 'three_col') {
-      output$sphericity_results <- renderUI(
-        tagList(
-          h3(strong('ANOVA')),
-          DTOutput('sphericity_anova_test'),
-          h3(strong('Teste de Esfericidade de Mauchly')),
-          DTOutput('mauchly_test'),
-          h3(strong('Correções de esfericidade')),
-          fluidRow(
-            column(6, h4('Correção Greenhouse-Geisser', align = 'center'), DTOutput('sphericity_corrections_gg')),
-            column(6, h4('Correção Huynh-Feldt', align = 'center'), DTOutput('sphericity_corrections_hf'))
-          ),
-          h3(strong('Resultados:')),
-          uiOutput('sphericity_statistics')
-        )
+    if (values$bidimensional_data_type %in% c('anova_mix', 'anova_rep')) {
+
+      dt <- values$bidimensional_data
+      names <- names(dt)
+
+      #Pegando os dados
+      anova <- switch(
+        values$bidimensional_data_type,
+        'anova_mix' = {
+          names(dt) <- c('vd', 'vi1', 'vi2', 'id')
+          anova_test(data = dt, dv = vd, wid = id, between = vi1, within = vi2)
+        },
+        'anova_rep' = {
+          names(dt) <- c('vd', 'vi', 'id')
+          anova_test(data = dt, dv = vd, wid = id, within = vi)
+        }
       )
-      # print()
-      dt <- data.frame(values$bidimensional_data[,1], values$bidimensional_data[,ncol(values$bidimensional_data)])
-      colnames(dt) <- c('Dados', 'Classificação')
-      k <- lapply(names(table(dt$Classificação)), function (x) seq(length(which(dt$Classificação == x))))
-      k2 <- NULL
-      for (i in k)
-        k2 <- append(k2, i)
-      dt$id <- k2
-
-      res <- anova_test(data = dt, dv = Dados,wid = id, within = Classificação)
-      correction <- input$sphericity_correc_anova_2
-      output$sphericity_anova_test <- renderDT(get_anova_table(res, correction = correction))
-
-      mauchly <- res$`Mauchly's Test for Sphericity`[2:3]
-      mauchly$Significância <- if(mauchly$p <= 1 - input$esfericity_ci) 'Significante' else 'Não Significante'
+      #ANOVA table
+      anova_table <- get_anova_table(anova)
+      mauchly <- anova$`Mauchly's Test for Sphericity`
+      if(nrow(anova_table) == 1) {
+        anova_table[[1]] <- names[2]
+        mauchly[[1]] <- mauchly[2]
+        anova_table <- anova_table[-1]
+        mauchly <- mauchly[-4]
+      }
+      else
+        mauchly <- mauchly[-4]
+      output$sphericity_anova_test <- renderDT(anova_table)
       output$mauchly_test <- renderDT(mauchly)
 
-      output$sphericity_corrections_gg <- renderDT(res$`Sphericity Corrections`[2:5])
-      output$sphericity_corrections_hf <- renderDT(res$`Sphericity Corrections`[6:9])
+      #Correções de Esfericidade
+      Corr_GG <- get_anova_table(anova, correction = "GG")
+      Corr_HF <- get_anova_table(anova, correction = "HF")
+      if(nrow(Corr_GG) == 1){
+        Corr_GG[[1]] <- names[2]
+        Corr_GG <- Corr_GG[-6]
+        Corr_GG$p <- signif(Corr_GG$p, significancia_de_aproximacao)
+        Corr_HF[[1]] <- names[2]
+        Corr_HF <- Corr_HF[-6]
+        Corr_HF$p <- signif(Corr_HF$p, significancia_de_aproximacao)
+      }
+      else{
+        Corr_GG[[1]] <- c(names[2], names[3], paste0(names[2], ' - ', names[3]))
+        Corr_GG <- Corr_GG[-6]
+        Corr_GG$p <- signif(Corr_GG$p, significancia_de_aproximacao)
+        Corr_HF[[1]] <- c(names[2], names[3], paste0(names[2], ' - ', names[3]))
+        Corr_HF <- Corr_HF[-6]
+        Corr_HF$p <- signif(Corr_HF$p, significancia_de_aproximacao)
+      }
+      output$sphericity_corrections_gg <- renderDT(Corr_GG)
+      output$sphericity_corrections_hf <- renderDT(Corr_HF)
+      mauchly_p <- ifelse(nrow(mauchly) == 1, mauchly$p, mauchly$p[2])
       output$sphericity_statistics <- renderUI(h4(
-        'Pelo teste de esfericidade de mauchly, ', strong('p =', mauchly$p), '.', if(mauchly$p <= 1 - input$esfericity_ci)
-           h4('As variâncias das diferenças entre os grupo ',strong('não são iguais'),' assim não podemos assumir a esfericidade.')
-        else h4('As variâncias das diferenças entre os grupo',strong('são iguais'),' conforme o intervalo de confiança, assim podemos assumir
-        a esfericidade.'), br()))
+        'Pelo teste de esfericidade de mauchly, ', strong('p =', mauchly_p), '.', if(mauchly_p > intervalo_global_de_confianca)
+           h4('As variâncias das diferenças entre os grupo',strong('são iguais'),' conforme o intervalo de confiança, assim podemos assumir a esfericidade.')
+        else  h4('As variâncias das diferenças entre os grupo ',strong('não são iguais'),' assim não podemos assumir a esfericidade.'), br()))
   }
   }
     #-------------Comparando duas médias-------------#
@@ -1234,10 +1251,6 @@ server <- function (input, output, session){
           )
         }
       }
-    else{
-        output$t_test_predict <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-        output$wilcoxon_test_predict <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
-      }
   }
     #--------------------ANOVA's---------------------#
   { if (values$bidimensional_data_type %in% c('anova', 'ancova')) {
@@ -1327,54 +1340,31 @@ server <- function (input, output, session){
     if(values$bidimensional_data_type == 'anova_rep'){
       #--------------ANOVA - repeated measures-------------#
     {
-           output$anova_rep_statistics <- renderUI(tagList(
-             column(6,
-                      h3(strong('Testando Normalidade', align = 'center')),
-                      plotlyOutput('anova_rep_qq_plot'),
-                      uiOutput('anova_rep_shapiro')
+      df <- values$bidimensional_data
+      names <- names(df)
+      names(df) <- c('vd', 'vi', 'wid')
+      model <- lm(df$vd ~ df$vi)
 
-               ),
-              column(6,
-                     h3(strong('Verificando Outliers', align = 'center')),
-                     plotlyOutput('anova_rep_box_plot')
-              ),br(),
-               column(12,
-                      h3(strong('', align = 'center')),
-                      h3(strong('Esfericidade de Mauchly', align = 'center')),
-                      DTOutput('anova_rep_mauchly_dt'),
-                      uiOutput('anova_rep_mauchly_results'),br(),
-                      h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                      DTOutput('anova_rep_dt'),
-                      uiOutput('anova_rep_p'),
-                      h3(strong('Tabela Post Hoc', align = 'center')),
-                      DTOutput('anova_rep_posthoc')
-               )))
-           df <- values$bidimensional_data
-           names <- names(df)
-           names(df) <- c('vd', 'vi', 'wid')
-           model <- lm(df$vd ~ df$vi)
+      #Normalidade
+      output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
+      shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
+      output$anova_rep_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
 
-           #Normalidade
-           output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
-           shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
-           output$anova_rep_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+      #Outliers
+      output$anova_rep_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
 
-           #Outliers
-           output$anova_rep_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
+      #Teste de Esfericidade de Mauchly
+      anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
+      mauchly <- anova_dt$`Mauchly's Test for Sphericity`
+      output$anova_rep_mauchly_dt <- renderDT(mauchly[-4])
+      output$anova_rep_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
 
-
-           #Teste de Esfericidade de Mauchly
-           anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
-           mauchly <- anova_dt$`Mauchly's Test for Sphericity`
-           output$anova_rep_mauchly_dt <- renderDT(mauchly[-4])
-           output$anova_rep_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
-
-           #ANOVA
-           output$anova_rep_dt <- renderDT(get_anova_table(anova_dt))
-           output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
-           posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
-           output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
-          }
+      #ANOVA
+      output$anova_rep_dt <- renderDT(get_anova_table(anova_dt))
+      output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
+      posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
+      output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
+    }
       #-------------------Friedman Test-------------------#
     {
       output$friedman_test_statistics <- renderUI(tagList(
@@ -1432,46 +1422,11 @@ server <- function (input, output, session){
     }
     }
     else{
-      output$anova_rep_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
       output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     }
   }
     #----------------ANOVA - Mixed Measures-------------#
     if(values$bidimensional_data_type == 'anova_mix'){
-      {
-        output$anova_mix_statistics <- renderUI(tagList(
-          column(12,
-                 column(6,
-                        h3(strong('Testando Normalidade', align = 'center')),
-                        plotlyOutput('anova_mix_qq_plot'),
-                        uiOutput('anova_mix_shapiro')
-
-                 ),
-                 column(6,
-                        h3(strong('Verificando Outliers', align = 'center')),
-                        plotlyOutput('anova_mix_box_plot')
-                 )),
-
-          column(12,
-                 column(6,
-                        h3(strong('Verificando Homogeneidade de Variância', align = 'center')),
-                        DTOutput('anova_mix_levene'),
-                 ),
-                 column(6,
-                        h3(strong('Verificando Homogeneidade de Covariância', align = 'center')),
-                        DTOutput('anova_mix_boxm'),
-                 )
-          ),
-          br(),
-          column(12,
-                 h3(strong('Esfericidade de Mauchly', align = 'center')),
-                 DTOutput('anova_mix_mauchly_dt'),
-                 uiOutput('anova_mix_mauchly_results'),
-                 br(),
-                 h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                 DTOutput('anova_mix_dt')
-          )
-        ))
         df <- values$bidimensional_data
         names <- names(df)
         names(df) <- c('vd', 'vi1', 'vi2', 'id')
@@ -1524,9 +1479,6 @@ server <- function (input, output, session){
         names(pwc2) <- c(names[3], 'Grupo 1', 'Grupo 2', 'p')
         output$anova_mix_pairwise_2 <- renderDT(pwc2)
       }
-    }
-    else
-      output$anova_mix_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     #--------------------ANCOVA----------------------#
   {
     if(values$bidimensional_data_type == 'ancova'){
