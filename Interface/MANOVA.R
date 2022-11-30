@@ -4,35 +4,75 @@ manova_page <- function (){
     h3("MANOVA - Análise de Variância Multivariada", style="text-align:center; font-size:50px;"),
     column(12,
            h3(strong('Dados')),
-              plotlyOutput('manova_boxplot'),
-              h3(strong('Detectando Outliers Multivariados')),
-              DTOutput('manova_outliers_multi'),
-              h3(strong('Checando Normalidade Multivariada')),
-              DTOutput('manova_normality_multi'),
-              uiOutput('manova_interpret_normality_multi'),
-              align = 'center'
+           shinycssloaders::withSpinner(
+             plotlyOutput('manova_boxplot'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
+           h3(strong('Detectando Outliers Multivariados')),
+           shinycssloaders::withSpinner(
+             DTOutput('manova_outliers_multi'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
+           h3(strong('Checando Normalidade Multivariada')),
+           shinycssloaders::withSpinner(
+             DTOutput('manova_normality_multi'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
+           uiOutput('manova_interpret_normality_multi'),
+           align = 'center'
        ),
        br(),
        column(6,
               h3(strong('Checando Tamanho da Amostra')),
-              DTOutput('manova_sample_size_dt'),
+              shinycssloaders::withSpinner(
+                DTOutput('manova_sample_size_dt'),
+                type = spinnerType,
+                color = spinnerColor,
+                size = spinnerSize
+              ),
               uiOutput('manova_sample_size_assumpt'),
               br(),
               h3(strong('Checando Homogeniedade das Covariâncias')),
-              DTOutput('manova_covariancia_dt'),
+              shinycssloaders::withSpinner(
+                DTOutput('manova_covariancia_dt'),
+                type = spinnerType,
+                color = spinnerColor,
+                size = spinnerSize
+              ),
               uiOutput('manova_covariancia_assumpt'),
               align = 'center'
        ),
        column(6,
               h3(strong('Identificando Multicollinearidade')),
-              DTOutput('manova_multicollinearity'),
+              shinycssloaders::withSpinner(
+                DTOutput('manova_multicollinearity'),
+                type = spinnerType,
+                color = spinnerColor,
+                size = spinnerSize
+              ),
               h3(strong('Checando Homogeniedade das Variâncias')),
-              DTOutput('manova_variance'),
+              shinycssloaders::withSpinner(
+                DTOutput('manova_variance'),
+                type = spinnerType,
+                color = spinnerColor,
+                size = spinnerSize
+              ),
               align = 'center'
        ),br(),
      column(12,
             h3(strong('Resultado do teste de MANOVA')),
-            verbatimTextOutput('manova_dt'),
+            shinycssloaders::withSpinner(
+                verbatimTextOutput('manova_dt'),
+                type = spinnerType,
+                color = spinnerColor,
+                size = spinnerSize
+              ),
             uiOutput('manova_res'),
             align = 'center'
      ),
@@ -46,11 +86,26 @@ manova_univariable_assumptions_page <- function (){
     h3("MANOVA - Verificações Unidimensionais", style="text-align:center; font-size:50px;"),
     column(12,
            h3(strong('Checando Normalidade')),
-           plotlyOutput('manova_normality_uni'),
+           shinycssloaders::withSpinner(
+             plotlyOutput('manova_normality_uni'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
            h3(strong('Testes pareados de Shapiro Wilk')),
-           DTOutput('manova_shapiro_uni'),
+           shinycssloaders::withSpinner(
+             DTOutput('manova_shapiro_uni'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
            h3(strong('Checando Linearidade')),
-           plotOutput('manova_linearity_plot'),
+           shinycssloaders::withSpinner(
+             plotOutput('manova_linearity_plot'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
            align = 'center'
     ),
     column(12, hr())

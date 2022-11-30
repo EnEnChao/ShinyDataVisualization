@@ -257,7 +257,24 @@ check_norm_page <- function (){
                        ),
                        tabPanel(title = 'Tabela de verificação de normalidade',
                                 h3("Tabela de verificação de normalidade", style="text-align:center; font-size:50px;"),
-                                uiOutput('check_norm_table')
+                                column(6,
+                                       h4('Teste de Shapiro Wilk', align = 'center'),
+                                       shinycssloaders::withSpinner(
+                                         DTOutput('check_norm_table_shapiro'),
+                                         type = spinnerType,
+                                         color = spinnerColor,
+                                         size = spinnerSize
+                                       )
+                                ),
+                                column(6,
+                                       h4('Teste de Kolmogorov-Smirnov', align = 'center'),
+                                       shinycssloaders::withSpinner(
+                                         DTOutput('check_norm_table_kolmogorov'),
+                                         type = spinnerType,
+                                         color = spinnerColor,
+                                         size = spinnerSize
+                                       )
+                                ),
                        )
            )
     ),

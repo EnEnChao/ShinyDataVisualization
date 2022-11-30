@@ -48,16 +48,19 @@ transform_norm_page <- function (){
            )}
     ),
     column(9,
-           fluidPage(fluidRow(column(9,
-                                     h3("Transformando em Normalidade", style="text-align:center; font-size:50px;"),
-                                     br(),
-                                     h3('Sem nenhuma transformação'),
-                                     plotlyOutput('transform_norm_results_original'),
-                                     uiOutput('transform_norm_results_new'),
-                                     uiOutput('transform_norm_results_method_statistics'),
-                                     uiOutput('transform_norm_download'),
-                                     align = 'center'
-           )))
+           h3("Transformando em Normalidade", style="text-align:center; font-size:50px;"),
+           br(),
+           h3('Sem nenhuma transformação'),
+           shinycssloaders::withSpinner(
+             plotlyOutput('transform_norm_results_original'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
+           uiOutput('transform_norm_results_new'),
+           uiOutput('transform_norm_results_method_statistics'),
+           uiOutput('transform_norm_download'),
+           align = 'center'
     ),
     column(12, hr())
   )

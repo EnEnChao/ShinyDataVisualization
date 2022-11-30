@@ -6,31 +6,61 @@ anova_mix_page <- function (){
            column(12,
                   column(6,
                          h3(strong('Testando Normalidade', align = 'center')),
-                         plotlyOutput('anova_mix_qq_plot'),
+                         shinycssloaders::withSpinner(
+                           plotlyOutput('anova_mix_qq_plot'),
+                           type = spinnerType,
+                           color = spinnerColor,
+                           size = spinnerSize
+                         ),
                          uiOutput('anova_mix_shapiro')
                   ),
                   column(6,
                          h3(strong('Verificando Outliers', align = 'center')),
-                         plotlyOutput('anova_mix_box_plot')
+                         shinycssloaders::withSpinner(
+                           plotlyOutput('anova_mix_box_plot'),
+                           type = spinnerType,
+                           color = spinnerColor,
+                           size = spinnerSize
+                         )
                   )),
            column(12,
                   column(6,
                          h3(strong('Verificando Homogeneidade de Variância', align = 'center')),
-                         DTOutput('anova_mix_levene'),
+                         shinycssloaders::withSpinner(
+                           DTOutput('anova_mix_levene'),
+                           type = spinnerType,
+                           color = spinnerColor,
+                           size = spinnerSize
+                         )
                   ),
                   column(6,
                          h3(strong('Verificando Homogeneidade de Covariância', align = 'center')),
-                         DTOutput('anova_mix_boxm'),
+                         shinycssloaders::withSpinner(
+                           DTOutput('anova_mix_boxm'),
+                           type = spinnerType,
+                           color = spinnerColor,
+                           size = spinnerSize
+                         )
                   )
            ),
            br(),
            column(12,
                   h3(strong('Esfericidade de Mauchly', align = 'center')),
-                  DTOutput('anova_mix_mauchly_dt'),
+                  shinycssloaders::withSpinner(
+                    DTOutput('anova_mix_mauchly_dt'),
+                    type = spinnerType,
+                    color = spinnerColor,
+                    size = spinnerSize
+                  ),
                   uiOutput('anova_mix_mauchly_results'),
                   br(),
                   h3(strong('Resultado do teste de ANOVA', align = 'center')),
-                  DTOutput('anova_mix_dt')
+                  shinycssloaders::withSpinner(
+                    DTOutput('anova_mix_dt'),
+                    type = spinnerType,
+                    color = spinnerColor,
+                    size = spinnerSize
+                  )
            )
       , align = 'center'
     ),
@@ -45,10 +75,20 @@ anova_mix_pairwise_page <- function (){
            h3('ANOVA - medidas misturadas - testes pareados', style="text-align:center; font-size:50px;"),
            h3('Tabela de ambos grupos pareados'),
            column(6,
-                  DTOutput('anova_mix_pairwise_1')
+                  shinycssloaders::withSpinner(
+                    DTOutput('anova_mix_pairwise_1'),
+                    type = spinnerType,
+                    color = spinnerColor,
+                    size = spinnerSize
+                  )
            ),
            column(6,
-                  DTOutput('anova_mix_pairwise_2')
+                  shinycssloaders::withSpinner(
+                    DTOutput('anova_mix_pairwise_2'),
+                    type = spinnerType,
+                    color = spinnerColor,
+                    size = spinnerSize
+                  )
            )
            , align = 'center'
     ),

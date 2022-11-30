@@ -19,23 +19,22 @@ homogenity_var_page <- function (){
                    'Teste de Fligner-Killeen' = 'fk_test'
                  ),
                  selected = 'levene_test'
-               ),
-               conditionalPanel(condition = 'input.homogenity_tests == "f_test"',
-                                uiOutput('var_f_test')
-               ),
-               numericInput('homogenity_ci', 'Escolha o intervalo de confiança: ',
-                            min = 0, max = 1, value = intervalo_global_de_confianca, step = 0.01
                )
              )
            )}
     ),
     column(9,
-           fluidPage(fluidRow(column(9,
-                                     h3("Homogeneidade das Variâncias", style="text-align:center; font-size:50px;"),
-                                     br(),
-                                     uiOutput('homogenity_results'),
-                                     align = 'center'
-           )))
+           h3("Homogeneidade das Variâncias", style="text-align:center; font-size:50px;"),
+           br(),
+           uiOutput('homogenity_method_name'),
+           shinycssloaders::withSpinner(
+             DTOutput('homogenity_table'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           ),
+           uiOutput('homogenity_method_results'),
+           align = 'center'
     ),
     column(12, hr())
   )

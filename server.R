@@ -23,9 +23,6 @@ server <- function (input, output, session){
   output$title_name_insert <- renderUI(h2(strong('Digite os dados:')))
 
   output$table_import_bi_data_output <- renderUI(tagList(h2(strong('Importe os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
-  output$homogenity_results <- renderUI(tagList(h2(strong('Escolha os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
-  output$transform_norm_results <- renderUI(tagList(h2(strong('Escolha os seus dados na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
-  output$table_transform_bi_data_output <- renderUI(tagList(h2(strong('Escolha a variável na barra de controle à esquerda:'),align = 'center'), br(), br(), br(), br(), br(), br(), br(), br(), br(), br()))
   output$title_name_insert_bi <- renderUI(h2(strong('Digite os dados:')))
   frase_erro <- 'Dados inseridos incorretamente, verificar o manual para mais informações.'
 
@@ -237,7 +234,6 @@ server <- function (input, output, session){
           hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
-          hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
         },
@@ -246,7 +242,6 @@ server <- function (input, output, session){
           showTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
-          showTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
         },
@@ -368,7 +363,6 @@ server <- function (input, output, session){
     } else output$rest_of_sidebar <- renderMenu(NULL)
 
     type <- input$inserted_bi_type
-    print(type)
     output$table_import_bi_data_output <- renderUI(
          shinycssloaders::withSpinner(
            DTOutput("table_import_bi_data_output2"),
@@ -416,7 +410,6 @@ server <- function (input, output, session){
           hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
-          hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
         },
@@ -425,7 +418,6 @@ server <- function (input, output, session){
           showTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste T')
           showTab(inputId = 'tabsetid_two_means', target = 'Teste de Wilcoxon')
-          showTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_two_means', selected = 'Teste T')
         },
@@ -517,16 +509,24 @@ server <- function (input, output, session){
     }
   })
 
-  observeEvent(values$bidimensional_data_type, {
+  observeEvent(values$bidimensional_data, {
     useShinyjs()
     if(values$bidimensional_data_type == 'uni_data') {
-      # output$select_test_t_options <- renderUI(numericInput('test_t_mu', 'Valor verdadeiro da média:', value = 0, step = 1))
       updateSelectInput(session, 'test_t_options', choices = c('One way' = 'one'))
       updateSelectInput(session, 'wilcoxon_test_options', choices = c('One way' = 'one'))
+      hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
     }
     else if(values$bidimensional_data_type == 'two_col'){
-      updateSelectInput(session, 'test_t_options', choices  = c('One way' = 'one', 'Two ways' = 'two', 'Pareado' = 'paired'), selected = 'two')
-      updateSelectInput(session, 'wilcoxon_test_options',choices = c('One way' = 'one', 'Mann–Whitney' = 'rank_sum', 'Pareado' = 'paired'), selected = 'rank_sum')
+      if(length(na.omit(values$bidimensional_data[[1]])) == length(na.omit(values$bidimensional_data[[2]]))) {
+        updateSelectInput(session, 'test_t_options', choices = c('One way' = 'one', 'Two ways' = 'two', 'Pareado' = 'paired'), selected = 'two')
+        updateSelectInput(session, 'wilcoxon_test_options', choices = c('One way' = 'one', 'Mann–Whitney' = 'rank_sum', 'Pareado' = 'paired'), selected = 'rank_sum')
+        showTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
+      }
+      else{
+        updateSelectInput(session, 'test_t_options', choices = c('One way' = 'one', 'Two ways' = 'two'), selected = 'two')
+        updateSelectInput(session, 'wilcoxon_test_options', choices = c('One way' = 'one', 'Mann–Whitney' = 'rank_sum'), selected = 'rank_sum')
+        hideTab(inputId = 'tabsetid_two_means', target = 'Teste do Sinal')
+      }
     }
   })
 
@@ -537,7 +537,9 @@ server <- function (input, output, session){
     #-------------------Transform to Normality-------------------#
     if(values$bidimensional_data_type == 'uni_data') {
       data <- values$bidimensional_data
-      output$transform_norm_results_original <- renderPlotly(plot_ly(x = ~density(data[seq_len(nrow(data)),])$x, y = ~density(data[seq_len(nrow(data)),])$y, type = 'scatter', fill = 'tozeroy', alpha = 0.7))
+      initial_plot <- plot_ly(x = ~density(data[seq_len(nrow(data)),])$x, y = ~density(data[seq_len(nrow(data)),])$y, type = 'scatter', fill = 'tozeroy', alpha = 0.7) %>%
+        layout(xaxis = list(title = 'Dados'), yaxis = list(title = 'Frequência'))
+      output$transform_norm_results_original <- renderPlotly(initial_plot)
       output$transform_norm_results_method_statistics <- renderUI(h4('O coeficiente de distorção é : ', signif(skewness(data[[1]], na.rm = TRUE), significancia_de_aproximacao)))
       observeEvent(input$load_transform_norm, {
 
@@ -555,11 +557,17 @@ server <- function (input, output, session){
       if (input$transform_norm_distributions != 'none'){
          output$transform_norm_results_new <- renderUI(tagList(
             uiOutput('transform_norm_results_new_name'),
-            plotlyOutput('transform_norm_results_new_plot'),
+            shinycssloaders::withSpinner(
+             plotlyOutput('transform_norm_results_new_plot'),
+             type = spinnerType,
+             color = spinnerColor,
+             size = spinnerSize
+           )
          ))
         transformation <- input$transform_norm_distributions
         output$transform_norm_results_new_name <- renderUI(h3('Com a transformação: ',transformation))
-        output$transform_norm_results_new_plot <- renderPlotly(plot_ly(x = ~density(df[seq_len(nrow(df)),])$x, y = ~density(df[seq_len(nrow(df)),])$y, type = 'scatter', mode = 'markers', fill = 'tozeroy', alpha = 0.7))
+        output$transform_norm_results_new_plot <- renderPlotly(plot_ly(x = ~density(df[seq_len(nrow(df)),])$x, y = ~density(df[seq_len(nrow(df)),])$y, type = 'scatter', mode = 'markers', fill = 'tozeroy', alpha = 0.7) %>%
+        layout(xaxis = list(title = 'Dados'), yaxis = list(title = 'Frequência')))
         output$transform_norm_results_method_statistics <- renderUI(tagList(
            h4('O coeficiente de distorção é : ', signif(skewness(data[1], na.rm = TRUE), significancia_de_aproximacao)),
            h4('O novo coeficiente de distorção é : ', signif(skewness(df[1], na.rm = TRUE), significancia_de_aproximacao))
@@ -582,21 +590,11 @@ server <- function (input, output, session){
   }
 
     #-------------------Assessing Normality-------------------#
-    if(values$bidimensional_data_type != 'anova_2groups') {
+    {
       output$plotly_norm_density <- renderPlotly(renderAssessingNormDensity(values, options))
       output$plotly_norm_qq <- renderPlotly(renderAssessingNormQQ(values, options))
 
       df <- values$bidimensional_data
-      output$check_norm_table <- renderUI(tagList(
-            column(6,
-                   h4('Teste de Shapiro Wilk', align = 'center'),
-                   DTOutput('check_norm_table_shapiro')
-            ),
-            column(6,
-                   h4('Teste de Kolmogorov-Smirnov', align = 'center'),
-                   DTOutput('check_norm_table_kolmogorov')
-            ),
-          ))
       switch(
         values$bidimensional_data_type,
         'uni_data' = {
@@ -621,13 +619,16 @@ server <- function (input, output, session){
             p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value), significancia_de_aproximacao),
             Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
           )
+          shap_assumption_norality <- data.frame(Nomes = names(values$bidimensional_data), shap_assumption_norality)
           output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
           kolmogorov <- list(ks.test(values$bidimensional_data[[1]], 'pnorm'), ks.test(values$bidimensional_data[[2]], 'pnorm'))
-          output$check_norm_table_kolmogorov <- renderDT(data.frame(
+          kolmogorov <- data.frame(
             `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic), significancia_de_aproximacao),
             p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value), significancia_de_aproximacao),
             Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
-          ))
+          )
+          kolmogorov <- data.frame(Nomes = names(values$bidimensional_data), kolmogorov)
+          output$check_norm_table_kolmogorov <- renderDT(kolmogorov)
         },
         'anova' = {
           residuos <- residuals(lm(values$bidimensional_data[[1]] ~ values$bidimensional_data[[2]]))
@@ -746,14 +747,9 @@ server <- function (input, output, session){
         }
       )
   }
-      # -------------------Homogenity of Variance-------------------#
+
+    # -------------------Homogenity of Variance-------------------#
     if(values$bidimensional_data_type %in% c('two_col', 'anova')) {
-    {
-      output$homogenity_results <- renderUI(tagList(
-        uiOutput('homogenity_method_name'),
-        DTOutput('homogenity_table'),
-        uiOutput('homogenity_method_results')
-      ))
       choosen <- input$homogenity_tests
       ci <- intervalo_global_de_confianca
       data <- switch(
@@ -775,9 +771,9 @@ server <- function (input, output, session){
           names(data) <- c('Dados', 'Classificacao')
 
           res <- var.test(Dados ~ Classificacao, data = data, conf.level = ci)
-          dt <- signif(data.frame(F = res$statistic, Num_df = res$parameter[1], Denom_df = res$parameter[2], p = res$p.value), significancia_de_aproximacao)
+          dt_ftest <- signif(data.frame(F = res$statistic, Num_df = res$parameter[1], Denom_df = res$parameter[2], p = res$p.value), significancia_de_aproximacao)
 
-          output$homogenity_table <- renderDT(dt)
+          output$homogenity_table <- renderDT(dt_ftest)
           output$homogenity_method_results <- renderUI(
             tagList(
               h4('Com um intervalo de confiança de ', ci * 100, '%:'),
@@ -791,8 +787,6 @@ server <- function (input, output, session){
             )
           )
       }
-        else
-          output$homogenity_results <- renderUI(tagList(br(),br(),h3('Os dados inseridos devem conter apenas dois grupos.', align = 'center')))
       }
       else if (choosen == 'bartlett_test') {
         res <- bartlett.test(Dados ~ Classificação, data = data)
@@ -841,7 +835,7 @@ server <- function (input, output, session){
         )
       }
     }
-    }
+
     #-------------------Assumption of Sphericity-------------------#
     if (values$bidimensional_data_type %in% c('anova_mix', 'anova_rep')) {
 
@@ -918,7 +912,7 @@ server <- function (input, output, session){
         column(6,
                h3(strong('Verificando Outliers', align = 'center')),
                plotlyOutput('t_test_uni_boxplot'),
-               uiOutput('t_test_uni_outliers'), align = 'center'
+               align = 'center'
           ),
         column(12,
                h3(strong('Resultados', align = 'center')),
@@ -934,7 +928,7 @@ server <- function (input, output, session){
       ))
       #Testes de Outlier
       output$t_test_uni_boxplot <- renderPlotly(plot_ly(data.frame(), y = df[,1], type = 'box', boxpoints = "all", fillcolor = '#FEE4E2', name = names(df)[1], marker = list(color = '#F8766D', outliercolor = 'gray'), line = list(color = '#F8766D')))
-      output$t_test_uni_outliers <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
+      # output$t_test_uni_outliers <- renderUI(if(nrow(identify_outliers(df[1])) == 0) p('Não exstem outliers') else p('Existem ',nrow(identify_outliers(df[1])), ' outliers.'))
 
       #Resultados da computação do Teste T
       df_test_t_uni <- test_t_uni(df[1], input$test_t_mu)
@@ -948,7 +942,8 @@ server <- function (input, output, session){
       ))
     }
       #-------------------Wilcoxon Test-------------------#
-    {output$wilcoxon_test_predict <- renderUI(tagList(
+    {
+      output$wilcoxon_test_predict <- renderUI(tagList(
       column(6,
              h3(strong('Testando Simetria ao redor da mediana')),
              plotlyOutput('wilcoxon_test_uni_symmetry'),align = 'center'
@@ -993,12 +988,22 @@ server <- function (input, output, session){
               h3(strong('Testando Normalidade', align = 'center')),
               column(6,
                      h4(names(df)[1]),
-                     plotlyOutput('t_test_normality_1'),
+                     shinycssloaders::withSpinner(
+                       plotlyOutput('t_test_normality_1'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                      uiOutput('t_test_normality_results_1'), align = 'center'
               ),
               column(6,
                      h4(names(df)[2]),
-                     plotlyOutput('t_test_normality_2'),
+                     shinycssloaders::withSpinner(
+                       plotlyOutput('t_test_normality_2'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                      uiOutput('t_test_normality_results_2'), align = 'center'
                 ),
               column(12,
@@ -1006,23 +1011,43 @@ server <- function (input, output, session){
                      h3(strong('Verificando Outliers', align = 'center'))
               ),
               column(6,
-                     plotlyOutput('t_test_boxplot_1'),
+                     shinycssloaders::withSpinner(
+                       plotlyOutput('t_test_boxplot_1'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                      uiOutput('t_test_outliers_1'), align = 'center'
               ),
               column(6,
-                     plotlyOutput('t_test_boxplot_2'),
+                     shinycssloaders::withSpinner(
+                       plotlyOutput('t_test_boxplot_2'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                      uiOutput('t_test_outliers_2'), align = 'center'
               ),
               column(12,
-                     h3(strong('Resultados', align = 'center')),
+                     h3(strong('Resultados do Teste T:', align = 'center')),
                      column(6,
                             h4(strong('Teste T - ',names(values$bidimensional_data)[1]), align = 'center'),
-                            DTOutput('t_test_dt_1'),
+                            shinycssloaders::withSpinner(
+                       DTOutput('t_test_dt_1'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                             uiOutput('t_test_effect_size1')
                      ),
                      column(6,
                             h4(strong('Teste T - ',names(values$bidimensional_data)[2]), align = 'center'),
-                            DTOutput('t_test_dt_2'),
+                            shinycssloaders::withSpinner(
+                       DTOutput('t_test_dt_2'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                             uiOutput('t_test_effect_size2')
                      )
               )
@@ -1063,17 +1088,32 @@ server <- function (input, output, session){
             output$t_test_predict <- renderUI(tagList(
               column(6, h3(strong('Testando Normalidade', align = 'center'))),
               column(6, h3(strong('Verificando Outliers', align = 'center'))),
-
-              column(12, plotlyOutput('t_test_plotly')),
+              column(12,
+                     shinycssloaders::withSpinner(
+                       plotlyOutput('t_test_plotly'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     )
+              ),
               column(6, uiOutput('t_test_normality_results')),
-              column(12, DTOutput('t_test_outliers')),
 
               column(12,
                      h3(strong('Teste de homocedasticidade')),
-                     DTOutput('t_test_homostacity'),
+                     shinycssloaders::withSpinner(
+                       DTOutput('t_test_homostacity'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                      uiOutput('t_test_homostacity_results'),
-                     h3(strong('Resultados: ')),
-                     DTOutput('t_test_dt'),
+                     h3(strong('Resultados do teste T: ')),
+                     shinycssloaders::withSpinner(
+                       DTOutput('t_test_dt'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                      uiOutput('t_test_effect_size')
                 ,align = 'center'
               )
@@ -1093,8 +1133,8 @@ server <- function (input, output, session){
             )
             # output$t_test_boxplot <- renderPlotly(plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box'))
             fig2 <- plot_ly(data = dt, y =~ Dados, x =~ Classificação, color =~ Classificação, type = 'box')
-            outliers_dt <- dt %>% group_by(Classificação) %>% identify_outliers(Dados) %>% data.frame()
-            output$t_test_outliers <- if(nrow(outliers_dt) != 0) renderDT(outliers_dt)
+            # outliers_dt <- dt %>% group_by(Classificação) %>% identify_outliers(Dados) %>% data.frame()
+            # output$t_test_outliers <- if(nrow(outliers_dt) != 0) renderDT(outliers_dt)
 
             output$t_test_plotly <- renderPlotly(subplot(fig1, fig2, margin = 0.1))
             ftest <- var.test(Dados ~ Classificação, dt)
@@ -1102,19 +1142,14 @@ server <- function (input, output, session){
             output$t_test_homostacity <- renderDT(ftest_dt)
             output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',strong(signif(ftest_dt$p, significancia_de_aproximacao)), 'ou seja,', ifelse(ftest_dt$p > intervalo_global_de_confianca, 'a variância entre os grupos é estatísticamente igual.', 'a variância entre os grupos é estatísticamente diferente.')))
 
-            #Remove outliers
-            # if(input$test_t_options != 'paired')
-            #   dt <- removeOutliers(dt)
-
             test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ftest_dt$p > intervalo_global_de_confianca | input$test_t_options == 'paired')
-            # test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = F)
             test_w_df <- data.frame(p = signif(test_w$p, significancia_de_aproximacao), estatística = signif(test_w$statistic, significancia_de_aproximacao), df = signif(test_w$df, significancia_de_aproximacao))
             rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
             output$t_test_dt <- renderDT(test_w_df)
             cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
             output$t_test_effect_size <-renderUI(tagList(p('O valor p do teste T é: ',strong(test_w_df$p) , ' ou seja, ', ifelse(test_w_df$p > intervalo_global_de_confianca, 'as variâncias de ambos os grupos são estatísticamente iguais.', 'os dados médios de ambos os grupos são estatísticamente diferentes.'),
                                                    br(),
-                                                   'A área de efeito entre as variáveis ', strong(names(dt)[1]),', e ',strong(names(dt)[2]), ' é de: ', strong(signif(cohensD, significancia_de_aproximacao)),br()),
+                                                   'A área de efeito entre as variáveis ', strong(names(values$bidimensional_data)[1]),', e ',strong(names(values$bidimensional_data)[2]), ' é de: ', strong(signif(cohensD, significancia_de_aproximacao)),br()),
                                                    if(ftest_dt$p <= intervalo_global_de_confianca & input$test_t_options != 'paired') p('O algoritmo para calcular a área de efeito foi o ', strong('o algoritmo de Welch,'), ' como as variâncias foram diferentes.')
             ))
           }
@@ -1127,34 +1162,66 @@ server <- function (input, output, session){
           h3(strong('Testando Simetria ao redor da mediana', align = 'center')),
           column(6,
                  h4(names(df)[1]),
-                 plotlyOutput('wilcoxon_test_symmetry_1'),align = 'center'
+                 shinycssloaders::withSpinner(
+                       plotlyOutput('wilcoxon_test_symmetry_1'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
+                 align = 'center'
           ),
           column(6,
                  h4(names(df)[2]),
-                 plotlyOutput('wilcoxon_test_symmetry_2'),align = 'center'
+                 shinycssloaders::withSpinner(
+                       plotlyOutput('wilcoxon_test_symmetry_2'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
+                 align = 'center'
             ),
           column(12,
                  br(),
                  h3(strong('Verificando Outliers', align = 'center'))
           ),
           column(6,
-                 plotlyOutput('wilcoxon_test_boxplot_1'),
+                 shinycssloaders::withSpinner(
+                       plotlyOutput('wilcoxon_test_boxplot_1'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                  uiOutput('wilcoxon_test_outliers_1'), align = 'center'
           ),
           column(6,
-                 plotlyOutput('wilcoxon_test_boxplot_2'),
+                 shinycssloaders::withSpinner(
+                       plotlyOutput('wilcoxon_test_boxplot_2'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                  uiOutput('wilcoxon_test_outliers_2'), align = 'center'
           ),
           column(12,
-                 h3(strong('Resultados', align = 'center')),
+                 h3(strong('Resultados do Teste de Wilcoxon:', align = 'center')),
                  column(6,
                         h4(strong('Teste de Wilcoxon - ',names(values$bidimensional_data)[1]), align = 'center'),
-                        DTOutput('wilcoxon_test_dt_1'),
+                        shinycssloaders::withSpinner(
+                       DTOutput('wilcoxon_test_dt_1'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                         uiOutput('wilcoxon_test_effect_size1')
                  ),
                  column(6,
                         h4(strong('Teste de Wilcoxon - ',names(values$bidimensional_data)[2]), align = 'center'),
-                        DTOutput('wilcoxon_test_dt_2'),
+                        shinycssloaders::withSpinner(
+                       DTOutput('wilcoxon_test_dt_2'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                         uiOutput('wilcoxon_test_effect_size2')
                  )
           )
@@ -1198,10 +1265,25 @@ server <- function (input, output, session){
           column(12,
                  uiOutput('more_assumptions'),
                  h3(strong('Verificando Outliers')),
-                 plotlyOutput('wilcoxon_test_plotly'),
-                 DTOutput('wilcoxon_test_outliers'),
-                 h3(strong('Resultados: ')),
-                 DTOutput('wilcoxon_test_dt'),
+                 shinycssloaders::withSpinner(
+                       plotlyOutput('wilcoxon_test_plotly'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
+                 shinycssloaders::withSpinner(
+                       DTOutput('wilcoxon_test_outliers'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
+                 h3(strong('Resultados do Teste de Wilcoxon:')),
+                 shinycssloaders::withSpinner(
+                       DTOutput('wilcoxon_test_dt'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
                  uiOutput('wilcoxon_test_effect_size'),
                  align = 'center',
           )
@@ -1237,7 +1319,7 @@ server <- function (input, output, session){
       }
     }
         #-------------------Sign Test-------------------#
-        {
+        if(length(na.omit(values$bidimensional_data[[1]])) == length(na.omit(values$bidimensional_data[[2]]))){
           dt <- values$bidimensional_data
           colnames(dt) <- c('var1', 'var2')
           dt <- contingency_data(dt)
@@ -1367,31 +1449,6 @@ server <- function (input, output, session){
     }
       #-------------------Friedman Test-------------------#
     {
-      output$friedman_test_statistics <- renderUI(tagList(
-        column(
-          12,
-          h3(strong('Detectando Outliers')),
-          plotlyOutput('friedman_boxplot'),
-          br(),
-          h3(strong('Calculo do Teste de friedman Wallis')),
-          DTOutput('friedman_dt'),
-          uiOutput('friedman_interpretation'),
-          h3(strong('Área de Efeito')),
-          DTOutput('friedman_effectArea'),
-          uiOutput('friedman_effectArea_interpretation'),
-          br(),
-          h3(strong('Múltiplas comparações entre pares')),
-          column(6,
-                 h3(strong('Teste de Wilcoxon')),
-                 DTOutput('friedman_wilcoxon_test')
-          ),
-          column(6,
-                 h3(strong('Teste do Sinal')),
-                 DTOutput('friedman_sign_test')
-          )
-          , align = 'center'
-        )
-      ))
       df <- values$bidimensional_data
       #Boxplot
       output$friedman_boxplot <- renderPlotly(plot_ly(df, y = df[[1]], color = df[[2]], type = 'box'))
@@ -1420,9 +1477,6 @@ server <- function (input, output, session){
       df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], significancia_de_aproximacao)
       output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
     }
-    }
-    else{
-      output$friedman_test_statistics <- renderUI(tagList(br(),br(),h3(frase_erro, align = 'center')))
     }
   }
     #----------------ANOVA - Mixed Measures-------------#
@@ -1611,7 +1665,6 @@ server <- function (input, output, session){
       #Testes de Linearidade
       results <- df %>% df_select(vars = names(df)[2:df_ncol]) %>% group_by(var = names(df)[df_ncol + 1]) %>% doo(~ggpairs(.) + theme_bw(), result = "plots")
       output$manova_linearity_plot <- renderPlot(results$plots[[1]])
-
       }
   }
   })

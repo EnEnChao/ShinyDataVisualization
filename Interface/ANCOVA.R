@@ -4,11 +4,21 @@ ancova_page <- function (){
     h3("ANCOVA - Análise de Covariância", style="text-align:center; font-size:50px;"),
     column(6,
           h3(strong('Teste de Linearidade'), align = 'center'),
-          plotOutput('ancova_linearity')
+           shinycssloaders::withSpinner(
+                       plotOutput('ancova_linearity'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     )
     ),
     column(6,
            h3(strong('Regressão de Homogeniedade'), align = 'center'),
-           DTOutput('ancova_regression'),
+           shinycssloaders::withSpinner(
+                       DTOutput('ancova_regression'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
            uiOutput('ancova_regression_results'),
            align = 'center'
     ),
@@ -16,16 +26,31 @@ ancova_page <- function (){
     column(12,
           column(6,
                  h3(strong('Homogeniedade das Variâncias'), align = 'center'),
-                 DTOutput('ancova_levene_test')
+                 shinycssloaders::withSpinner(
+                       DTOutput('ancova_levene_test'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     )
           ),
           column(6,
                  h3(strong('Teste de Normalidade'), align = 'center'),
-                 DTOutput('ancova_shapiro_test')
+                 shinycssloaders::withSpinner(
+                       DTOutput('ancova_shapiro_test'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     )
           )
     ),
     column(12,
            h3(strong('Tabela Posthoc:'), align = 'center'),
-           DTOutput('ancova_posthoc'),
+           shinycssloaders::withSpinner(
+                       DTOutput('ancova_posthoc'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
            h3(strong('Resultados:'), align = 'center'),
            br(),
            uiOutput('ancova_results'),
