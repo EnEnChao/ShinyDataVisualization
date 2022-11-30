@@ -3,13 +3,6 @@ sphericity_page <- function (){
     'Avaliando a esfericidade',
     column(12,
            h3("Avaliando a esfericidade", style="text-align:center; font-size:50px;"),
-           h3(strong('ANOVA')),
-           shinycssloaders::withSpinner(
-             DTOutput('sphericity_anova_test'),
-             type = spinnerType,
-             color = spinnerColor,
-             size = spinnerSize
-            ),
            h3(strong('Teste de Esfericidade de Mauchly')),
            shinycssloaders::withSpinner(
              DTOutput('mauchly_test'),
@@ -17,6 +10,9 @@ sphericity_page <- function (){
              color = spinnerColor,
              size = spinnerSize
             ),
+           h3(strong('Resultados:')),
+           uiOutput('sphericity_statistics'),
+           br(),
            h3(strong('Correções de esfericidade')),
            fluidRow(
              column(6, h4('Correção Greenhouse-Geisser', align = 'center'),
@@ -35,9 +31,7 @@ sphericity_page <- function (){
                       size = spinnerSize
                     )
              )
-           ),
-           h3(strong('Resultados:')),
-           uiOutput('sphericity_statistics')
+           )
            , align = 'center'
     ),
     column(12,hr())

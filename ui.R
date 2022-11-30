@@ -124,6 +124,7 @@ tags$style(HTML("
     navbarMenu('Testes Estatísticos',
                tabPanel('Carregue seus dados',
                         tabsetPanel(
+                          id = 'bidimensional_data_input',
                           import_bidimensional_page(),
                           insert_bidimensional()
                         )
@@ -148,11 +149,11 @@ tags$style(HTML("
                tabPanel('Comparando multiplas médias',
                         tabsetPanel(
                           id = 'tabsetid_multiple_means',
+                          ancova_page(),
                           anova_page(),
                           anova_rep_page(),
                           anova_mix_page(),
                           anova_mix_pairwise_page(),
-                          ancova_page(),
                           manova_page(),
                           manova_univariable_assumptions_page(),
                           kruskal_wallis_test_page(),

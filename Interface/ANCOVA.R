@@ -84,10 +84,11 @@ posthoc_ancova_table <- function (df){
     df %>% emmeans_test(vd ~ vi, covariate = cov, p.adjust.method = 'bonferroni')
   )
   posthoc <- posthoc[,-c(1, 2)]
+  posthoc <- posthoc[,-7]
   posthoc$statistic <- signif(posthoc$statistic, 4)
   posthoc$p <- signif(posthoc$p, 4)
   posthoc$p.adj <- signif(posthoc$p.adj, 4)
-  names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj', 'Significância')
+  names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj')
 
   return(posthoc)
 }

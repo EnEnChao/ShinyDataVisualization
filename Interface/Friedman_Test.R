@@ -21,13 +21,6 @@ friedman_test_page <- function (){
                    size = spinnerSize
                  ),
                  uiOutput('friedman_interpretation'),
-                 h3(strong('Área de Efeito')),
-                 shinycssloaders::withSpinner(
-                   DTOutput('friedman_effectArea'),
-                   type = spinnerType,
-                   color = spinnerColor,
-                   size = spinnerSize
-                 ),
                  uiOutput('friedman_effectArea_interpretation'),
                  br(),
                  h3(strong('Múltiplas comparações entre pares')),

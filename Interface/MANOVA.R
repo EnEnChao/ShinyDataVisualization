@@ -10,13 +10,6 @@ manova_page <- function (){
              color = spinnerColor,
              size = spinnerSize
            ),
-           h3(strong('Detectando Outliers Multivariados')),
-           shinycssloaders::withSpinner(
-             DTOutput('manova_outliers_multi'),
-             type = spinnerType,
-             color = spinnerColor,
-             size = spinnerSize
-           ),
            h3(strong('Checando Normalidade Multivariada')),
            shinycssloaders::withSpinner(
              DTOutput('manova_normality_multi'),

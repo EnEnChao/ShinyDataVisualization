@@ -293,14 +293,14 @@ server <- function (input, output, session){
         'ancova' = {
           hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANCOVA')
@@ -346,6 +346,7 @@ server <- function (input, output, session){
     }
   })
   observeEvent(input$load_spreadsheet_bi,{
+    updateTabsetPanel(session = session, inputId = 'bidimensional_data_input', selected = 'Importe seus dados')
     dt <- data.frame(hot_to_r(input$user_data_bi))
     empty_columns <- colSums(dt == "") == nrow(dt)
     dt <- dt[, !empty_columns]
@@ -469,14 +470,14 @@ server <- function (input, output, session){
         'ancova' = {
           hideTab(inputId = 'tabsetid_checking_data', target = 'Homogeneidade das variâncias')
           hideTab(inputId = 'tabsetid_checking_data', target = 'Avaliando a esfericidade')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas misturadas - testes pareados')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'ANOVA - medidas repetidas')
           showTab(inputId = 'tabsetid_multiple_means', target = 'ANCOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'MANOVA Verificações Univariadas')
-          hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
+          showTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Kruskal-Wallis')
           hideTab(inputId = 'tabsetid_multiple_means', target = 'Teste de Friedman')
           updateTabsetPanel(session = session, inputId = 'tabsetid_checking_data', selected = 'Distribuição de dados Normais')
           updateTabsetPanel(session = session, inputId = 'tabsetid_multiple_means', selected = 'ANCOVA')
@@ -683,19 +684,19 @@ server <- function (input, output, session){
           residuos2 <- residuals(lm(values$bidimensional_data[[2]] ~ values$bidimensional_data[[3]]))
           shap <- list(shapiro.test(residuos1), shapiro.test(residuos2))
           shap_assumption_norality <- data.frame(
+            Nomes = c(names(values$bidimensional_data)[1], names(values$bidimensional_data)[2]),
             `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic), significancia_de_aproximacao),
             p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value), significancia_de_aproximacao),
             Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
           )
-          colnames(shap_assumption_norality) <- c(names(values$bidimensional_data)[1], names(values$bidimensional_data)[2])
           output$check_norm_table_shapiro <- renderDT(shap_assumption_norality)
           kolmogorov <- list(ks.test(residuos1, 'pnorm'), ks.test(residuos2, 'pnorm'))
           kolmogorov <- data.frame(
+            Nomes = c(names(values$bidimensional_data)[1], names(values$bidimensional_data)[2]),
             `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic), significancia_de_aproximacao),
             p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value), significancia_de_aproximacao),
             Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
           )
-          colnames(kolmogorov) <- c(names(values$bidimensional_data)[1], names(values$bidimensional_data)[2])
           output$check_norm_table_kolmogorov <- renderDT(kolmogorov)
         },
         'manova' = {
@@ -708,16 +709,19 @@ server <- function (input, output, session){
           shap_assumption_norality <- switch(
             ncol(values$bidimensional_data) - 2,
             data.frame(
+              Nomes = names(values$bidimensional_data)[1:2],
               `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic), significancia_de_aproximacao),
               p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value), significancia_de_aproximacao),
               Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
             ),
             data.frame(
+              Nomes = names(values$bidimensional_data)[1:3],
               `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic, shap[[3]]$statistic), significancia_de_aproximacao),
               p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value), significancia_de_aproximacao),
               Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
             ),
             data.frame(
+              Nomes = names(values$bidimensional_data)[1:4],
               `Estatística` = signif(c(shap[[1]]$statistic, shap[[2]]$statistic, shap[[3]]$statistic, shap[[4]]$statistic), significancia_de_aproximacao),
               p = signif(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value, shap[[4]]$p.value), significancia_de_aproximacao),
               Normalidade = ifelse(c(shap[[1]]$p.value, shap[[2]]$p.value, shap[[3]]$p.value, shap[[4]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
@@ -728,16 +732,19 @@ server <- function (input, output, session){
           kolmogorov <- switch(
             ncol(values$bidimensional_data) - 2,
             data.frame(
+              Nomes = names(values$bidimensional_data)[1:2],
               `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic), significancia_de_aproximacao),
               p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value), significancia_de_aproximacao),
               Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
             ),
             data.frame(
+              Nomes = names(values$bidimensional_data)[1:3],
               `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic, kolmogorov[[3]]$statistic), significancia_de_aproximacao),
               p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value), significancia_de_aproximacao),
               Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
             ),
             data.frame(
+              Nomes = names(values$bidimensional_data)[1:4],
               `Estatística` = signif(c(kolmogorov[[1]]$statistic, kolmogorov[[2]]$statistic, kolmogorov[[3]]$statistic, kolmogorov[[4]]$statistic), significancia_de_aproximacao),
               p = signif(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value, kolmogorov[[4]]$p.value), significancia_de_aproximacao),
               Normalidade = ifelse(c(kolmogorov[[1]]$p.value, kolmogorov[[2]]$p.value, kolmogorov[[3]]$p.value, kolmogorov[[4]]$p.value) > intervalo_global_de_confianca, 'Normal', 'Não normal')
@@ -858,14 +865,11 @@ server <- function (input, output, session){
       anova_table <- get_anova_table(anova)
       mauchly <- anova$`Mauchly's Test for Sphericity`
       if(nrow(anova_table) == 1) {
-        anova_table[[1]] <- names[2]
         mauchly[[1]] <- mauchly[2]
-        anova_table <- anova_table[-1]
         mauchly <- mauchly[-4]
       }
       else
         mauchly <- mauchly[-4]
-      output$sphericity_anova_test <- renderDT(anova_table)
       output$mauchly_test <- renderDT(mauchly)
 
       #Correções de Esfericidade
@@ -1357,14 +1361,12 @@ server <- function (input, output, session){
     ))
     #Outliers
     output$anova_box_plot <- renderPlotly(plot_ly(df, x = df[, 2], y = df[, 1], type = 'box', color = df[, 2]))
-    # if (nrow(df %>% group_by(Grupos) %>% identify_outliers(Dados)) > 0)
-    #   output$anova_outliers <- renderDT(as.data.frame(df %>% group_by(Grupos) %>% identify_outliers(Dados)))
 
     #Teste de Levene
-    levene <- signif((df %>% rstatix::levene_test(Dados ~ Grupos))$p, significancia_de_aproximacao)
+    levene_anova <- (df %>% rstatix::levene_test(Dados ~ Grupos))$p %>% signif(significancia_de_aproximacao)
     output$anova_levene_dt <- renderDT(signif(data.frame(df %>% rstatix::levene_test(Dados ~ Grupos)), significancia_de_aproximacao))
-    output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', strong(levene), '. Ou seja, ',
-                                              ifelse(levene > intervalo_global_de_confianca, 'não existe difereça entre as variâncias entre os grupos.', 'existe difereça entre as variâncias entre os grupos.')))
+    output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', strong(levene_anova), '. Ou seja, ',
+                                              ifelse(levene_anova > intervalo_global_de_confianca, 'não existe difereça entre as variâncias entre os grupos.', 'existe difereça entre as variâncias entre os grupos.')))
 
     #ANOVA
     anova_dt <- df %>% anova_test(Dados ~ Grupos)
@@ -1418,7 +1420,6 @@ server <- function (input, output, session){
   }
    }
      #---------------ANOVA repeated measures----------------#
-  {
     if(values$bidimensional_data_type == 'anova_rep'){
       #--------------ANOVA - repeated measures-------------#
     {
@@ -1430,7 +1431,9 @@ server <- function (input, output, session){
       #Normalidade
       output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
       shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
-      output$anova_rep_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+      output$anova_rep_shapiro <- renderUI(tagList(p('O valor p para o teste de Shapiro-Wilk é: ', strong(shap), ifelse(shap > intervalo_global_de_confianca, ' (Estatísticamente normal)', ' (Estatísticamente não normal)')),
+                                     if(shap <= intervalo_global_de_confianca) p('Recomenda-se utilizar o teste de Friedman.')
+      ))
 
       #Outliers
       output$anova_rep_box_plot <- renderPlotly(plot_ly(df, x = df[,2], y = df[,1], type = 'box', color = df[,2]))
@@ -1439,11 +1442,18 @@ server <- function (input, output, session){
       anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
       mauchly <- anova_dt$`Mauchly's Test for Sphericity`
       output$anova_rep_mauchly_dt <- renderDT(mauchly[-4])
-      output$anova_rep_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', mauchly$p, align = 'center'))
+      output$anova_rep_mauchly_results <- renderUI(h4(
+        'Pelo teste de esfericidade de mauchly, ', strong('p =', mauchly$p), '.', if(mauchly$p > intervalo_global_de_confianca)
+           h4('As variâncias das diferenças entre os grupo',strong('são iguais'),' conforme o intervalo de confiança, assim podemos assumir a esfericidade.')
+        else  h4('As variâncias das diferenças entre os grupo ',strong('não são iguais'),' assim não podemos assumir a esfericidade.'), br()))
 
       #ANOVA
-      output$anova_rep_dt <- renderDT(get_anova_table(anova_dt))
-      output$anova_rep_p <- renderUI(p('O valor de p do anova é: ', anova_dt$p, align = 'center'))
+      anova_dt <- get_anova_table(anova_dt)
+      anova_dt[1] <- names(values$bidimensional_data)[2]
+      anova_dt <- anova_dt[-c(2, 3, 6)]
+      output$anova_rep_dt <- renderDT(anova_dt)
+      output$anova_rep_p <- renderUI(h4('O valor de p do anova é: ', strong(anova_dt$p), '. Ou seja, ',
+                                 ifelse(anova_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')))
       posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
       output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
     }
@@ -1458,10 +1468,13 @@ server <- function (input, output, session){
       df_friedman_dt[3] <- signif(df_friedman_dt[3], significancia_de_aproximacao)
       output$friedman_dt <- renderDT(df_friedman_dt)
 
+      output$friedman_interpretation <- renderUI(h4('O valor de p do teste de Friedman é: ', strong(df_friedman_dt$p), '. Ou seja, ',
+                                 ifelse(df_friedman_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')))
+
       #Area de Efeito
       df_friedman_effectArea <- (df %>% rstatix::friedman_effsize(Dados ~ Grupo | id) %>% data.frame())[-(1:2)]
       df_friedman_effectArea[1] <- signif(df_friedman_effectArea[1], significancia_de_aproximacao)
-      output$friedman_effectArea <- renderDT(df_friedman_effectArea)
+      output$friedman_effectArea_interpretation <- renderUI(p('O valor da área de efeito do teste é: ', strong(df_friedman_effectArea[1])))
 
       #Sign's test
       df_friedman_sign_test <- df %>% rstatix::sign_test(Dados ~ Grupo, p.adjust.method = "bonferroni")
@@ -1478,7 +1491,6 @@ server <- function (input, output, session){
       output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
     }
     }
-  }
     #----------------ANOVA - Mixed Measures-------------#
     if(values$bidimensional_data_type == 'anova_mix'){
         df <- values$bidimensional_data
@@ -1500,7 +1512,10 @@ server <- function (input, output, session){
         mauchly <- anova_dt$`Mauchly's Test for Sphericity`
         mauchly[[1]] <- c(names[2], paste0(names[2], ' - ', names[3]))
         output$anova_mix_mauchly_dt <- renderDT(mauchly[-4])
-        output$anova_mix_mauchly_results <- renderUI(p('O valor de p do teste de mauchly é: ', signif(mauchly$p[2], significancia_de_aproximacao), align = 'center'))
+        output$anova_mix_mauchly_results <- renderUI(h4(
+        'Pelo teste de esfericidade de mauchly, ', strong('p =', mauchly$p[2]), '.', if(mauchly$p[2] > intervalo_global_de_confianca)
+           h4('As variâncias das diferenças entre os grupo',strong('são iguais'),' conforme o intervalo de confiança, assim podemos assumir a esfericidade.')
+        else  h4('As variâncias das diferenças entre os grupo ',strong('não são iguais'),' assim não podemos assumir a esfericidade.'), br()))
 
         #Teste de Homogeneidade das Variâncias
         homogenity_var <- df %>% group_by(vi1) %>% levene_test(vd ~ vi2) %>% data.frame()
@@ -1521,7 +1536,11 @@ server <- function (input, output, session){
         anova_table[[1]] <- c(names[2], names[3], paste0(names[2], ' - ', names[3]))
         anova_table <- anova_table[-6]
         output$anova_mix_dt <- renderDT(anova_table)
-        output$anova_mix_p <- renderUI(p('O valor de p do anova é: ', signif(anova_dt$p[3], significancia_de_aproximacao), align = 'center'))
+
+        #Intepretação dos resultados
+        output$anova_mix_results <- renderUI(h4('O valor de p do anova é: ', strong(anova_table$p[3]), '. Ou seja, ',
+                                 ifelse(anova_table$p[3]> intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')))
+
 
         pwc1 <- df %>% group_by(vi1) %>% pairwise_t_test(vd ~ vi2, p.adjust.method = "bonferroni") %>% data.frame()
         pwc1 <- pwc1[-c(2, 5, 6, 8, 9, 10)]
@@ -1536,22 +1555,25 @@ server <- function (input, output, session){
     #--------------------ANCOVA----------------------#
   {
     if(values$bidimensional_data_type == 'ancova'){
-      df <- values$bidimensional_data
-      names(df) <- c('vd', 'cov', 'vi')
+      df2 <- values$bidimensional_data
+      nomes <- names(values$bidimensional_data)
+      names(df2) <- c('vd', 'cov', 'vi')
       # output$ancova_linearity <- renderPlotly(renderANCOVA(values, options))
       output$ancova_linearity <- renderPlot(
-        ggscatter(df, x = "cov", y = "vd", color = "vi", add = "reg.line")+
+        ggscatter(df2, x = "cov", y = "vd", color = "vi", add = "reg.line")+
           stat_regline_equation(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~"), color = vi))
       )
-      regression <- as.data.frame(anova_test(df, vd ~ vi*cov))
+      regression <- as.data.frame(anova_test(df2, vd ~ vi*cov))
+      regression[1] <- nomes
+      regression <- regression[-6]
       output$ancova_regression <- renderDT(regression)
       output$ancova_regression_results <- renderUI(h4('O valor de', strong(' F (',regression$DFn[3], ', ',regression$DFd[3],')',' = ', regression$F[3]), ' e o valor de P é: ', strong(regression$p[3])))
 
       #Teste de levene
-      levene <- ancova_levene_test(df)
+      levene <- ancova_levene_test(df2)
       output$ancova_levene_test <- renderDT(levene)
       #Teste de shapiro wilk
-      shapiro <- ancova_shapiro_test(df)
+      shapiro <- ancova_shapiro_test(df2)
       output$ancova_shapiro_test <- renderDT(shapiro)
 
       #Resultados/interpretações
@@ -1567,7 +1589,7 @@ server <- function (input, output, session){
         assumir a igualdade da variância dos resíduos.')
       ))
       #Posthoc
-      output$ancova_posthoc <- renderDT(posthoc_ancova_table(df))
+      output$ancova_posthoc <- renderDT(posthoc_ancova_table(df2))
     }
     }
     #--------------------MANOVA----------------------#
@@ -1583,7 +1605,7 @@ server <- function (input, output, session){
       output$manova_boxplot <- renderPlotly(ggboxplot(df, x = names(df)[df_ncol + 1], y = names(df)[2:df_ncol], merge = TRUE, palette = "jco") %>% ggplotly())
 
       #Tabela con o tesde de Mahalanobis, verificando os outliers multiplos
-      output$manova_outliers_multi <- df %>% group_by(var = names(df)[df_ncol + 1]) %>% mahalanobis_distance(-id) %>% filter(is.outlier == TRUE) %>% as.data.frame() %>% renderDT()
+      # output$manova_outliers_multi <- df %>% group_by(var = names(df)[df_ncol + 1]) %>% mahalanobis_distance(-id) %>% filter(is.outlier == TRUE) %>% as.data.frame() %>% renderDT()
 
       #Teste de Normalidade
       manova_normality_multi_df <- df %>% df_select(vars = names(df)[2:df_ncol]) %>% mshapiro_test() %>% as.data.frame()

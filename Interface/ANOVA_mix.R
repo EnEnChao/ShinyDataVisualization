@@ -60,7 +60,8 @@ anova_mix_page <- function (){
                     type = spinnerType,
                     color = spinnerColor,
                     size = spinnerSize
-                  )
+                  ),
+                  uiOutput('anova_mix_results')
            )
       , align = 'center'
     ),
