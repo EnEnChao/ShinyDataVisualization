@@ -27,8 +27,46 @@ server <- function (input, output, session){
   frase_erro <- 'Dados inseridos incorretamente, verificar o manual para mais informações.'
 
   #Iniciar as planilhas
-  output$user_data <- renderRHandsontable({ rhandsontable(data = data.frame(matrix('', 1000, 1000))) })
-  output$user_data_bi <- renderRHandsontable({ rhandsontable(data = data.frame(matrix('', 1000, 1000))) })
+  output$user_data <- renderRHandsontable({ rhandsontable(data = data.frame(matrix(data = '', nrow = 1000, ncol =50))) })
+  observeEvent(input$inserted_bi_type,
+    output$user_data_bi <- switch(input$inserted_bi_type,
+                                  'uni_data' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 1))
+                                    names(dt_aux) <- 'A'
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+                                  'two_col' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 2))
+                                    names(dt_aux) <- c('A', 'B')
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+                                  'anova' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 2))
+                                    names(dt_aux) <- c('A', 'B')
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+                                  'anova_rep' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 3))
+                                    names(dt_aux) <- c('A', 'B', 'C')
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+                                  'anova_mix' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 4))
+                                    names(dt_aux) <- c('A', 'B', 'C', 'D')
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+                                  'ancova' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 3))
+                                    names(dt_aux) <- c('A', 'B', 'C')
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+                                  'manova' = {
+                                    dt_aux <- data.frame(matrix('', 1000, 5))
+                                    names(dt_aux) <- c('A', 'B', 'C', 'D', 'E')
+                                    renderRHandsontable({ rhandsontable(dt_aux) })
+                                  },
+    )
+  )
 
   #Esconder todos os paineis
   hideTab(inputId = "tabs", target = "Gráficos 2D")
@@ -348,22 +386,19 @@ server <- function (input, output, session){
   observeEvent(input$load_spreadsheet_bi,{
     updateTabsetPanel(session = session, inputId = 'bidimensional_data_input', selected = 'Importe seus dados')
     dt <- data.frame(hot_to_r(input$user_data_bi))
-    empty_columns <- colSums(dt == "") == nrow(dt)
-    dt <- dt[, !empty_columns]
-
-    if(ncol(dt) != 0) {
-      empty_rows <- rowSums(dt == "") == ncol(dt)
-      dt <- dt[!empty_rows,]
-    } else dt <- NULL
-
-    if(!is.null(dt)) {
-      names(dt) <- dt[1,]
-      dt <- dt[-1,]
-
-      dt <- as.data.frame(dt)
-    } else output$rest_of_sidebar <- renderMenu(NULL)
-
     type <- input$inserted_bi_type
+    nomes <- dt[1,]
+    names(dt) <- nomes
+    dt <- dt[-1,]
+    if(type != 'uni_data') {
+      dt2 <- lapply(seq(ncol(dt)), function(x) { which(dt[x] == '') })
+      dt <- dt[-Reduce(intersect, dt2),]
+    }
+    else {
+      dt <- as.data.frame(dt)
+      dt <- dt[-which(dt == ''),]
+      dt <- as.data.frame(dt)
+    }
     output$table_import_bi_data_output <- renderUI(
          shinycssloaders::withSpinner(
            DTOutput("table_import_bi_data_output2"),

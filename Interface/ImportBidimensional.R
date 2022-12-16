@@ -17,7 +17,8 @@ import_bidimensional_page <- function (){
                #Arquivo a ser carregado
                fileInput(inputId = "file_imported_bi", "Insira o arquivo", accept = '.xlsx'),
                 awesomeRadio(inputId = 'imported_bi_type', label = "Escolha o tipo de teste",
-                             choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
+                             choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova',
+                                         'ANOVA médias repetidas' = 'anova_rep' ,'ANOVA médias misturadas' = 'anova_mix' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
                              inline = TRUE, status = "success"),
                # switchInput(inputId = 'imported_bi_as.factor', offLabel = 'Categorias', onLabel = 'Fatores', value = TRUE)
              ),
@@ -80,7 +81,8 @@ insert_bidimensional <- function (){
              #Selecione se deseja utilizar um arquivo existente ou um exemplar
              h3(strong('Digite ou cole na planilha a esquerda:')),
              awesomeRadio(inputId = 'inserted_bi_type', label = "Escolha o tipo de teste",
-                             choices = c('Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova', 'ANOVA dois grupos' = 'anova_2groups' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
+                             choices = c('Uma coluna' = 'uni_data', 'Comparando duas Médias' = 'two_col', 'ANOVA' = 'anova',
+                                         'ANOVA médias repetidas' = 'anova_rep' ,'ANOVA médias misturadas' = 'anova_mix' , 'ANCOVA' = 'ancova', 'MANOVA' = 'manova'),
                              selected = 'two_col',
                              inline = TRUE, status = "success"),
              #Caso tenha escolhido alguma das opções, aparece o botão grande " Carregue! "
