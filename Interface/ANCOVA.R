@@ -31,7 +31,9 @@ ancova_page <- function (){
                        type = spinnerType,
                        color = spinnerColor,
                        size = spinnerSize
-                     )
+                     ),
+                 uiOutput('ancova_levene_res'),
+                 align = 'center'
           ),
           column(6,
                  h3(strong('Teste de Normalidade'), align = 'center'),
@@ -40,10 +42,21 @@ ancova_page <- function (){
                        type = spinnerType,
                        color = spinnerColor,
                        size = spinnerSize
-                     )
+                     ),
+                 uiOutput('ancova_shapiro_res'),
+                 align = 'center'
           )
     ),
     column(12,
+           h3(strong('Resultados:'), align = 'center'),
+           br(),
+           shinycssloaders::withSpinner(
+                       DTOutput('ancova_dt_res'),
+                       type = spinnerType,
+                       color = spinnerColor,
+                       size = spinnerSize
+                     ),
+           uiOutput('ancova_results'),
            h3(strong('Tabela Posthoc:'), align = 'center'),
            shinycssloaders::withSpinner(
                        DTOutput('ancova_posthoc'),
@@ -51,9 +64,6 @@ ancova_page <- function (){
                        color = spinnerColor,
                        size = spinnerSize
                      ),
-           h3(strong('Resultados:'), align = 'center'),
-           br(),
-           uiOutput('ancova_results'),
            align = 'center'
     ),
     column(12, hr())
@@ -62,8 +72,8 @@ ancova_page <- function (){
 #Constroi a tabela de levene
 ancova_levene_test <- function (df){
   levene <- leveneTest(aov(vd ~ cov + vi, data = df)$residuals ~ df$vi)
-  levene <- data.frame(F = levene$`F value`[1], Df1 = levene$Df[1], Df2 = levene$Df[2], p = levene$`Pr(>F)`[1])
-  levene <- signif(levene, 4)
+  levene <- data.frame(Estatística = levene$`F value`[1], Df1 = levene$Df[1], Df2 = levene$Df[2], p = levene$`Pr(>F)`[1])
+  levene <- signif(levene, significancia_de_aproximacao)
   rownames(levene) <- 'Teste de Levene'
 
   return(levene)
@@ -73,7 +83,7 @@ ancova_levene_test <- function (df){
 ancova_shapiro_test <- function (df){
   shapiro <- shapiro.test(aov(vd ~ cov + vi, data = df)$residuals)
   shapiro <- data.frame(Estatística = shapiro$statistic, p = shapiro$p.value)
-  shapiro <- signif(shapiro, 4)
+  shapiro <- signif(shapiro, significancia_de_aproximacao)
   rownames(shapiro) <- 'Teste de Shapiro-Wilk'
   return(shapiro)
 }
@@ -83,12 +93,13 @@ posthoc_ancova_table <- function (df){
   posthoc <- as.data.frame(
     df %>% emmeans_test(vd ~ vi, covariate = cov, p.adjust.method = 'bonferroni')
   )
-  posthoc <- posthoc[,-c(1, 2)]
-  posthoc <- posthoc[,-7]
-  posthoc$statistic <- signif(posthoc$statistic, 4)
-  posthoc$p <- signif(posthoc$p, 4)
-  posthoc$p.adj <- signif(posthoc$p.adj, 4)
-  names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p', 'p.adj')
+  posthoc <- posthoc[-c(1, 2, 8, 9)]
+  posthoc$statistic <- signif(posthoc$statistic, significancia_de_aproximacao)
+  posthoc$p <- signif(posthoc$p, significancia_de_aproximacao)
+  names(posthoc) <- c('Grupo 1','Grupo 2', 'df', 'Estatistica', 'p')
+  posthoc$`Significância` <- lapply(posthoc$p, function (x){
+    return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+  })
 
   return(posthoc)
 }

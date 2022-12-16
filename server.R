@@ -1356,7 +1356,7 @@ server <- function (input, output, session){
     else
       output$anova_qq_plot <- renderPlotly(ggplotly(ggqqplot(data = df, x = 'Dados', color = 'Grupos', ggtheme = theme_minimal())))
     shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
-    output$anova_shapiro <- renderUI(tagList(p('O valor p para o teste de Shapiro-Wilk é: ', strong(shap), ifelse(shap > intervalo_global_de_confianca, ' (Estatísticamente normal)', ' (Estatísticamente não normal)')),
+    output$anova_shapiro <- renderUI(tagList(h4('O valor p para o teste de Shapiro-Wilk é: ', strong(shap), ifelse(shap > intervalo_global_de_confianca, ' (Estatísticamente normal)', ' (Estatísticamente não normal)')),
                                      if(shap <= intervalo_global_de_confianca) p('Recomenda-se utilizar o teste de Kruskal-Wallis.')
     ))
     #Outliers
@@ -1364,21 +1364,30 @@ server <- function (input, output, session){
 
     #Teste de Levene
     levene_anova <- (df %>% rstatix::levene_test(Dados ~ Grupos))$p %>% signif(significancia_de_aproximacao)
-    output$anova_levene_dt <- renderDT(signif(data.frame(df %>% rstatix::levene_test(Dados ~ Grupos)), significancia_de_aproximacao))
-    output$anova_levene_results <- renderUI(p('O valor de p do teste de Levene é: ', strong(levene_anova), '. Ou seja, ',
-                                              ifelse(levene_anova > intervalo_global_de_confianca, 'não existe difereça entre as variâncias entre os grupos.', 'existe difereça entre as variâncias entre os grupos.')))
+    levene_anova <- signif(data.frame(df %>% rstatix::levene_test(Dados ~ Grupos)), significancia_de_aproximacao)
+    names(levene_anova) <- c('DF1', 'DF2', 'Estatística', 'p')
+    output$anova_levene_dt <- renderDT(levene_anova)
+    output$anova_levene_results <- renderUI(h4('O valor de p do teste de Levene é: ', strong(levene_anova$p), '. Ou seja, ',
+                                              ifelse(levene_anova$p > intervalo_global_de_confianca, 'não existe difereça entre as variâncias entre os grupos.', 'existe difereça entre as variâncias entre os grupos.')))
 
     #ANOVA
     anova_dt <- df %>% anova_test(Dados ~ Grupos)
-    output$anova_dt <- renderDT(anova_dt[, 4:7])
-    output$anova_p <- renderUI(p('O valor de p do anova é: ', strong(anova_dt$p), '. Ou seja, ',
+    anova_dt <- anova_dt[, 4:7]
+    anova_dt <- anova_dt[, -3]
+    names(anova_dt) <- c('Estatística', 'p', 'ges')
+    output$anova_dt <- renderDT(anova_dt)
+    output$anova_p <- renderUI(h4('O valor de p do anova é: ', strong(anova_dt$p), '. Ou seja, ',
                                  ifelse(anova_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')))
+
     posthoc <- df %>% tukey_hsd(Dados ~ Grupos)
-    posthoc$conf.high <- signif(posthoc$conf.high, significancia_de_aproximacao)
-    posthoc$conf.low <- signif(posthoc$conf.low, significancia_de_aproximacao)
     posthoc$estimate <- signif(posthoc$estimate, significancia_de_aproximacao)
     posthoc$p.adj <- signif(posthoc$p.adj, significancia_de_aproximacao)
-    output$anova_posthoc <- renderDT(posthoc[-c(1, 9)])
+    posthoc <- posthoc[-c(1,4, 6, 7, 9)]
+    names(posthoc) <- c('Grupo 1', 'Grupo 2', 'Estatística', 'p')
+    posthoc$`Significância` <- lapply(posthoc$p, function (x){
+      return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+    })
+    output$anova_posthoc <- renderDT(posthoc)
   }
     #-------------------Kruskal-Wallis-------------------#
   {
@@ -1398,9 +1407,9 @@ server <- function (input, output, session){
     #Area de Efeito
     dfkruskal_effectArea <- df %>% rstatix::kruskal_effsize(df[[1]] ~ df[[2]])
     dfkruskal_effectArea <- signif(dfkruskal_effectArea$effsize, significancia_de_aproximacao)
-    output$kruskal_interpretation <- renderUI(tagList(p('O valor de p do teste de Kruskal Wallis é: ', strong(dfkruskal_dt$p), '. Ou seja, ',
+    output$kruskal_interpretation <- renderUI(tagList(h4('O valor de p do teste de Kruskal Wallis é: ', strong(dfkruskal_dt$p), '. Ou seja, ',
                                                 ifelse(dfkruskal_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')),
-                                              p('O valor da área de efeito do teste é: ', strong(dfkruskal_effectArea))))
+                                              h4('O valor da área de efeito do teste é: ', strong(dfkruskal_effectArea))))
     names(df) <- c('Dados', 'Grupos')
 
     #Dumm's test
@@ -1408,6 +1417,10 @@ server <- function (input, output, session){
     df_dumm_test <- df_dumm_test[c(2, 3, 6, 7)]
     df_dumm_test[3] <- signif(df_dumm_test[3], significancia_de_aproximacao)
     df_dumm_test[4] <- signif(df_dumm_test[4], significancia_de_aproximacao)
+    names(df_dumm_test) <- c('Grupo 1', 'Grupo 2', 'Estatística', 'p')
+    df_dumm_test$`Significância` <- lapply(df_dumm_test$p, function (x){
+      return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+    })
     output$kruskal_dunn_test <- renderDT(df_dumm_test)
 
     #Wilcoxon's test
@@ -1415,6 +1428,10 @@ server <- function (input, output, session){
     df_wilcoxon_test <- df_wilcoxon_test[c(2, 3, 6, 7)]
     df_wilcoxon_test[3] <- signif(df_wilcoxon_test[3], significancia_de_aproximacao)
     df_wilcoxon_test[4] <- signif(df_wilcoxon_test[4], significancia_de_aproximacao)
+    names(df_wilcoxon_test) <- c('Grupo 1', 'Grupo 2', 'Estatística', 'p')
+    df_wilcoxon_test$`Significância` <- lapply(df_wilcoxon_test$p, function (x){
+      return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+    })
     output$kruskal_wilcoxon_test <- renderDT(df_wilcoxon_test)
   }
   }
@@ -1431,7 +1448,7 @@ server <- function (input, output, session){
       #Normalidade
       output$anova_rep_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
       shap <- signif(rstatix::shapiro_test(residuals(model))$p.value, significancia_de_aproximacao)
-      output$anova_rep_shapiro <- renderUI(tagList(p('O valor p para o teste de Shapiro-Wilk é: ', strong(shap), ifelse(shap > intervalo_global_de_confianca, ' (Estatísticamente normal)', ' (Estatísticamente não normal)')),
+      output$anova_rep_shapiro <- renderUI(tagList(h4('O valor p para o teste de Shapiro-Wilk é: ', strong(shap), ifelse(shap > intervalo_global_de_confianca, ' (Estatísticamente normal)', ' (Estatísticamente não normal)')),
                                      if(shap <= intervalo_global_de_confianca) p('Recomenda-se utilizar o teste de Friedman.')
       ))
 
@@ -1441,7 +1458,10 @@ server <- function (input, output, session){
       #Teste de Esfericidade de Mauchly
       anova_dt <- df %>% anova_test(dv = vd, within = vi, wid = wid)
       mauchly <- anova_dt$`Mauchly's Test for Sphericity`
-      output$anova_rep_mauchly_dt <- renderDT(mauchly[-4])
+      mauchly <- mauchly[-4]
+      names(mauchly) <- c('Efeito', 'W', 'p')
+      mauchly[1] <- names[2]
+      output$anova_rep_mauchly_dt <- renderDT(mauchly)
       output$anova_rep_mauchly_results <- renderUI(h4(
         'Pelo teste de esfericidade de mauchly, ', strong('p =', mauchly$p), '.', if(mauchly$p > intervalo_global_de_confianca)
            h4('As variâncias das diferenças entre os grupo',strong('são iguais'),' conforme o intervalo de confiança, assim podemos assumir a esfericidade.')
@@ -1451,11 +1471,24 @@ server <- function (input, output, session){
       anova_dt <- get_anova_table(anova_dt)
       anova_dt[1] <- names(values$bidimensional_data)[2]
       anova_dt <- anova_dt[-c(2, 3, 6)]
+      names(anova_dt) <- c('Efeito', 'Estatística', 'p', 'ges')
+      anova_dt$`Estatística` <- signif(anova_dt$`Estatística`, significancia_de_aproximacao)
+      anova_dt$p <- signif(anova_dt$p, significancia_de_aproximacao)
       output$anova_rep_dt <- renderDT(anova_dt)
       output$anova_rep_p <- renderUI(h4('O valor de p do anova é: ', strong(anova_dt$p), '. Ou seja, ',
                                  ifelse(anova_dt$p > intervalo_global_de_confianca, 'não existe difereça significativa entre os grupos.', 'existe difereça significativa entre, pelo menos dois grupos.')))
+
+      #Posthoc
       posthoc <- data.frame(df %>% pairwise_t_test(vd ~ vi, paired = TRUE, p.adjust.method = "bonferroni"))
-      output$anova_rep_posthoc <- renderDT(posthoc[-c(1, 3, 4, 10)])
+      posthoc <- posthoc[-c( 1, 4, 5,10)]
+      posthoc <- posthoc[-6]
+      names(posthoc) <- c('Grupo 1', 'Grupo 2', 'Estatística', 'DF', 'p')
+      posthoc$`Significância` <- lapply(posthoc$p, function (x){
+        return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+      })
+      posthoc$`Estatística` <- signif(posthoc$`Estatística`, significancia_de_aproximacao)
+      posthoc$p <- signif(posthoc$p, significancia_de_aproximacao)
+      output$anova_rep_posthoc <- renderDT(posthoc)
     }
       #-------------------Friedman Test-------------------#
     {
@@ -1466,6 +1499,8 @@ server <- function (input, output, session){
       names(df) <- c('Dados', 'Grupo', 'id')
       df_friedman_dt <- (df %>% rstatix::friedman_test(Dados ~ Grupo | id) %>% data.frame())[3:6]
       df_friedman_dt[3] <- signif(df_friedman_dt[3], significancia_de_aproximacao)
+      df_friedman_dt<- df_friedman_dt[-1]
+      names(df_friedman_dt) <- c('Estatística', 'DF', 'p')
       output$friedman_dt <- renderDT(df_friedman_dt)
 
       output$friedman_interpretation <- renderUI(h4('O valor de p do teste de Friedman é: ', strong(df_friedman_dt$p), '. Ou seja, ',
@@ -1479,8 +1514,13 @@ server <- function (input, output, session){
       #Sign's test
       df_friedman_sign_test <- df %>% rstatix::sign_test(Dados ~ Grupo, p.adjust.method = "bonferroni")
       df_friedman_sign_test <- df_friedman_sign_test[c(2, 3, 6, 7, 8)]
+      # df_friedman_sign_test <- df_friedman_sign_test[,-4]
       df_friedman_sign_test[3] <- signif(df_friedman_sign_test[3], significancia_de_aproximacao)
       df_friedman_sign_test[5] <- signif(df_friedman_sign_test[5], significancia_de_aproximacao)
+      names(df_friedman_sign_test) <- c('Grupo 1', 'Grupo 2', 'Estatística','DF', 'p')
+      df_friedman_sign_test$`Significância` <- lapply(df_friedman_sign_test$p, function (x){
+        return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+      })
       output$friedman_sign_test <- renderDT(df_friedman_sign_test)
 
       #Wilcoxon's test
@@ -1488,6 +1528,10 @@ server <- function (input, output, session){
       df_friedman_wilcoxon_test <- df_friedman_wilcoxon_test[c(2, 3, 6, 7)]
       df_friedman_wilcoxon_test[3] <- signif(df_friedman_wilcoxon_test[3], significancia_de_aproximacao)
       df_friedman_wilcoxon_test[4] <- signif(df_friedman_wilcoxon_test[4], significancia_de_aproximacao)
+      names(df_friedman_wilcoxon_test) <- c('Grupo 1', 'Grupo 2', 'Estatística', 'p')
+      df_friedman_wilcoxon_test$`Significância` <- lapply(df_friedman_wilcoxon_test$p, function (x){
+        return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+      })
       output$friedman_wilcoxon_test <- renderDT(df_friedman_wilcoxon_test)
     }
     }
@@ -1501,7 +1545,7 @@ server <- function (input, output, session){
         #Normalidade
         output$anova_mix_qq_plot <- renderPlotly(ggplotly(ggqqplot(residuals(model), color = "#E7B800")))
         shap <- (df %>% group_by(vi1, vi2) %>% shapiro_test(vd))$p %>% mean() %>% signif(significancia_de_aproximacao)
-        output$anova_mix_shapiro <- renderUI(p('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
+        output$anova_mix_shapiro <- renderUI(h4('O valor p do teste de Shapiro-Wilk para estest dados são: ', shap, align = 'center'))
 
         #Outliers
         output$anova_mix_box_plot <- renderPlotly(plot_ly(df, y =~ vd, x =~ vi1, color =~ vi2, type = 'box') %>%
@@ -1519,9 +1563,12 @@ server <- function (input, output, session){
 
         #Teste de Homogeneidade das Variâncias
         homogenity_var <- df %>% group_by(vi1) %>% levene_test(vd ~ vi2) %>% data.frame()
-        names(homogenity_var) <- c(names[2], 'df1', 'df2', 'Estatística', 'p')
+        names(homogenity_var) <- c(names[2], 'DF1', 'DF2', 'Estatística', 'p')
         homogenity_var$Estatística <- signif(homogenity_var$Estatística, significancia_de_aproximacao)
         homogenity_var$p <- signif(homogenity_var$p, significancia_de_aproximacao)
+        homogenity_var$`Significância` <- lapply(homogenity_var$p, function (x){
+          return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+        })
         output$anova_mix_levene <- renderDT(homogenity_var)
 
         #Teste de Homogeneidade das Covariâncias
@@ -1529,12 +1576,16 @@ server <- function (input, output, session){
         box_m <- box_m[-3:-4]
         box_m <- signif(box_m, significancia_de_aproximacao)
         names(box_m) <- c('Estatística', 'p')
+        box_m$`Significância` <- lapply(box_m$p, function (x){
+          return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+        })
         output$anova_mix_boxm <- renderDT(box_m)
 
         #ANOVA
         anova_table <-get_anova_table(anova_dt)
         anova_table[[1]] <- c(names[2], names[3], paste0(names[2], ' - ', names[3]))
         anova_table <- anova_table[-6]
+        names(anova_table) <- c('Efeito', 'DFn', 'DFd', 'Estatística', 'p', 'ges')
         output$anova_mix_dt <- renderDT(anova_table)
 
         #Intepretação dos resultados
@@ -1545,11 +1596,17 @@ server <- function (input, output, session){
         pwc1 <- df %>% group_by(vi1) %>% pairwise_t_test(vd ~ vi2, p.adjust.method = "bonferroni") %>% data.frame()
         pwc1 <- pwc1[-c(2, 5, 6, 8, 9, 10)]
         names(pwc1) <- c(names[2], 'Grupo 1', 'Grupo 2', 'p')
+        pwc1$`Significância` <- lapply(pwc1$p, function (x){
+          return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+        })
         output$anova_mix_pairwise_1 <- renderDT(pwc1)
 
         pwc2 <- df %>% group_by(vi2) %>% pairwise_t_test(vd ~ vi1, p.adjust.method = "bonferroni") %>% data.frame()
         pwc2 <- pwc2[-c(2, 5, 6, 8, 9, 10)]
         names(pwc2) <- c(names[3], 'Grupo 1', 'Grupo 2', 'p')
+        pwc2$`Significância` <- lapply(pwc2$p, function (x){
+          return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+        })
         output$anova_mix_pairwise_2 <- renderDT(pwc2)
       }
     #--------------------ANCOVA----------------------#
@@ -1572,21 +1629,53 @@ server <- function (input, output, session){
       #Teste de levene
       levene <- ancova_levene_test(df2)
       output$ancova_levene_test <- renderDT(levene)
+      output$ancova_levene_res <- renderUI(h4(
+        ifelse(as.double(levene$p) > intervalo_global_de_confianca,
+                  'O teste de Levene não foi significante',
+                  'O teste de Levene foi significante'
+        ),
+        ' (',levene$p,ifelse(levene$p > intervalo_global_de_confianca,' > ', ' <= '),intervalo_global_de_confianca,'), ',
+        ifelse(as.double(levene$p) > intervalo_global_de_confianca,
+                 'assim podemos assumir a igualdade da variância dos resíduos para todos os grupos.',
+                'não podemos assumir a igualdade da variância dos resíduos.'
+        )
+      ))
+
       #Teste de shapiro wilk
       shapiro <- ancova_shapiro_test(df2)
       output$ancova_shapiro_test <- renderDT(shapiro)
 
-      #Resultados/interpretações
-      output$ancova_results <- renderUI(tagList(
-        if(as.double(shapiro$p) > intervalo_global_de_confianca) h4('O teste de Shapiro-Wilk não foi significante (p > ',intervalo_global_de_confianca,'), assim podemos
-        assumir a normalidade dos residuos')
-        else h4('O teste de Shapiro-Wilk foi significante (p <= ',intervalo_global_de_confianca,'), não podemos
-        assumir a normalidade dos resíduos.'),
+      output$ancova_shapiro_res <- renderUI(h4(
+        ifelse(as.double(shapiro$p) > intervalo_global_de_confianca,
+                  'O teste de Shapiro-Wilk não foi significante',
+                  'O teste de Shapiro-Wilk foi significante'
+        ),
+        ' (',as.double(shapiro$p),ifelse(shapiro$p > intervalo_global_de_confianca,' > ', ' <= '),intervalo_global_de_confianca,'), ',
+        ifelse(as.double(shapiro$p) > intervalo_global_de_confianca,
+                 'assim podemos assumir a normalidade dos residuos.',
+                'não podemos assumir a normalidade dos resíduos.'
+        )
+      ))
 
-        if(as.double(levene$p) > intervalo_global_de_confianca) h4('O teste de Levene não foi significante (p > ',intervalo_global_de_confianca,'), assim podemos
-        assumir a igualdade da variância dos resíduos para todos os grupos.')
-        else h4('O teste de Levene foi significante (p <= ',intervalo_global_de_confianca,'), não podemos
-        assumir a igualdade da variância dos resíduos.')
+      #ANCOVA
+      ancova_dt <- df2 %>% anova_test(vd ~ cov + vi)
+      ancova_dt <- get_anova_table(ancova_dt) %>% as.data.frame()
+      ancova_dt <- ancova_dt[-6]
+      names(ancova_dt) <- c('Efeito', 'DFn', 'DFd', 'F', 'p', 'ges')
+      ancova_dt$p <- signif(ancova_dt$p, significancia_de_aproximacao)
+      ancova_dt[1] <- nomes[2:3]
+      output$ancova_dt_res <- renderDT(ancova_dt)
+
+      output$ancova_results <- renderUI(h4(
+        ifelse(ancova_dt$p[2] > intervalo_global_de_confianca,
+                  'O valor do teste de ANCOVA não foi significante',
+                  'O valor do teste de ANCOVA foi significante'
+        ),
+        ' (',ancova_dt$p[2], ifelse(ancova_dt$p[2] > intervalo_global_de_confianca,' > ', ' <= '),intervalo_global_de_confianca,'), ',
+        ifelse(ancova_dt$p[2] > intervalo_global_de_confianca,
+                 'ou seja, não existe difereça significativa entre os grupos.',
+                'ou seja, existe difereça significativa entre, pelo menos dois grupos.'
+        )
       ))
       #Posthoc
       output$ancova_posthoc <- renderDT(posthoc_ancova_table(df2))
@@ -1613,7 +1702,7 @@ server <- function (input, output, session){
       manova_normality_multi_df <- signif(manova_normality_multi_df, significancia_de_aproximacao)
       output$manova_normality_multi <-  renderDT(manova_normality_multi_df)
       output$manova_interpret_normality_multi <-  renderUI(
-        p('O valor de p utilizando o teste múltiplo de Shapiro Wilk é de: ', strong(manova_normality_multi_df$p),
+        h4('O valor de p utilizando o teste múltiplo de Shapiro Wilk é de: ', strong(manova_normality_multi_df$p),
           ifelse(manova_normality_multi_df$p > intervalo_global_de_confianca, '(Estatísticamente normal)', '(Estatísticamente não normal)'))
       )
 
@@ -1621,6 +1710,10 @@ server <- function (input, output, session){
       dt_multicollinearity <- df %>% cor_test(vars = names(df)[2:df_ncol]) %>% as.data.frame()
       dt_multicollinearity <- dt_multicollinearity[-c(3, 6, 7, 8)]
       dt_multicollinearity[3:4] <- signif(dt_multicollinearity[3:4], significancia_de_aproximacao)
+      names(dt_multicollinearity) <- c('Grupo 1', 'Grupo 2', 'Estatística', 'p')
+      dt_multicollinearity$`Significância` <- lapply(dt_multicollinearity$p, function (x){
+        return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+      })
       output$manova_multicollinearity <- dt_multicollinearity %>% renderDT()
 
       #Verificação do tamanho da amostra
@@ -1643,13 +1736,18 @@ server <- function (input, output, session){
                  '. Ou seja, as covariâncias são estatísticamente diferentes entre, pelo menos dois grupos.'))
       ))
 
-      #Computação do teste de MANOVA
+      # Checando Homogeniedade das Variâncias
       df_gather <- df %>% gather(key = "variable", value = "value", names(df)[2:df_ncol]) %>% group_by(variable)
       names(df_gather) <- c('id', 'group', 'variable', 'value')
       df_gather <- df_gather %>% levene_test(value ~ group) %>% data.frame()
       df_gather[4:5] <- signif(df_gather[4:5], significancia_de_aproximacao)
-      names(df_gather) <- c('Variáveis', 'df1', 'df2', 'Estatística', 'p')
+      names(df_gather) <- c('Variáveis', 'DF1', 'DF2', 'Estatística', 'p')
+      df_gather$`Significância` <- lapply(df_gather$p, function (x){
+        return(ifelse(x > intervalo_global_de_confianca, 'Não significativo', 'Significativo'))
+      })
       output$manova_variance <- renderDT(df_gather)
+
+      #Computação do teste de MANOVA
       vars_dependentes <- switch(
         as.character(df_ncol),
         '3' = { cbind(df[[2]], df[[3]]) },
@@ -1682,6 +1780,9 @@ server <- function (input, output, session){
       dt_shapiro_uni[3:4] <- signif(dt_shapiro_uni[3:4], significancia_de_aproximacao)
       dt_shapiro_uni <- dt_shapiro_uni[2:4]
       names(dt_shapiro_uni) <- c('Variável', 'Estatística', 'p')
+      dt_shapiro_uni$Normalidade <- lapply(dt_shapiro_uni$p, function (x){
+        return(ifelse(x > intervalo_global_de_confianca, 'Normal', 'Não normal'))
+      })
       output$manova_shapiro_uni <- dt_shapiro_uni %>% renderDT()
 
       #Testes de Linearidade
