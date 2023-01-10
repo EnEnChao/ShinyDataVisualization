@@ -388,7 +388,7 @@ server <- function (input, output, session){
     dt <- data.frame(hot_to_r(input$user_data_bi))
     type <- input$inserted_bi_type
     nomes <- dt[1,]
-    names(dt) <- nomes
+    names(dt) <- as.character(nomes)
     dt <- dt[-1,]
     if(type != 'uni_data') {
       dt2 <- lapply(seq(ncol(dt)), function(x) { which(dt[x] == '') })
