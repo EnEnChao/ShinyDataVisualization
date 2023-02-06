@@ -10,7 +10,7 @@ home_page <- function (){
            ),
            br(),
              # HTML('<center><img src="HomeImages/a-imagem-destaca-grafico-setores-grafico-linhas-grafico-barras.png" width=40% height=40%></center>'),
-           h2(strong('Informações disponiveis'), align = 'center'),
+           h2(strong('Informações disponíveis'), align = 'center'),
            hr(),
            wellPanel(
              p(

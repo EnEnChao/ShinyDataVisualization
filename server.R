@@ -1181,12 +1181,12 @@ server <- function (input, output, session){
             output$t_test_homostacity <- renderDT(ftest_dt)
             output$t_test_homostacity_results <- renderUI(p('O valor de p é: ',strong(signif(ftest_dt$p, significancia_de_aproximacao)), 'ou seja,', ifelse(ftest_dt$p > intervalo_global_de_confianca, 'a variância entre os grupos é estatísticamente igual.', 'a variância entre os grupos é estatísticamente diferente.')))
 
-            test_w <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ftest_dt$p > intervalo_global_de_confianca | input$test_t_options == 'paired')
-            test_w_df <- data.frame(p = signif(test_w$p, significancia_de_aproximacao), estatística = signif(test_w$statistic, significancia_de_aproximacao), df = signif(test_w$df, significancia_de_aproximacao))
-            rownames(test_w_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
-            output$t_test_dt <- renderDT(test_w_df)
+            test_t <- dt %>% t_test(Dados ~ Classificação, paired = input$test_t_options == 'paired', var.equal = ftest_dt$p > intervalo_global_de_confianca | input$test_t_options == 'paired')
+            test_t_df <- data.frame(p = signif(test_t$p, significancia_de_aproximacao), df = signif(test_t$df, significancia_de_aproximacao), Tcalc = signif(test_t$statistic, significancia_de_aproximacao), Ttab = qt(intervalo_global_de_confianca, df = length(dt$Dados) - 2) %>% abs() %>% signif(significancia_de_aproximacao))
+            rownames(test_t_df) <- if(input$test_t_options == 'two') paste0('Teste T') else if(input$test_t_options == 'paired') paste0('Teste T - Pareado')
+            output$t_test_dt <- renderDT(test_t_df)
             cohensD <- (dt %>% cohens_d(Dados ~ Classificação, paired = input$test_t_options == 'paired'))$effsize
-            output$t_test_effect_size <-renderUI(tagList(p('O valor p do teste T é: ',strong(test_w_df$p) , ' ou seja, ', ifelse(test_w_df$p > intervalo_global_de_confianca, 'as variâncias de ambos os grupos são estatísticamente iguais.', 'os dados médios de ambos os grupos são estatísticamente diferentes.'),
+            output$t_test_effect_size <-renderUI(tagList(p('O valor p do teste T é: ',strong(test_t$p) , ' ou seja, ', ifelse(test_t$p > intervalo_global_de_confianca, 'as variâncias de ambos os grupos são estatísticamente iguais.', 'os dados médios de ambos os grupos são estatísticamente diferentes.'),
                                                    br(),
                                                    'A área de efeito entre as variáveis ', strong(names(values$bidimensional_data)[1]),', e ',strong(names(values$bidimensional_data)[2]), ' é de: ', strong(signif(cohensD, significancia_de_aproximacao)),br()),
                                                    if(ftest_dt$p <= intervalo_global_de_confianca & input$test_t_options != 'paired') p('O algoritmo para calcular a área de efeito foi o ', strong('o algoritmo de Welch,'), ' como as variâncias foram diferentes.')
@@ -1827,7 +1827,7 @@ server <- function (input, output, session){
   }
   })
 
-  #-------------------Load Tridimensional Data-------------------#
+  #-------------------Gráficos 3D em Mesh-------------------#
   observeEvent(input$load_tridimensional, {
     showTab(inputId = "tabs", target = "Gráfico em Mesh")
 

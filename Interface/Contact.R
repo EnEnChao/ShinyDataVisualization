@@ -15,12 +15,11 @@ contact_page <- function (){
            ),
            column(8,
                   h3(strong('Informações de contato: ')),br(),
-                  h4(strong('Divisão de Metrologia em Dinâmica de Fluidos (Dinam)')),
-                  h4(strong('Diretoria de Metrologia Científica e Industrial (Dimci)')),
-                  h4(strong('Instituto Nacional de Metrologia, Qualidade e Tecnologia (Inmetro)')),br(),
+                  h4(strong('Instituto Nacional de Metrologia, Qualidade e Tecnologia (Inmetro)')),
+                  h4(strong('Diretoria de Metrologia Científica e Industrial (Dimci)')),br(),
                   p(strong('Endereço:'),'Av. N. Sra. das Graças, 50 – Xerém – Duque de Caxias – Rio de Janeiro – Brasil',br(),
-                    strong('Telefones:'),'+55 (21) 2679-9149 e +55 (21) 2679-9716',br(),
-                    strong('Email:'), a('dinam@inmetro.gov.br'))
+                    strong('Telefones:'),'(21) 2679-9011/9787',br(),
+                    strong('Email:'), a('dimci@inmetro.gov.br'))
            ),
            column(12, hr())
 

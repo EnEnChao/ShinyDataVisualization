@@ -33,7 +33,9 @@ test_t_page <- function (){
 
 test_t_uni <- function (vector, mu){
   test_t <- t.test(vector, mu = mu)
-  test_t2 <- data.frame(p = signif(test_t$p.value, 4), estatística = signif(test_t$estimate, 4), df = signif(test_t$parameter, 4))
+  test_t2 <- data.frame(p = signif(test_t$p.value, 4), df = signif(test_t$parameter, 4), Tcalc = signif(test_t$estimate, 4))
+  Ttab <- qt(intervalo_global_de_confianca, df = test_t2$df, lower.tail = F) %>% abs() %>% signif(digits = significancia_de_aproximacao)
+  test_t2 <- cbind(test_t2, Ttab)
   rownames(test_t2) <- paste0('Test T - ', names(vector)[1])
   return(test_t2)
 }

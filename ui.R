@@ -1,31 +1,40 @@
+#Shiny
 if (!(require(shiny))){install.packages("shiny"); require(shiny, quietly=TRUE)}
 if (!(require(shinyjs))){install.packages("shinyjs"); require(shinyjs, quietly=TRUE)}
 if (!(require(shinythemes))){install.packages("shinythemes"); require(shinythemes, quietly=TRUE)}
-if (!(require(DT))){install.packages("DT"); require(DT, quietly=TRUE)}
 if (!(require(shinydashboardPlus))){install.packages("shinydashboardPlus"); require(shinydashboardPlus, quietly=TRUE)}
 if (!(require(shinydashboard))){install.packages("shinydashboard"); require(shinydashboard, quietly=TRUE)}
 if (!(require(shinyWidgets))){install.packages("shinyWidgets"); require(shinyWidgets, quietly=TRUE)}
+
+#Plots e tabelas
+if (!(require(DT))){install.packages("DT"); require(DT, quietly=TRUE)}
 if (!(require(plotly))){install.packages("plotly"); require(plotly, quietly=TRUE)}
+if (!(require(ggridges))){install.packages("ggridges"); require(ggridges, quietly=TRUE)}
+if (!(require(vtable))){install.packages("vtable"); require(vtable, quietly=TRUE)}
+if (!(require(beeswarm))){install.packages("beeswarm"); require(beeswarm, quietly=TRUE)}
+if (!(require(ggpubr))){install.packages("ggpubr"); require(ggpubr, quietly=TRUE)}
+if (!(require(GGally))){install.packages("GGally"); require(GGally, quietly=TRUE)}
+if (!(require(rhandsontable))){install.packages("rhandsontable"); require(rhandsontable, quietly=TRUE)}
+if (!(require(shinycssloaders))){install.packages("shinycssloaders"); require(shinycssloaders, quietly=TRUE)}
+if (!(require(colourpicker))){install.packages("colourpicker"); require(colourpicker, quietly=TRUE)}
+
+#Arquivos
 if (!(require(openxlsx))){install.packages("openxlsx"); require(openxlsx, quietly=TRUE)}
 if (!(require(writexl))){install.packages("writexl"); require(writexl, quietly=TRUE)}
-if (!(require(vtable))){install.packages("vtable"); require(vtable, quietly=TRUE)}
-if (!(require(ggridges))){install.packages("ggridges"); require(ggridges, quietly=TRUE)}
-if (!(require(beeswarm))){install.packages("beeswarm"); require(beeswarm, quietly=TRUE)}
+if (!(require(emmeans))){install.packages("emmeans"); require(emmeans, quietly=TRUE)}
+if (!(require(readxl))){install.packages("readxl"); require(readxl, quietly=TRUE)}
+
+#Estatística e outros
 if (!(require(car))){install.packages("car"); require(car, quietly=TRUE)}
 if (!(require(carData))){install.packages("carData"); require(carData, quietly=TRUE)}
 if (!(require(tidyverse))){install.packages("tidyverse"); require(tidyverse, quietly=TRUE)}
 if (!(require(datarium))){install.packages("datarium"); require(datarium, quietly=TRUE)}
 if (!(require(rstatix))){install.packages("rstatix"); require(rstatix, quietly=TRUE)}
 if (!(require(broom))){install.packages("broom"); require(broom, quietly=TRUE)}
-if (!(require(ggpubr))){install.packages("ggpubr"); require(ggpubr, quietly=TRUE)}
-if (!(require(rhandsontable))){install.packages("rhandsontable"); require(rhandsontable, quietly=TRUE)}
 if (!(require(multcomp))){install.packages("multcomp"); require(multcomp, quietly=TRUE)}
-if (!(require(emmeans))){install.packages("emmeans"); require(emmeans, quietly=TRUE)}
-if (!(require(readxl))){install.packages("readxl"); require(readxl, quietly=TRUE)}
 if (!(require(slickR))){install.packages("slickR"); require(slickR, quietly=TRUE)}
 if (!(require(moments))){install.packages("moments"); require(moments, quietly=TRUE)}
 if (!(require(coin))){install.packages("coin"); require(coin, quietly=TRUE)}
-if (!(require(GGally))){install.packages("GGally"); require(GGally, quietly=TRUE)}
 
 source('RFunctions/table.R')
 source('RFunctions/PlotFunct.R')
