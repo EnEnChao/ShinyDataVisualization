@@ -5,7 +5,7 @@ about_page <- function (){
                     h4(strong('Descrição do Projeto')),
                     h5('Este aplicativo de estatística é projetado para ajudar estudantes, professores, pesquisadores e profissionais da área, para visualizar e analisar dados de maneira eficiente e intuitiva.
                      Com ele, é possível importar como arquivos Excel, e transformá-los em gráficos interativos e informativos. Além disso, o aplicativo oferece uma ampla gama de testes estatísticos, incluindo testes t
-                     , ANOVA, MANOVA e muito mais, para ajudar a obter insights precisos sobre os dados.',br(),br(),' Com sua interface intuitiva e fácil de usar, o aplicativo é perfeito tanto para usuários avançados quanto para aqueles
+                     , ANOVA, MANOVA e muito mais, para ajudar a obter insights precisos sobre os dados.',br(), br(),' Com sua interface intuitiva e fácil de usar, o aplicativo é perfeito tanto para usuários avançados quanto para aqueles
                       sem experiência prévia em estatística. Além disso, ele oferece recursos de colaboração, permitindo que você compartilhe suas análises e resultados com colegas e equipes. Em resumo, este aplicativo é uma
                        ferramenta poderosa e acessível para quem precisa visualizar e analisar dados.'),
                     actionButton('tutorial_button', 'Ver tutorial'),
